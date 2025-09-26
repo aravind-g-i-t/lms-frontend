@@ -1,14 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { logout } from "../services/userAuthServices";
+import { getBusinessProfile } from "../services/businessServices";
 
 interface IBusinessState {
     id: string | null;
     name: string | null;
-    email: string | null;
-    planId: string | null;
-    planStartDate: Date | null;
-    planEndDate: Date | null;
-    maxEmployees: number | null;
     profilePic: string | null;
 
 }
@@ -16,11 +12,6 @@ interface IBusinessState {
 const initialState: IBusinessState = {
     id: null,
     name: null,
-    email: null,
-    planId: null,
-    planStartDate: null,
-    planEndDate: null,
-    maxEmployees: null,
     profilePic: null,
 }
 
@@ -30,16 +21,17 @@ const businessSlice = createSlice({
     initialState,
     reducers: {
         setBusiness: (state, action) => {
+            
             state.id = action.payload.id;
-            state.email = action.payload.email;
             state.name = action.payload.name;
             state.profilePic = action.payload.profilePic;
-            state.maxEmployees = action.payload.maxEmployees;
-            state.planId = action.payload.planId;
-            state.planStartDate = action.payload.planStartDate;
-            state.planEndDate = action.payload.planEndDate;
         },
-
+        setBusinessName: (state, action) => {
+            state.name = action.payload.name;
+        },
+        setBusinessImage: (state, action) => {
+            state.profilePic = action.payload.profilePic;
+        },
         clearBusiness: (state) => {
             Object.assign(state, initialState)
         }
@@ -48,27 +40,22 @@ const businessSlice = createSlice({
         builder
             .addCase(logout.fulfilled, (state) => {
                 state.id = null;
-                state.email = null;
                 state.name = null;
                 state.profilePic = null;
-                state.maxEmployees = null;
-                state.planId = null
-                state.planStartDate = null;
-                state.planEndDate = null
             })
             .addCase(logout.rejected, (state) => {
                 state.id = null;
-                state.email = null;
                 state.name = null;
                 state.profilePic = null;
-                state.maxEmployees = null;
-                state.planId = null;
-                state.planStartDate = null;
-                state.planEndDate = null;
+            })
+            .addCase(getBusinessProfile.fulfilled, (state, action) => {
+                state.name = action.payload.business.name;
+                state.profilePic = action.payload.business.profilePic;
+
             })
     }
 });
 
 
-export const { setBusiness, clearBusiness } = businessSlice.actions;
+export const { setBusiness, clearBusiness,setBusinessImage,setBusinessName } = businessSlice.actions;
 export default businessSlice.reducer;

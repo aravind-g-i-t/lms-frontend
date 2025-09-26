@@ -1,13 +1,14 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
 import axiosInstance from "../../config/axiosInstance";
+import type { UpdateBusinessProfileInput } from "../types/serviceInput";
 
 
-export const getLearnerProfile = createAsyncThunk(
-    "learner/profile",
+export const getBusinessProfile = createAsyncThunk(
+    "business/profile",
     async (_ ,{ rejectWithValue }) => {
         try {
-            const result = await axiosInstance.get(`/learner/profile`);
+            const result = await axiosInstance.get(`/business/profile`);
             console.log(result);
 
             if (!result.data.success) {
@@ -26,11 +27,11 @@ export const getLearnerProfile = createAsyncThunk(
 )
 
 
-export const updateLearnerProfile = createAsyncThunk(
-    "learner/profile/update",
-    async (data:{name:string}, { rejectWithValue }) => {
+export const updateBusinessProfile = createAsyncThunk(
+    "business/profile/update",
+    async (data:UpdateBusinessProfileInput, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch(`/learner/profile`, {data});
+            const result = await axiosInstance.patch(`/business/profile`, {data});
             console.log(result);
 
             if (!result.data.success) {
@@ -48,11 +49,12 @@ export const updateLearnerProfile = createAsyncThunk(
     },
 )
 
-export const updateLearnerProfileImage = createAsyncThunk(
-    "learner/profile/image/update",
+
+export const updateBusinessProfileImage = createAsyncThunk(
+    "business/profile/image/update",
     async (data:{imageURL:string}, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch(`/learner/profile/image`, data);
+            const result = await axiosInstance.patch(`/business/profile/image`, data);
             console.log(result);
 
             if (!result.data.success) {
@@ -70,11 +72,11 @@ export const updateLearnerProfileImage = createAsyncThunk(
     },
 )
 
-export const resetLearnerPassword = createAsyncThunk(
-    "learner/profile/password",
+export const resetBusinessPassword = createAsyncThunk(
+    "business/profile/password",
     async (input:{currentPassword:string,newPassword:string}, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch(`/learner/password`, input);
+            const result = await axiosInstance.patch(`/business/password`, input);
             console.log(result);
 
 
@@ -93,25 +95,25 @@ export const resetLearnerPassword = createAsyncThunk(
     },
 )
 
-export const learnerResetPassword = createAsyncThunk(
-    "learner/profile/password",
-    async (input:{id:string,currentPassword:string,newPassword:string}, { rejectWithValue }) => {
-        try {
-            const result = await axiosInstance.patch(`/learner/password`, input);
-            console.log(result);
+// export const learnerResetPassword = createAsyncThunk(
+//     "learner/profile/password",
+//     async (input:{id:string,currentPassword:string,newPassword:string}, { rejectWithValue }) => {
+//         try {
+//             const result = await axiosInstance.patch(`/learner/password`, input);
+//             console.log(result);
 
 
-            if (!result.data.success) {
-                return rejectWithValue(result.data.message)
-            }
-            return result.data
-        } catch (error: unknown) {
+//             if (!result.data.success) {
+//                 return rejectWithValue(result.data.message)
+//             }
+//             return result.data
+//         } catch (error: unknown) {
 
-            if (error instanceof AxiosError) {
-                console.log(error.response?.data);
-                return rejectWithValue(error.response?.data?.message || "Invalid request");
-            }
-            return rejectWithValue("Something went wrong. Please try again.");
-        }
-    },
-)
+//             if (error instanceof AxiosError) {
+//                 console.log(error.response?.data);
+//                 return rejectWithValue(error.response?.data?.message || "Invalid request");
+//             }
+//             return rejectWithValue("Something went wrong. Please try again.");
+//         }
+//     },
+// )

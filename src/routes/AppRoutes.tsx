@@ -23,9 +23,9 @@ const AppRoutes = () => {
       {!role &&<Route path="/reset" element={<ResetPassword/>}/>}
       {!role &&<Route path="/reset/verify-otp" element={<ResetOtpVerification/>}/>}
      { !role && <Route path="/signin" element={<Signin/>}/>}
+     
 
       <Route path="/admin/*" element={<AdminRoutes />} />
-
       {role === "learner" && <Route path="/learner/*" element={<LearnerRoutes />} />}
       {role === "instructor" && <Route path="/instructor/*" element={<InstructorRoutes />} />}
       {role === "business" && <Route path="/business/*" element={<BusinessRoutes />} />}

@@ -6,12 +6,15 @@ import AdminLayout from "../components/admin/Layout";
 import ManageLearners from "../pages/admin/Learners";
 import ManageBusinesses from "../pages/admin/Business";
 import ManageInstructors from "../pages/admin/Instructors";
+import { useSelector } from "react-redux";
+import type { RootState } from "../redux/store";
+// import Verifications from "../pages/admin/Verifications";
 
 const AdminRoutes = () => {
-
+  const {role}=useSelector((state:RootState)=>state.auth)
     return (
     <Routes>
-        <Route path="signin" element={<AdminSignin/>}/>
+        {!role &&<Route path="signin" element={<AdminSignin/>}/>}
         <Route element={<ProtectedAdmin />}>
         <Route path="/" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -19,6 +22,7 @@ const AdminRoutes = () => {
           <Route path="learners" element={<ManageLearners />} />
           <Route path="instructors" element={<ManageInstructors />} />
           <Route path="business" element={<ManageBusinesses />} />
+          {/* <Route path="verifications" element={<Verifications />} /> */}
         </Route>
         
         {/* <Route>

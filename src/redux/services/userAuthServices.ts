@@ -1,7 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { OTPVerificationInput, signinInput, SignupInput } from "../../types/auth";
+
 import { AxiosError } from "axios";
-import userAxiosInstance from "../../config/userAxiosInstance";
+import type { GoogleSigninRequest, OTPVerificationRequest, ResendOTPRequest, ResetPasswordRequest, SigninRequest, SignupRequest, VerifyEmailRequest, VerifyResetOTPRequest } from "../../types/api/auth";
+import axiosInstance from "../../config/axiosInstance";
 
 
 
@@ -10,9 +11,9 @@ import userAxiosInstance from "../../config/userAxiosInstance";
 
 export const sendOTP = createAsyncThunk(
     "/send-otp",
-    async (singupInput: SignupInput, { rejectWithValue }) => {
+    async (singupInput: SignupRequest, { rejectWithValue }) => {
         try {
-            const result = await userAxiosInstance.post('/auth/signup', singupInput);
+            const result = await axiosInstance.post('/auth/signup', singupInput);
             console.log(result);
 
             if (!result.data.success) {
@@ -32,10 +33,10 @@ export const sendOTP = createAsyncThunk(
 
 export const verifyOTP = createAsyncThunk(
     "/verify-otp",
-    async (inputData:OTPVerificationInput, { rejectWithValue }) => {
+    async (inputData:OTPVerificationRequest, { rejectWithValue }) => {
         try {
             console.log(inputData);
-            const result = await userAxiosInstance.post('/auth/otp/send', inputData);
+            const result = await axiosInstance.post('/auth/otp/send', inputData);
             console.log(result);
 
             if (!result.data.success) {
@@ -54,10 +55,9 @@ export const verifyOTP = createAsyncThunk(
 
 export const resendOTP = createAsyncThunk(
     "/resend-otp",
-    async (email:string, { rejectWithValue }) => {
+    async (input:ResendOTPRequest, { rejectWithValue }) => {
         try {
-            console.log(email);
-            const result = await userAxiosInstance.post('/auth/otp/resend', {email});
+            const result = await axiosInstance.post('/auth/otp/resend', input);
             console.log(result);
 
             if (!result.data.success) {
@@ -78,9 +78,9 @@ export const resendOTP = createAsyncThunk(
 
 export const signin = createAsyncThunk(
     "/signin",
-    async ({role,email,password}:signinInput, { rejectWithValue }) => {
+    async (input:SigninRequest, { rejectWithValue }) => {
         try {
-            const result = await userAxiosInstance.post(`/auth/signin`, {role,email,password});
+            const result = await axiosInstance.post(`/auth/signin`, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -102,7 +102,7 @@ export const logout = createAsyncThunk(
     "/logout",
     async (_, { rejectWithValue }) => {
         try {
-            const result = await userAxiosInstance.post(`/auth/logout`);
+            const result = await axiosInstance.post(`/auth/logout`);
             console.log(result);
 
             if (!result.data.success) {
@@ -126,7 +126,7 @@ export const userTokenRefresh = createAsyncThunk(
     "/auth/refresh",
     async (_, { rejectWithValue }) => {
         try {
-            const result = await userAxiosInstance.post(`/auth/refresh`);
+            const result = await axiosInstance.post(`/auth/refresh`);
             console.log(result);
             return result.data
         } catch (error: unknown) {
@@ -143,9 +143,9 @@ export const userTokenRefresh = createAsyncThunk(
 
 export const googleSignIn = createAsyncThunk(
     "/auth/googleAuth",
-    async (payload:{token:string,role:string}, { rejectWithValue }) => {
+    async (payload:GoogleSigninRequest, { rejectWithValue }) => {
         try {
-            const result = await userAxiosInstance.post(`/auth/google`,payload);
+            const result = await axiosInstance.post(`/auth/google`,payload);
             console.log(result);
             return result.data
         } catch (error: unknown) {
@@ -162,10 +162,10 @@ export const googleSignIn = createAsyncThunk(
 
 export const verifyEmail = createAsyncThunk(
     "/reset/verifyEmail",
-    async (input:{email:string,role:string}, { rejectWithValue }) => {
+    async (input:VerifyEmailRequest, { rejectWithValue }) => {
         try {
             console.log(input);
-            const result = await userAxiosInstance.post('/auth/reset/email', input);
+            const result = await axiosInstance.post('/auth/reset/email', input);
             console.log(result);
 
             if (!result.data.success) {
@@ -186,10 +186,10 @@ export const verifyEmail = createAsyncThunk(
 
 export const verifyResetOTP = createAsyncThunk(
     "/reset/verifyEmail",
-    async (input:{email:string,otp:string}, { rejectWithValue }) => {
+    async (input:VerifyResetOTPRequest, { rejectWithValue }) => {
         try {
             console.log(input);
-            const result = await userAxiosInstance.post('/auth/reset/otp', input);
+            const result = await axiosInstance.post('/auth/reset/otp', input);
             console.log(result);
 
             if (!result.data.success) {
@@ -210,10 +210,10 @@ export const verifyResetOTP = createAsyncThunk(
 
 export const resetPassword = createAsyncThunk(
     "/reset/verifyEmail",
-    async (input:{email:string,role:string,password:string}, { rejectWithValue }) => {
+    async (input:ResetPasswordRequest, { rejectWithValue }) => {
         try {
             console.log(input);
-            const result = await userAxiosInstance.post('/auth/reset', input);
+            const result = await axiosInstance.post('/auth/reset', input);
             console.log(result);
 
             if (!result.data.success) {

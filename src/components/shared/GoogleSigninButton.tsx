@@ -19,14 +19,14 @@ const GoogleSigninButton: React.FC<{ role: string }> = ({ role }) => {
       const result = await dispatch(
         googleSignIn({
           token: tokenResponse.access_token as string, 
-          role: role.toLowerCase(),
+          role: role.toLowerCase() as 'learner'|'instructor'|'business',
         })
       ).unwrap();
 
       const user = result.user;
-      if (role === "Learner") {
+      if (role === "learner") {
         dispatch(setLearner(user));
-      } else if (role === "Instructor") {
+      } else if (role === "instructor") {
         dispatch(setInstructor(user));
       } else {
         dispatch(setBusiness(user));

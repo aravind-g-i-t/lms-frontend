@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { Bell, Search, ShoppingCart } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import type{ AppDispatch, RootState } from "../../redux/store";
 import { clearLearner } from "../../redux/slices/learnerSlice";
@@ -9,9 +8,10 @@ import { logout } from "../../redux/services/userAuthServices";
 
 export default function LearnerNav() {
   const { name,profilePic } = useSelector((state: RootState) => state.learner);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+
+
 
   const handleLogout = async () => {
     try {
@@ -27,14 +27,9 @@ export default function LearnerNav() {
         navigate("/signin");
       }
     } catch (error: unknown) {
-      let message = "Network error. Logging out locally.";
       console.error("Logout error:", error);
 
-      if (error instanceof Error) {
-        message = error.message;
-      }
 
-      toast.error(message);
       dispatch(clearLearner());
       navigate("/signin");
     }
@@ -44,56 +39,82 @@ export default function LearnerNav() {
   if (!name) return null;
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-3">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        {/* Logo */}
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center mr-2">
-            <span className="text-white font-bold text-sm">N</span>
-          </div>
-          <span className="font-semibold text-gray-900">NlightN</span>
-        </div>
+    <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-teal-500 rounded flex items-center justify-center">
+                <span className="text-white font-bold">N</span>
+              </div>
+              <span className="ml-2 text-xl font-bold text-gray-900">
+                NlightN
+              </span>
+            </div>
 
-        {/* Right section */}
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen((prev) => !prev)}
-            className="flex items-center space-x-2 focus:outline-none"
-          >
-            <img
-              src={profilePic || "/images/default-profile.jpg"}
-              alt="User avatar"
-              className="w-8 h-8 rounded-full object-cover border"
-            />
-            <span className="font-medium text-gray-800">{name}</span>
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          </button>
+            {/* Navigation */}
+            <nav className="hidden md:flex space-x-8">
+              <Link
+                to="/learner/home"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2"
+              >
+                Home
+              </Link>
+              <Link
+                to="/learner/dashboard"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="#"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2"
+              >
+                Explore
+              </Link>
+            </nav>
 
-          {/* Dropdown menu */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+            {/* Search Bar */}
+            <div className="flex-1 max-w-lg mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Want to learn?"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Right side icons */}
+            <div className="flex items-center space-x-4">
+              <ShoppingCart className="w-5 h-5 text-gray-600 cursor-pointer" />
+              <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
+
+              {/* Profile Unit */}
               <Link
                 to="/learner/profile"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
-                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center space-x-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition"
               >
-                <User className="w-4 h-4 mr-2" />
-                My Profile
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
+                  <img
+                    src={profilePic || "/images/default-profile.jpg"}
+                    alt={name ?? ""}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="text-gray-700 font-medium">{name}</span>
               </Link>
+
               <button
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                  handleLogout();
-                }}
-                className="flex w-full items-center px-4 py-2 text-gray-700 hover:bg-gray-100 text-left"
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
               >
-                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </nav>
+      </header>
   );
 }

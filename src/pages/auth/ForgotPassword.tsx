@@ -7,12 +7,15 @@ import { useNavigate } from "react-router-dom";
 import { verifyEmail } from "../../redux/services/userAuthServices";
 
 export default function ForgotPassword() {
+
+  type Role = 'learner' | 'instructor' | 'business';
+
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.status.user);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("learner"); // default role
+  const [role, setRole] = useState<Role>("learner"); 
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -112,13 +115,13 @@ export default function ForgotPassword() {
                   </label>
                   <select
                     value={role}
-                    onChange={(e) => setRole(e.target.value)}
+                    onChange={(e) => setRole(e.target.value as Role)}
                     disabled={loading}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="learner">Learner</option>
                     <option value="instructor">Instructor</option>
-                    <option value="organisation">Organisation</option>
+                    <option value="business">Business</option>
                   </select>
                 </div>
 

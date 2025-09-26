@@ -1,24 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { updateLearnerProfile } from "../services/learnerServices";
+import { getLearnerProfile, updateLearnerProfile } from "../services/learnerServices";
 import { logout } from "../services/userAuthServices";
 
 interface ILearnerState {
     id: string | null;
     name: string | null;
-    email: string | null;
-    walletBalance: number | null;
-    profilePic: string |null;
+    profilePic: string | null;
 
 }
 
 const initialState: ILearnerState = {
     id: null,
     name: null,
-    email: null,
-    walletBalance: null,
-    profilePic:null
+    profilePic: null
 }
-
 
 const learnerSlice = createSlice({
     name: 'learner',
@@ -26,12 +21,16 @@ const learnerSlice = createSlice({
     reducers: {
         setLearner: (state, action) => {
             state.id = action.payload.id;
-            state.email = action.payload.email;
             state.name = action.payload.name;
-            state.walletBalance = action.payload.walletBalance;
             state.profilePic = action.payload.profilePic;
         },
 
+        setLearnerName: (state, action) => {
+            state.name = action.payload.name;
+        },
+        setLearnerImage: (state, action) => {
+            state.profilePic = action.payload.profilePic;
+        },
         clearLearner: (state) => {
             Object.assign(state, initialState)
         }
@@ -44,24 +43,26 @@ const learnerSlice = createSlice({
                 state.profilePic = action.payload.imageURL;
 
             })
+            .addCase(getLearnerProfile.fulfilled, (state, action) => {
+                console.log(action.payload);
+                state.name = action.payload.learner.name;
+                state.profilePic = action.payload.learner.profilePic;
+
+            })
             .addCase(logout.fulfilled, (state, action) => {
                 console.log(action.payload);
                 state.id = null;
                 state.name = null;
-                state.email = null;
-                state.walletBalance = null;
-                state.profilePic=null
+                state.profilePic = null
             })
             .addCase(logout.rejected, (state) => {
                 state.id = null;
                 state.name = null;
-                state.email = null;
-                state.walletBalance = null;
-                state.profilePic=null
+                state.profilePic = null
             })
     }
 });
 
 
-export const { setLearner, clearLearner } = learnerSlice.actions;
+export const { setLearner, clearLearner,setLearnerImage,setLearnerName } = learnerSlice.actions;
 export default learnerSlice.reducer;

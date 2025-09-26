@@ -93,7 +93,7 @@ export default function ResetOtpVerification() {
       setError("");
       if (!email) return;
 
-      await dispatch(resendOTP(email)).unwrap();
+      await dispatch(resendOTP({email})).unwrap();
     } catch (err) {
       console.error(err);
       setError("Failed to resend OTP. Please try again.");

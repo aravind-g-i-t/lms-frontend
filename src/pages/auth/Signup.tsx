@@ -9,7 +9,7 @@ import { clearUserStatus } from "../../redux/slices/statusSlice";
 import UserAuthNav from "../../components/shared/UserAuthNav";
 import { Eye, EyeOff } from "lucide-react";
 
-type Role = 'Learner' | 'Instructor' | 'Business'
+type Role = 'learner' | 'instructor' | 'business';
 
 
 const UserSignup = () => {
@@ -25,7 +25,7 @@ const UserSignup = () => {
     }
   },[dispatch])
 
-  const [selectedRole, setSelectedRole] = useState<Role>('Learner');
+  const [selectedRole, setSelectedRole] = useState<Role>('learner');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +38,11 @@ const UserSignup = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
 
-  const roles: Role[] = ['Learner', 'Instructor', 'Business']
+  const roles = [
+    {label:'Learner',value:'learner'}, 
+    {label:'Instructor',value:'instructor'},
+    {label:'Business',value:'business'}
+  ] as const;
 
   const handleRoleSelect = (role: Role) => setSelectedRole(role);
 
@@ -56,7 +60,7 @@ const UserSignup = () => {
       return;
     }
     const signupInput = {
-      role: selectedRole.toLowerCase(),
+      role: selectedRole,
       name,
       email,
       password
@@ -105,15 +109,15 @@ const UserSignup = () => {
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     {roles.map((role) => (
                       <button
-                        key={role}
+                        key={role.value}
                         type="button"
-                        onClick={() => handleRoleSelect(role)}
-                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${selectedRole === role
+                        onClick={() => handleRoleSelect(role.value)}
+                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${selectedRole === role.value
                           ? 'bg-white text-green-600 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
                           }`}
                       >
-                        {role}
+                        {role.label}
                       </button>
                     ))}
                   </div>
@@ -124,7 +128,7 @@ const UserSignup = () => {
 
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{selectedRole === 'Business' ? 'Company Name' : 'Full Name'}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{selectedRole === 'business' ? 'Company Name' : 'Full Name'}</label>
                   <input
                     type="text"
                     value={name}
@@ -135,7 +139,7 @@ const UserSignup = () => {
                   {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{selectedRole === 'Business' ? 'Company Email' : 'Email'} </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{selectedRole === 'business' ? 'Company Email' : 'Email'} </label>
                   <input
                     type="email"
                     value={email}

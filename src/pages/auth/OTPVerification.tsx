@@ -139,7 +139,7 @@ export default function OtpVerification() {
             if (!email) {
                 return;
             }
-            await dispatch(resendOTP(email));
+            await dispatch(resendOTP({email}));
             
         } catch (err) {
             console.error(err);

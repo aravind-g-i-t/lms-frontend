@@ -14,7 +14,7 @@ import UserAuthNav from '../../components/shared/UserAuthNav';
 import { Eye, EyeOff } from "lucide-react";
 import GoogleSigninButton from '../../components/shared/GoogleSigninButton';
 
-type Role = 'Learner' | 'Instructor' | 'Business';
+type Role = 'learner' | 'instructor' | 'business';
 
 export default function Signin() {
   const { errorMsg } = useSelector((state: RootState) => state.status.user);
@@ -31,11 +31,14 @@ export default function Signin() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [show, setShow] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role>('Learner');
+  const [selectedRole, setSelectedRole] = useState<Role>('learner');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const roles: Role[] = ['Learner', 'Instructor', 'Business'];
-
+  const roles = [
+    { label: 'Learner', value: 'learner' },
+    { label: 'Instructor', value: 'instructor' },
+    { label: 'Business', value: 'business' }
+  ] as const;
 
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -49,21 +52,21 @@ export default function Signin() {
       return;
     }
     const signinInput = {
-      role: selectedRole.toLowerCase(),
+      role:selectedRole,
       email,
       password
     }
     try {
       const result = await dispatch(signin(signinInput)).unwrap();
       const user = result.user
-      if (selectedRole === 'Learner') {
+      if (selectedRole === 'learner') {
         dispatch(setLearner(user))
-      } else if (selectedRole === 'Instructor') {
+      } else if (selectedRole === 'instructor') {
         dispatch(setInstructor(user))
       } else {
         dispatch(setBusiness(user))
       }
-      navigate(`/${selectedRole.toLowerCase()}/dashboard`)
+      navigate(`/${selectedRole}/dashboard`)
 
     } catch (err) {
       console.error("Signin failed:", err)
@@ -76,8 +79,8 @@ export default function Signin() {
   //       return;
   //     }
   //     const decoded = jwtDecode(credentialResponse.credential);
-      
-      
+
+
   //     // await dispatch(googleAuth(credentialResponse.credential));
 
   //   } catch (error) {
@@ -120,15 +123,15 @@ export default function Signin() {
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     {roles.map((role) => (
                       <button
-                        key={role}
+                        key={role.value}
                         type="button"
-                        onClick={() => handleRoleSelect(role)}
-                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${selectedRole === role
+                        onClick={() => handleRoleSelect(role.value)}
+                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${selectedRole === role.value
                           ? 'bg-white text-green-600 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
                           }`}
                       >
-                        {role}
+                        {role.label}
                       </button>
                     ))}
                   </div>
@@ -139,7 +142,7 @@ export default function Signin() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {selectedRole === 'Business' ? 'Company Email' : 'Email address'}
+                    {selectedRole === 'business' ? 'Company Email' : 'Email address'}
                   </label>
                   <input
                     type="email"
@@ -177,7 +180,7 @@ export default function Signin() {
                 {/* Forgot Password */}
                 <div className="text-right">
                   <span className="text-sm text-gray-500">
-                    Forgot password? <Link to="/reset/email"   className="text-blue-500 hover:text-blue-600">Reset password</Link>
+                    Forgot password? <Link to="/reset/email" className="text-blue-500 hover:text-blue-600">Reset password</Link>
                   </span>
                 </div>
 
@@ -211,7 +214,7 @@ export default function Signin() {
                 useOneTap
               /> */}
 
-              <GoogleSigninButton role={selectedRole}/>
+              <GoogleSigninButton role={selectedRole} />
             </div>
 
           </div>

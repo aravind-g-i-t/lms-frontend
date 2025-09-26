@@ -1,9 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { googleSignIn, logout, signin, userTokenRefresh } from "../services/userAuthServices";
+import { adminLogout, adminSignin } from "../services/adminServices";
 
 
 interface IAuthState {
-    role: 'learner' | 'instructor' | 'business' | null
+    role: 'learner' | 'instructor' | 'business' | 'admin'| null
     accessToken: string | null;
 }
 
@@ -43,6 +44,21 @@ const authSlice = createSlice({
                 state.role = action.payload.role;
                 state.accessToken = action.payload.accessToken;
             })
+            .addCase(adminSignin.fulfilled, (state,action) => {
+                state.role = "admin";
+                state.accessToken = action.payload.accessToken;
+            })
+            .addCase(adminLogout.rejected, (state) => {
+                state.role = null;
+                state.accessToken = null;
+            })
+            .addCase(adminLogout.fulfilled, (state) => {
+                state.role = null;
+                state.accessToken = null;
+            })
+            
+
+            
     }
 });
 

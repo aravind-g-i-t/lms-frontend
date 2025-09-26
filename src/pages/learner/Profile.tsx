@@ -1,34 +1,38 @@
 import React, { useState, useEffect } from "react";
 import type{ ChangeEvent } from "react";
 import {
-  Search,
-  ShoppingCart,
-  Bell,
   Camera,
   Eye,
   EyeOff,
   ArrowLeft,
   Check,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import toast from "react-hot-toast";
-import { clearLearner } from "../../redux/slices/learnerSlice";
-import { logout } from "../../redux/services/userAuthServices";
-import { learnerResetPassword, updateLearnerProfile } from "../../redux/services/learnerServices";
+import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../redux/services/learnerServices";
 import { uploadImageToCloudinary } from "../../config/cloudinary";
+import LearnerNav from "../../components/learner/LearnerNav";
+import { setLearnerImage, setLearnerName } from "../../redux/slices/learnerSlice";
 
 const LearnerProfile: React.FC = () => {
-  const { id,name, profilePic, email } = useSelector(
+  const { id } = useSelector(
     (state: RootState) => state.learner
   );
   
 
+
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
+
+
+  
 
   const [editableName, setEditableName] = useState("");
+  const [email,setEmail]=useState('');
+  const [profilePic,setProfilePic]=useState<string|null>(null);
+  const [hasPassword,setHasPassword]=useState<boolean>(false);
+  const [joiningDate,setJoiningDate]=useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -42,17 +46,30 @@ const LearnerProfile: React.FC = () => {
     {}
   );
 
-  const userData = {
-    joinDate: "January 2024",
-    coursesCompleted: 12,
-    totalHours: 145,
-  };
+  // const userData = {
+  //   joinDate: "January 2024",
+  //   coursesCompleted: 12,
+  //   totalHours: 145,
+  // };
 
   useEffect(() => {
-    if (name) {
-      setEditableName(name);
-    }
-  }, [name]);
+      const fetchProfile = async () => {
+        try {
+          const response = await dispatch(getLearnerProfile()).unwrap();
+          const learner=response.learner;
+          setEditableName(learner.name)
+          setEmail(learner.email)
+          setProfilePic(learner.profilePic);
+          setHasPassword(learner.hasPassword);
+          setJoiningDate(learner.joiningDate);
+
+        } catch (err) {
+          console.error("Failed to fetch learners:", err);
+        }
+      };
+  
+      fetchProfile();
+    }, [dispatch]);
 
   const handlePasswordChange = (field: string, value: string) => {
     setPasswordForm((prev) => ({
@@ -127,7 +144,7 @@ const LearnerProfile: React.FC = () => {
   };
 
   const handleImageUpload = async(event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];    
+    const file = event.target.files?.[0];
     if (!file) {
       return
     }
@@ -135,15 +152,13 @@ const LearnerProfile: React.FC = () => {
     if(!imageURL || !id){
       return
     }
-    const result=await dispatch(updateLearnerProfile({
-        id,
-        data:{
+    const result=await dispatch(updateLearnerProfileImage({
           imageURL
-        }
-        
       })).unwrap();
+    setProfilePic(imageURL)
+    dispatch(setLearnerImage({profilePic:imageURL}))
+    toast.success(result.message);
 
-  console.log(result);
   
     
   };
@@ -154,126 +169,22 @@ const LearnerProfile: React.FC = () => {
       console.log(editableName,id);
       
       const result=await dispatch(updateLearnerProfile({
-        id,
-        data:{
           name:editableName.trim()
-        }
-        
       })).unwrap();
       console.log(result);
-      
-      toast.success("Name updated successfully");
+      dispatch(setLearnerName(editableName))
+      toast.success(result.message);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      const response = await dispatch(logout()).unwrap();
-
-      if (response.success) {
-        toast.success("Logged out successfully");
-        dispatch(clearLearner());
-        navigate("/signin");
-      } else {
-        toast.error(response?.message || "Failed to log out from server");
-        dispatch(clearLearner());
-        navigate("/signin");
-      }
-    } catch (error: unknown) {
-      let message = "Network error. Logging out locally.";
-      console.error("Logout error:", error);
-
-      if (error instanceof Error) {
-        message = error.message;
-      }
-
-      toast.error(message);
-      dispatch(clearLearner());
-      navigate("/signin");
-    }
-  };
+  
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50">
+      
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-teal-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold">N</span>
-              </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">
-                NlightN
-              </span>
-            </div>
-
-            {/* Navigation */}
-            <nav className="hidden md:flex space-x-8">
-              <Link
-                to="/learner/home"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2"
-              >
-                Home
-              </Link>
-              <Link
-                to="/learner/dashboard"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="#"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2"
-              >
-                Explore
-              </Link>
-            </nav>
-
-            {/* Search Bar */}
-            <div className="flex-1 max-w-lg mx-8">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Want to learn?"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Right side icons */}
-            <div className="flex items-center space-x-4">
-              <ShoppingCart className="w-5 h-5 text-gray-600 cursor-pointer" />
-              <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
-
-              {/* Profile Unit */}
-              <Link
-                to="/learner/profile"
-                className="flex items-center space-x-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition"
-              >
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
-                  <img
-                    src={profilePic || "/images/default-profile.jpg"}
-                    alt={name ?? ""}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className="text-gray-700 font-medium">{name}</span>
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <LearnerNav/>
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
@@ -319,7 +230,7 @@ const LearnerProfile: React.FC = () => {
 
                 {/* User Info */}
                 <h1 className="text-2xl font-bold text-gray-900 mb-1 text-center border-b focus:outline-none focus:ring-2 focus:ring-teal-500">
-                  {name}
+                  {/* {name||"fdfd"} */}
                 </h1>
                 {/* <input
                   type="text"
@@ -327,9 +238,11 @@ const LearnerProfile: React.FC = () => {
                   onChange={(e) => setEditableName(e.target.value)}
                   className="text-2xl font-bold text-gray-900 mb-1 text-center border-b focus:outline-none focus:ring-2 focus:ring-teal-500"
                 /> */}
-                <p className="text-gray-600 mb-4">{email}</p>
+                <p className="text-gray-600 mb-4">
+                  {email}
+                  </p>
                 <p className="text-sm text-gray-500 mb-6">
-                  Member since {userData.joinDate}
+                  Member since {new Date(joiningDate).toLocaleDateString()}
                 </p>
 
                 {/* <button
@@ -340,7 +253,7 @@ const LearnerProfile: React.FC = () => {
                 </button> */}
 
                 {/* Stats */}
-                <div className="border-t pt-6 mt-6">
+                {/* <div className="border-t pt-6 mt-6">
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
                       <p className="text-2xl font-bold text-teal-600">
@@ -357,7 +270,7 @@ const LearnerProfile: React.FC = () => {
                       <p className="text-sm text-gray-600">Hours Learned</p>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -411,6 +324,7 @@ const LearnerProfile: React.FC = () => {
                 </div>
 
                 {/* Update Password */}
+                {hasPassword &&
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     Update Password
@@ -546,13 +460,14 @@ const LearnerProfile: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
+                </div>}
               </div>
             </div>
           </div>
         </div>
       </main>
     </div>
+    </>
   );
 };
 
