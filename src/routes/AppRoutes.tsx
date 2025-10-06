@@ -11,19 +11,20 @@ import BusinessRoutes from "./BusinessRoutes";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 import ResetOtpVerification from "../pages/auth/ResetOTPVerify";
+import Home from "../pages/learner/Home";
 
 const AppRoutes = () => {
   const { role } = useSelector((state: RootState) => state.auth);
   const { email}=useSelector((state:RootState)=> state.signup)
   return (
     <Routes>
+      <Route path="/home" element={<Home/>}/>
       {!role &&<Route path="/signup" element={<UserSignup/>}/>}
       {!role && email && <Route path="/verify-otp" element={<OtpVerification/>}/>}
       {!role &&<Route path="/reset/email" element={<ForgotPassword/>}/>}
       {!role &&<Route path="/reset" element={<ResetPassword/>}/>}
       {!role &&<Route path="/reset/verify-otp" element={<ResetOtpVerification/>}/>}
      { !role && <Route path="/signin" element={<Signin/>}/>}
-     
 
       <Route path="/admin/*" element={<AdminRoutes />} />
       {role === "learner" && <Route path="/learner/*" element={<LearnerRoutes />} />}
@@ -31,7 +32,7 @@ const AppRoutes = () => {
       {role === "business" && <Route path="/business/*" element={<BusinessRoutes />} />}
 
 
-      <Route path="*" element={<Navigate to={role ? `/${role.toLowerCase()}/dashboard` : "/signin"} />} />
+      <Route path="*" element={<Navigate to="/home" />} />
     </Routes>
   )
 }

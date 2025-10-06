@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { resendOTP, verifyOTP } from '../../redux/services/userAuthServices';
 import { clearSignup } from '../../redux/slices/signupSlice';
 import { clearUserStatus } from '../../redux/slices/statusSlice';
-import UserAuthNav from '../../components/shared/UserAuthNav';
+import LearnerNav from '../../components/learner/LearnerNav';
+import { toast } from 'react-toastify';
 
 
 export default function OtpVerification() {
@@ -36,7 +37,6 @@ export default function OtpVerification() {
 
     const [otp, setOtp] = useState('');
     const [timer, setTimer] = useState(0);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [OTPError, setError] = useState('');
     const [resendDisabled, setResendDisabled] = useState(true);
 
@@ -82,54 +82,16 @@ export default function OtpVerification() {
         }
         const input = { role, email, otp };
         try {
-            await dispatch(verifyOTP(input)).unwrap();
+            const response = await dispatch(verifyOTP(input)).unwrap();
             dispatch(clearSignup())
-            setShowSuccessModal(true)
+            toast.success(response.message);
+            navigate("/signin")
         } catch (err) {
-            console.error('OTP verification failed', err)
+            console.error('OTP verification failed', err);
+            toast.error(err as string)
         }
     }
 
-
-    // const handleSubmit = async (e: React.FormEvent) => {
-    //     e.preventDefault();
-    //     setError('');
-
-    //     if (otp.length !== 6) {
-    //         setError('OTP must be 6 digits');
-    //         return;
-    //     }
-    //     try {
-    //         if (!email || !otp) {
-    //             return
-    //         }
-    //         await dispatch(verifyOTP({ email, otp }));
-    //         setShowSuccessModal(true);
-    //         dispatch(clearSignup())
-    //     } catch (err: unknown) {
-    //         let message = 'OTP verification failed. Please try again.';
-
-    //         if (axios.isAxiosError(err)) {
-    //             message = err.response?.data?.message || message;
-    //         } else if (err instanceof Error) {
-    //             message = err.message;
-    //         }
-
-    //         const lowerMessage = message.toLowerCase();
-
-    //         if (lowerMessage.includes('expired')) {
-    //             setError('OTP has expired. Please request a new OTP.');
-    //         } else if (lowerMessage.includes('invalid') || lowerMessage.includes('mismatch')) {
-    //             setError('Invalid OTP. Please check and try again.');
-    //         } else if (lowerMessage.includes('attempts')) {
-    //             setError('Too many failed attempts. Please request a new OTP.');
-    //         } else {
-    //             setError(message);
-    //         }
-
-    //         setOtp('');
-    //     }
-    // };
 
 
     const handleResend = async () => {
@@ -139,50 +101,21 @@ export default function OtpVerification() {
             if (!email) {
                 return;
             }
-            await dispatch(resendOTP({email}));
-            
+            await dispatch(resendOTP({ email }));
+
         } catch (err) {
             console.error(err);
 
             setError('Failed to resend OTP. Please try again.');
             setResendDisabled(false);
+            toast.error(err as string)
         }
     };
 
-    const handleModalOk = () => {
-        setShowSuccessModal(false);
-        navigate('/signin');
-    };
-
-    if (showSuccessModal) {
-        return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8" style={{
-                backgroundImage: "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('/images/auth.jpg')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-            }}>
-                <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
-                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-                        <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Email Verified Successfully!</h3>
-                    <p className="text-gray-600 mb-8">Your email has been verified. You can now sign in to your account.</p>
-                    <button
-                        onClick={handleModalOk}
-                        className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg"
-                    >
-                        OK
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <>
-        <UserAuthNav />
+            <LearnerNav />
             <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
                 <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full grid md:grid-cols-2">
                     <div className="relative min-h-[600px]">
@@ -202,13 +135,13 @@ export default function OtpVerification() {
                             <h2 className="text-3xl font-bold text-gray-900 mb-8">OTP Verification</h2>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                { OTPError && (
+                                {OTPError && (
                                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                                         <div className="flex items-center">
                                             <svg className="h-5 w-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                                             </svg>
-                                            <span className="text-sm font-medium">{ OTPError}</span>
+                                            <span className="text-sm font-medium">{OTPError}</span>
                                         </div>
                                     </div>
                                 )}

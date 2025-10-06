@@ -30,7 +30,7 @@ export const updateInstructorProfile = createAsyncThunk(
     "instructor/profile/update",
     async (data:UpdateInstructorProfileInput, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch(`/instructor/profile`, {data});
+            const result = await axiosInstance.patch(`/instructor/profile`, data);
             console.log(result);
 
             if (!result.data.success) {
@@ -115,6 +115,28 @@ export const updateInstructorResume = createAsyncThunk(
     },
 )
 
+export const updateInstructorIDProof = createAsyncThunk(
+    "instructor/profile/IDProof/update",
+    async (data:{identityProof:string}, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.patch(`/instructor/profile/identity-proof`, data);
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
 export const applyForInstructorVerification  = createAsyncThunk(
     "instructor/verification",
     async (_, { rejectWithValue }) => {
@@ -161,47 +183,3 @@ export const resetInstructorPassword = createAsyncThunk(
 )
 
 
-// export const updateLearnerProfile = createAsyncThunk(
-//     "learner/profile/update",
-//     async (data:{name?:string,imageURL?:string}, { rejectWithValue }) => {
-//         try {
-//             const result = await axiosInstance.patch(`/learner/profile`, {data});
-//             console.log(result);
-
-//             if (!result.data.success) {
-//                 return rejectWithValue(result.data.message)
-//             }
-//             return result.data
-//         } catch (error: unknown) {
-
-//             if (error instanceof AxiosError) {
-//                 console.log(error.response?.data);
-//                 return rejectWithValue(error.response?.data?.message || "Invalid request");
-//             }
-//             return rejectWithValue("Something went wrong. Please try again.");
-//         }
-//     },
-// )
-
-// export const learnerResetPassword = createAsyncThunk(
-//     "learner/profile/password",
-//     async (input:{id:string,currentPassword:string,newPassword:string}, { rejectWithValue }) => {
-//         try {
-//             const result = await axiosInstance.patch(`/learner/password`, input);
-//             console.log(result);
-
-
-//             if (!result.data.success) {
-//                 return rejectWithValue(result.data.message)
-//             }
-//             return result.data
-//         } catch (error: unknown) {
-
-//             if (error instanceof AxiosError) {
-//                 console.log(error.response?.data);
-//                 return rejectWithValue(error.response?.data?.message || "Invalid request");
-//             }
-//             return rejectWithValue("Something went wrong. Please try again.");
-//         }
-//     },
-// )

@@ -4,14 +4,15 @@ import type { AppDispatch, RootState } from "../../redux/store";
 // import { resetPassword } from "../../redux/services/userAuthServices";
 import { clearUserStatus } from "../../redux/slices/statusSlice";
 import { useNavigate } from "react-router-dom";
-import UserAuthNav from "../../components/shared/UserAuthNav";
 import { resetPassword } from "../../redux/services/userAuthServices";
 import { clearSignup } from "../../redux/slices/signupSlice";
+import LearnerNav from "../../components/learner/LearnerNav";
+import { toast } from "react-toastify";
 
 export default function ResetPassword() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-    const { email,role } = useSelector((state: RootState) => state.signup);
+  const { email, role } = useSelector((state: RootState) => state.signup);
   const { loading } = useSelector((state: RootState) => state.status.user);
 
   const [password, setPassword] = useState("");
@@ -38,26 +39,25 @@ export default function ResetPassword() {
     }
 
     try {
-      
-      
-      if(!role){
+      if (!role) {
         return;
       }
-      await dispatch(resetPassword({ role, password,email })).unwrap();
+      await dispatch(resetPassword({ role, password, email })).unwrap();
       setSuccessMsg("Password reset successful! Redirecting to Sign In...");
       dispatch(clearSignup());
       dispatch(clearUserStatus())
       navigate("/signin")
-      
+
     } catch (err) {
       console.error("Reset password failed", err);
       setError("Failed to reset password. Please try again.");
+      toast.error(err as string)
     }
   };
 
   return (
     <>
-      <UserAuthNav />
+      <LearnerNav />
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full grid md:grid-cols-2">
           {/* Left side with image */}

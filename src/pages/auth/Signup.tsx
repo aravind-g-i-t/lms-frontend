@@ -6,8 +6,9 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { useNavigate } from "react-router-dom";
 import { sendOTP } from "../../redux/services/userAuthServices";
 import { clearUserStatus } from "../../redux/slices/statusSlice";
-import UserAuthNav from "../../components/shared/UserAuthNav";
 import { Eye, EyeOff } from "lucide-react";
+import LearnerNav from "../../components/learner/LearnerNav";
+import { toast } from "react-toastify";
 
 type Role = 'learner' | 'instructor' | 'business';
 
@@ -19,11 +20,11 @@ const UserSignup = () => {
   const navigate = useNavigate();
 
 
-  useEffect(()=>{
-    return ()=>{
+  useEffect(() => {
+    return () => {
       dispatch(clearUserStatus());
     }
-  },[dispatch])
+  }, [dispatch])
 
   const [selectedRole, setSelectedRole] = useState<Role>('learner');
   const [name, setName] = useState('');
@@ -39,18 +40,18 @@ const UserSignup = () => {
 
 
   const roles = [
-    {label:'Learner',value:'learner'}, 
-    {label:'Instructor',value:'instructor'},
-    {label:'Business',value:'business'}
+    { label: 'Learner', value: 'learner' },
+    { label: 'Instructor', value: 'instructor' },
+    { label: 'Business', value: 'business' }
   ] as const;
 
   const handleRoleSelect = (role: Role) => setSelectedRole(role);
 
   async function handleSubmit() {
-    const nameErr=validateTextField('Name', name);
-    const emailErr=validateEmail(email);
-    const passwordErr=validatePassword(password);
-    const confirmPasswordErr=validateConfirmPassword(password, confirmPassword)
+    const nameErr = validateTextField('Name', name);
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+    const confirmPasswordErr = validateConfirmPassword(password, confirmPassword)
     setNameError(nameErr);
     setEmailError(emailErr);
     setPasswordError(passwordErr);
@@ -70,14 +71,15 @@ const UserSignup = () => {
       await dispatch(sendOTP(signupInput)).unwrap();
       navigate("/verify-otp")
     } catch (error) {
-      console.error("Signup failed:", error)
+      console.error("Signup failed:", error);
+      toast.error(error as string)
     }
 
   }
 
   return (
     <>
-    <UserAuthNav />
+      <LearnerNav />
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full grid md:grid-cols-2">
           <div className="relative h-full min-h-[700px]">
@@ -149,51 +151,51 @@ const UserSignup = () => {
                   />
                   {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-      {/* Password */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 pr-10"
-            placeholder=""
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        </div>
-        {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
-      </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 pr-10"
+                        placeholder=""
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                    {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
+                  </div>
 
-      {/* Confirm Password */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-        <div className="relative">
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 pr-10"
-            placeholder=""
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
-          >
-            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        </div>
-        {confirmPasswordError && <p className="text-red-500 text-sm mt-1">{confirmPasswordError}</p>}
-      </div>
-    </div>
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 pr-10"
+                        placeholder=""
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                      >
+                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                    {confirmPasswordError && <p className="text-red-500 text-sm mt-1">{confirmPasswordError}</p>}
+                  </div>
+                </div>
                 <button
                   onClick={handleSubmit}
                   disabled={loading}

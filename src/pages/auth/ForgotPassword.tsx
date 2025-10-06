@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
-import UserAuthNav from "../../components/shared/UserAuthNav";
 import { setSignupCredentials } from "../../redux/slices/signupSlice";
 import { useNavigate } from "react-router-dom";
 import { verifyEmail } from "../../redux/services/userAuthServices";
+import LearnerNav from "../../components/learner/LearnerNav";
+import { toast } from "react-toastify";
 
 export default function ForgotPassword() {
 
@@ -15,7 +16,7 @@ export default function ForgotPassword() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<Role>("learner"); 
+  const [role, setRole] = useState<Role>("learner");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -30,21 +31,22 @@ export default function ForgotPassword() {
     }
 
     try {
-      const result=await dispatch(verifyEmail({ email, role })).unwrap(); 
+      const result = await dispatch(verifyEmail({ email, role })).unwrap();
       console.log(result);
-      
-      dispatch(setSignupCredentials({email,role}));
+
+      dispatch(setSignupCredentials({ email, role }));
       setSuccessMsg("OTP has been sent to your email.");
       navigate("/reset/verify-otp");
     } catch (err) {
       console.error("Password reset request failed", err);
+      toast.error(err as string)
       setError("Failed to send OTP. Please try again.");
     }
   };
 
   return (
     <>
-      <UserAuthNav />
+      <LearnerNav />
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full grid md:grid-cols-2">
           {/* Left side with image */}
@@ -99,11 +101,10 @@ export default function ForgotPassword() {
                     }}
                     required
                     disabled={loading}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                      error
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${error
                         ? "border-red-300 focus:ring-red-500"
                         : "border-gray-300 focus:ring-green-500"
-                    } ${loading ? "bg-gray-50" : "bg-white"}`}
+                      } ${loading ? "bg-gray-50" : "bg-white"}`}
                     placeholder="Enter your registered email"
                   />
                 </div>

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getLearnerProfile, updateLearnerProfile } from "../services/learnerServices";
+import { getLearnerProfile } from "../services/learnerServices";
 import { logout } from "../services/userAuthServices";
 
 interface ILearnerState {
@@ -37,12 +37,6 @@ const learnerSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(updateLearnerProfile.fulfilled, (state, action) => {
-                console.log(action.payload);
-                state.name = action.payload.name;
-                state.profilePic = action.payload.imageURL;
-
-            })
             .addCase(getLearnerProfile.fulfilled, (state, action) => {
                 console.log(action.payload);
                 state.name = action.payload.learner.name;

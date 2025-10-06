@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
-import { Shield, Mail, Lock, AlertCircle } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
+import { Shield, Mail, Lock } from "lucide-react";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { adminSignin } from "../../redux/services/adminServices";
-import type { AppDispatch, RootState } from "../../redux/store";
+import type { AppDispatch } from "../../redux/store";
 import { validateEmail, validatePassword } from "../../utils/validation";
 import { clearAdminStatus } from "../../redux/slices/statusSlice";
+import { toast } from "react-toastify";
 
 export default function AdminSignin() {
-    const {loading,errorMsg}=useSelector((state:RootState)=>state.status.admin)
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
+    const [loading,setLoading]=useState(false);
 
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
@@ -38,6 +39,9 @@ export default function AdminSignin() {
             setPasswordError(passwordErr);
             return;
         }
+        setEmailError("");
+        setPasswordError("")
+        setLoading(true)
 
         try {
             await dispatch(adminSignin({email, password})).unwrap();
@@ -45,7 +49,10 @@ export default function AdminSignin() {
             navigate("/admin/dashboard");
             
         } catch (error) {
+            toast.error(error as string)
             console.log('adminSigninError',error)
+        }finally{
+            setLoading(false)
         }
     };
 
@@ -73,12 +80,7 @@ export default function AdminSignin() {
                             className="space-y-6"
                         >
 
-                            {errorMsg && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3">
-                                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                    <p className="text-red-700 text-sm">{errorMsg}</p>
-                                </div>
-                            )}
+
 
                             <div>
                                 <label

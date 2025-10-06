@@ -30,7 +30,7 @@ export const updateLearnerProfile = createAsyncThunk(
     "learner/profile/update",
     async (data:{name:string}, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch(`/learner/profile`, {data});
+            const result = await axiosInstance.patch(`/learner/profile`, data);
             console.log(result);
 
             if (!result.data.success) {

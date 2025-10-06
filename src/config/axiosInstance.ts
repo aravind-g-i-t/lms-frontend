@@ -45,17 +45,19 @@ axiosInstance.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
                 return axiosInstance(originalRequest);
-            } catch{
+            } catch {
                 await store.dispatch(logout());
                 toast.error("Session has expired. Please login again.")
             }
         }
+        if (error.response?.status === 403 &&
+            errData?.message === "Your account has been blocked.") {
+            await store.dispatch(logout());
+        }
 
-        if (errData?.message) {
-            toast.error(errData.message);
-        } else if (error.message === "Network Error") {
-            toast.error("Network error. Please check your connection.");
-        } else {
+        if (!errData?.message) {
+            console.log(errData);
+            
             toast.error("Something went wrong. Please try again.");
         }
 

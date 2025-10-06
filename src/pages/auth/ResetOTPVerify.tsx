@@ -4,8 +4,9 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { useNavigate } from "react-router-dom";
 // import { verifyResetOTP, resendResetOTP } from "../../redux/services/userAuthServices";
 import { clearUserStatus } from "../../redux/slices/statusSlice";
-import UserAuthNav from "../../components/shared/UserAuthNav";
 import { resendOTP, verifyResetOTP } from "../../redux/services/userAuthServices";
+import LearnerNav from "../../components/learner/LearnerNav";
+import { toast } from "react-toastify";
 
 export default function ResetOtpVerification() {
   const { email, otpExpiresAt } = useSelector((state: RootState) => state.signup);
@@ -75,10 +76,7 @@ export default function ResetOtpVerification() {
     }
 
     try {
-       await dispatch(verifyResetOTP({ email, otp })).unwrap();
-
-      // Save reset token for ResetPassword page
-      
+      await dispatch(verifyResetOTP({ email, otp })).unwrap();
 
       navigate("/reset");
     } catch (err) {
@@ -93,17 +91,18 @@ export default function ResetOtpVerification() {
       setError("");
       if (!email) return;
 
-      await dispatch(resendOTP({email})).unwrap();
+      await dispatch(resendOTP({ email })).unwrap();
     } catch (err) {
       console.error(err);
       setError("Failed to resend OTP. Please try again.");
       setResendDisabled(false);
+      toast.error(err as string)
     }
   };
 
   return (
     <>
-      <UserAuthNav />
+      <LearnerNav />
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full grid md:grid-cols-2">
           {/* Left side with image */}
@@ -153,11 +152,10 @@ export default function ResetOtpVerification() {
                     pattern="\d{6}"
                     required
                     disabled={loading}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                      OTPError
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${OTPError
                         ? "border-red-300 focus:ring-red-500"
                         : "border-gray-300 focus:ring-green-500"
-                    } ${loading ? "bg-gray-50" : "bg-white"}`}
+                      } ${loading ? "bg-gray-50" : "bg-white"}`}
                     placeholder="Enter 6-digit OTP"
                   />
                 </div>

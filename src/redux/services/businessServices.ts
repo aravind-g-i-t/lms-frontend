@@ -31,7 +31,7 @@ export const updateBusinessProfile = createAsyncThunk(
     "business/profile/update",
     async (data:UpdateBusinessProfileInput, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch(`/business/profile`, {data});
+            const result = await axiosInstance.patch(`/business/profile`, data);
             console.log(result);
 
             if (!result.data.success) {
@@ -72,6 +72,28 @@ export const updateBusinessProfileImage = createAsyncThunk(
     },
 )
 
+export const updateBusinessLicense = createAsyncThunk(
+    "business/profile/image/update",
+    async (data:{license:string}, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.patch(`/business/profile/license`, data);
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
 export const resetBusinessPassword = createAsyncThunk(
     "business/profile/password",
     async (input:{currentPassword:string,newPassword:string}, { rejectWithValue }) => {
@@ -79,6 +101,29 @@ export const resetBusinessPassword = createAsyncThunk(
             const result = await axiosInstance.patch(`/business/password`, input);
             console.log(result);
 
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+
+export const applyForBusinessVerification  = createAsyncThunk(
+    "business/verification",
+    async (_, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.post(`/business/verification`);
+            console.log(result);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)

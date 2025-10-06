@@ -8,7 +8,6 @@ import ManageBusinesses from "../pages/admin/Business";
 import ManageInstructors from "../pages/admin/Instructors";
 import { useSelector } from "react-redux";
 import type { RootState } from "../redux/store";
-// import Verifications from "../pages/admin/Verifications";
 
 const AdminRoutes = () => {
   const {role}=useSelector((state:RootState)=>state.auth)
@@ -22,12 +21,10 @@ const AdminRoutes = () => {
           <Route path="learners" element={<ManageLearners />} />
           <Route path="instructors" element={<ManageInstructors />} />
           <Route path="business" element={<ManageBusinesses />} />
-          {/* <Route path="verifications" element={<Verifications />} /> */}
+
         </Route>
         
-        {/* <Route>
 
-        </Route> */}
       </Route>
 
     </Routes>

@@ -10,7 +10,7 @@ const BusinessRoutes = () => {
     <Routes>
       <Route path="/" element={<BusinessLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
-        {/* <Route path="profile" element={<InstructorProfile/>}/> */}
+
           <Route path="dashboard" element={<BusinessDashboard />} />
           <Route path="courses" element={<CourseCatalogPage />} />
           <Route path="teams" element={<TeamManagementPage />} />

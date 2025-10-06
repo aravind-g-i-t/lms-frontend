@@ -1,27 +1,61 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
-import { getInstructors, toggleInstructorStatus } from "../../redux/services/adminServices";
+import {
+  getInstructorData,
+  getInstructors,
+  toggleInstructorStatus,
+  updateInstructorVerificationStatus,
+} from "../../redux/services/adminServices";
 import { Pagination } from "../../components/shared/Pagination";
-import type { AppDispatch, RootState } from "../../redux/store";
-import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "../../redux/store";
+import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import { clearAdminStatus } from "../../redux/slices/statusSlice";
+import { toast } from "react-toastify";
+import FallbackUI from "../../components/shared/FallbackUI";
 
 type Instructor = {
   id: string;
   name: string;
   email: string;
   isActive: boolean;
-  isVerified: boolean;
   profilePic?: string;
+  verification: {
+    status: string;
+    remarks: string | null;
+  };
 };
 
+type InstructorView = {
+  name: string;
+  email: string;
+  verification: {
+    status: "Not Submitted" | "Under Review" | "Verified" | "Rejected";
+    remarks: string | null;
+  };
+  profilePic: string | null;
+  joiningDate: Date | null;
+  website: string | null;
+  bio: string | null;
+  hasPassword: boolean;
+  designation: string | null;
+  expertise: string[];
+  resume: string | null;
+  rating: number | null;
+};
+
+type Status = "All" | "Active" | "Blocked";
+type VerificationStatus =
+  | "All"
+  | "Not Submitted"
+  | "Under Review"
+  | "Verified"
+  | "Rejected";
+
 export default function ManageInstructors() {
-  const { loading, errorMsg } = useSelector(
-    (state: RootState) => state.status.admin
-  );
+
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -29,43 +63,111 @@ export default function ManageInstructors() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"All" | "Active" | "Blocked">("All");
+  const [status, setStatus] = useState<Status>("All");
+  const [verificationStatus, setVerificationStatus] =
+    useState<VerificationStatus>("All");
+  const [newVerificationStatus, setNewVerificationStatus] = useState<"Verified"
+    | "Rejected">("Verified");
+  // const [remarks,setRemarks]=useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [instructorView, setInstructorView] = useState<InstructorView | null>(null);
+  const [loading,setLoading]=useState(false);
+  const [fetchFailure,setFetchFailure]=useState(false);
+  const remarksRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
+        setLoading(true)
         const response = await dispatch(
-          getInstructors({ page, search, status, limit: 5 })
+          getInstructors({ page, search, status, limit: 5, verificationStatus })
         ).unwrap();
-
         setInstructors(response.instructors ?? []);
         setTotalPages(response.totalPages ?? 1);
       } catch (err) {
+        setFetchFailure(true)
         console.error("Failed to fetch instructors:", err);
+        toast.error(err as string)
+      }finally{
+        setLoading(false)
       }
     };
 
     fetchInstructors();
 
-    return()=>{
-      dispatch(clearAdminStatus())
-    }
-  }, [dispatch, page, search, status]);
+    return () => {
+      dispatch(clearAdminStatus());
+    };
+  }, [dispatch, page, search, status, verificationStatus]);
+
 
 
   const handleToggleStatus = async (payload: { id: string }) => {
-      console.log('prev');
-      
+    try {
       await dispatch(toggleInstructorStatus(payload)).unwrap();
-      console.log('follows');
-      
-      const updatedInstructors = instructors.map((instructor) =>
-        instructor.id === payload.id
-          ? { ...instructor, isActive: !instructor.isActive }
-          : instructor
-      );
-      setInstructors(updatedInstructors)
+
+    const updatedInstructors = instructors.map((instructor) =>
+      instructor.id === payload.id
+        ? { ...instructor, isActive: !instructor.isActive }
+        : instructor
+    );
+    setInstructors(updatedInstructors);
+    } catch (error) {
+      toast.error(error as string)
     }
+  };
+
+
+
+  const handleViewInstructor = async (id: string) => {
+    try {
+      const response = await dispatch(getInstructorData({ id })).unwrap();
+    setInstructorView(response.instructor);
+    setSelectedId(id)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  };
+
+
+
+  const updateVerificationStatus = async () => {
+    if (!selectedId) {
+      return;
+    }
+    const remarks = remarksRef.current?.value || null;
+
+    try {
+      await dispatch(updateInstructorVerificationStatus({
+      id: selectedId,
+      remarks,
+      status: newVerificationStatus
+    })).unwrap()
+    toast.success('Verificaton status updated successfully');
+    const verification = {
+      remarks,
+      status: newVerificationStatus
+    }
+    setInstructorView((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        verification,
+      };
+    });
+
+    const updatedInstructors=instructors.map(instructor=>{
+      if(instructor.id===selectedId){
+        instructor.verification=verification
+      };
+      return instructor
+    })
+
+    setInstructors(updatedInstructors)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
 
   const columns: Column<Instructor>[] = [
     {
@@ -73,82 +175,308 @@ export default function ManageInstructors() {
       render: (row) => (
         <div className="flex items-center gap-3">
           <img
-            src={row.profilePic || "/images/default-profile.jpg"} 
+            src={row.profilePic || "/images/default-profile.jpg"}
             alt={row.name}
             className="w-10 h-10 rounded-full object-cover border"
           />
-
-          {/* Name */}
           <span className="font-medium text-gray-800">{row.name}</span>
         </div>
       ),
     },
     { header: "Email", accessor: "email" },
-    { header: "Status", 
-      render:(row)=>(
-        <span className={row.isActive ? "text-green-600" : "text-red-600"}>
-        {row.isActive ? "Active" : "Blocked"}
-      </span>
-      )
+    {
+      header: "Status",
+      render: (row) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${row.isActive
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+            }`}
+        >
+          {row.isActive ? "Active" : "Blocked"}
+        </span>
+      ),
     },
-    { header: "Verification", 
-      render:(row)=>(
-        <span className={row.isVerified ? "text-green-600" : "text-red-600"}>
-        {row.isVerified ? "Verified" : "Unverified"}
+    {
+      header: "Verification",
+      render: (row) => (
+        <span
+        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+          row.verification.status === "Verified"
+            ? "bg-green-100 text-green-700 border border-green-200"
+            : row.verification.status === "Rejected"
+            ? "bg-red-100 text-red-700 border border-red-200"
+            : row.verification.status === "Under Review"
+            ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+            : "bg-gray-100 text-gray-700 border border-gray-200"
+        }`}
+      >
+        {row.verification.status === "Verified" }
+        {row.verification.status === "Rejected" }
+        {row.verification.status === "Under Review" }
+        {row.verification.status}
       </span>
-      )
+      ),
     },
     {
       header: "Actions",
       render: (row) => (
-        <button
-          onClick={() => handleToggleStatus({ id: row.id})}
-          className={`px-3 py-1 rounded text-white ${row.isActive
-              ? "bg-red-500 hover:bg-red-600" 
-              : "bg-green-500 hover:bg-green-600" 
-            }`}
-        >
-          {row.isActive ? "Block" : "Unblock"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleToggleStatus({ id: row.id })}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${row.isActive
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-green-500 text-white hover:bg-green-600"
+              }`}
+          >
+            {row.isActive ? "Block" : "Unblock"}
+          </button>
 
+          {/* View Button */}
+          <button
+            onClick={() => handleViewInstructor(row.id)}
+            className="px-3 py-1 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600"
+          >
+            View
+          </button>
+        </div>
       ),
     },
   ];
 
   if (loading) return <p>Loading instructors...</p>;
-  if (errorMsg) return <p className="text-red-500">{errorMsg}</p>;
+  if(fetchFailure) return(
+    <FallbackUI/>
+  )
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Manage Instructors</h1>
+  <div className="min-h-screen bg-background p-6">
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Manage Instructors</h1>
+        <p className="text-muted-foreground mt-2">View and manage all registered instructors</p>
+      </div>
 
-      <div className="flex gap-3 mb-4">
-        <SearchBar
-          value={search}
-          placeholder="Search instructors..."
-          onSearch={(query) => {
-            setSearch(query);
-          }}
-        />
+      {/* Filters */}
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-6 transition-all hover:shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <SearchBar
+            value={search}
+            placeholder="Search instructors..."
+            onSearch={(query) => setSearch(query)}
+          />
 
+          <div className="flex gap-3 flex-wrap">
+            <FilterDropdown<Status>
+              label="Status"
+              value={status}
+              options={["All", "Active", "Blocked"]}
+              onChange={(newStatus) => {
+                setStatus(newStatus);
+                setPage(1);
+              }}
+            />
+            <FilterDropdown<VerificationStatus>
+              label="Verification"
+              value={verificationStatus}
+              options={[
+                "All",
+                "Not Submitted",
+                "Under Review",
+                "Verified",
+                "Rejected",
+              ]}
+              onChange={(newStatus) => {
+                setVerificationStatus(newStatus);
+                setPage(1);
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
+      {/* Table */}
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden transition-all hover:shadow-md">
+        <Table<Instructor> columns={columns} data={instructors} />
+      </div>
 
-        <FilterDropdown
-          value={status}
-          onChange={(newStatus) => {
-            setStatus(newStatus);
-            setPage(1); 
-          }}
+      {/* Pagination */}
+      <div className="mt-6 flex justify-center">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
         />
       </div>
 
-      <Table<Instructor> columns={columns} data={instructors} />
+      {/* View Modal */}
+      {instructorView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-xl p-4 animate-fade-in">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
+            {/* Header */}
+            <div className=" top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Instructor Details</h2>
+              <button
+                onClick={() => setInstructorView(null)}
+                className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
 
-      <Pagination
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+            <div className="p-6">
+              {/* Profile */}
+              <div className="flex items-center gap-6 mb-8 pb-6 border-b border-border">
+                <img
+                  src={instructorView.profilePic || "/images/default-profile.jpg"}
+                  alt={instructorView.name}
+                  className="w-24 h-24 rounded-full border-4 border-primary/10 object-cover shadow-md"
+                />
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-foreground mb-1">{instructorView.name}</h3>
+                  <p className="text-muted-foreground mb-2">{instructorView.email}</p>
+                  <span
+                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold mt-1 ${
+                      instructorView.verification.status === "Verified"
+                        ? "bg-success/10 text-success"
+                        : instructorView.verification.status === "Rejected"
+                        ? "bg-destructive/10 text-destructive"
+                        : instructorView.verification.status === "Under Review"
+                        ? "bg-warning/10 text-warning"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {instructorView.verification.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Joining Date</p>
+                    <p className="text-foreground font-medium">
+                      {instructorView.joiningDate
+                        ? new Date(instructorView.joiningDate).toLocaleDateString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Designation</p>
+                    <p className="text-foreground font-medium">{instructorView.designation || "—"}</p>
+                  </div>
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Website</p>
+                    <p className="text-foreground font-medium">
+                      {instructorView.website ? (
+                        <a
+                          href={instructorView.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline"
+                        >
+                          {instructorView.website}
+                        </a>
+                      ) : "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Rating</p>
+                    <p className="text-foreground font-medium">
+                      {instructorView.rating !== null ? `${instructorView.rating}/5` : "—"}
+                    </p>
+                  </div>
+                  {instructorView.verification.remarks && (
+                    <div className="bg-secondary/30 rounded-lg p-4">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Remarks</p>
+                      <p className="text-foreground">{instructorView.verification.remarks}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Extra Details */}
+              <div className="space-y-4 mb-6">
+                <div className="bg-secondary/30 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Expertise</p>
+                  <p className="text-foreground font-medium">
+                    {instructorView.expertise.length > 0 ? instructorView.expertise.join(", ") : "—"}
+                  </p>
+                </div>
+                <div className="bg-secondary/30 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Bio</p>
+                  <p className="text-foreground">{instructorView.bio || "No bio available"}</p>
+                </div>
+                <div className="bg-secondary/30 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Resume</p>
+                  <p className="text-foreground">
+                    {instructorView.resume ? (
+                      <a
+                        href={instructorView.resume}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary underline"
+                      >
+                        View Resume
+                      </a>
+                    ) : "—"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Manage Verification */}
+              {instructorView.verification.status === "Under Review" && (
+                <div className="mt-6 pt-6 border-t border-border bg-secondary/10 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-foreground mb-4">Manage Verification Status</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-foreground mb-2">
+                        Change Status
+                      </label>
+                      <select
+                        value={newVerificationStatus}
+                        onChange={(e) => setNewVerificationStatus(e.target.value as "Verified" | "Rejected")}
+                        className="w-full md:w-auto px-4 py-2.5 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      >
+                        <option value="Verified">✓ Verified</option>
+                        <option value="Rejected">✕ Rejected</option>
+                      </select>
+                    </div>
+
+                    {newVerificationStatus === "Rejected" && (
+                      <div>
+                        <label className="block text-sm font-semibold text-foreground mb-2">
+                          Rejection Remarks
+                        </label>
+                        <input
+                          type="text"
+                          ref={remarksRef}
+                          className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          placeholder="Enter reason for rejection..."
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      onClick={updateVerificationStatus}
+                      className="w-full md:w-auto px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
+                    >
+                      Submit Status Change
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
+
 }

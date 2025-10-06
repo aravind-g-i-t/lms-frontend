@@ -10,9 +10,10 @@ import { signin } from '../../redux/services/userAuthServices';
 import { setLearner } from '../../redux/slices/learnerSlice';
 import { setInstructor } from '../../redux/slices/instructorSlice';
 import { setBusiness } from '../../redux/slices/businessSlice';
-import UserAuthNav from '../../components/shared/UserAuthNav';
 import { Eye, EyeOff } from "lucide-react";
 import GoogleSigninButton from '../../components/shared/GoogleSigninButton';
+import LearnerNav from '../../components/learner/LearnerNav';
+import { toast } from 'react-toastify';
 
 type Role = 'learner' | 'instructor' | 'business';
 
@@ -52,7 +53,7 @@ export default function Signin() {
       return;
     }
     const signinInput = {
-      role:selectedRole,
+      role: selectedRole,
       email,
       password
     }
@@ -69,30 +70,17 @@ export default function Signin() {
       navigate(`/${selectedRole}/dashboard`)
 
     } catch (err) {
-      console.error("Signin failed:", err)
+      console.error("Signin failed:", err);
+      toast.error(err as string)
     }
   };
 
-  // const handleGoogleSignIn = async (credentialResponse:CredentialResponse): Promise<void> => {
-  //   try {
-  //     if(!credentialResponse.credential){
-  //       return;
-  //     }
-  //     const decoded = jwtDecode(credentialResponse.credential);
-
-
-  //     // await dispatch(googleAuth(credentialResponse.credential));
-
-  //   } catch (error) {
-  //     console.error("Google sign-in error:", error);
-  //   }
-  // };
 
   const handleRoleSelect = (role: Role) => setSelectedRole(role);
 
   return (
     <>
-      <UserAuthNav />
+      <LearnerNav />
 
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full grid md:grid-cols-2">
