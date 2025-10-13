@@ -159,6 +159,7 @@ const UserSignup = () => {
                       <input
                         type={showPassword ? "text" : "password"}
                         value={password}
+                        maxLength={20}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 pr-10"
                         placeholder=""
@@ -181,6 +182,7 @@ const UserSignup = () => {
                       <input
                         type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
+                        maxLength={20}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 pr-10"
                         placeholder=""

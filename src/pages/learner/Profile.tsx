@@ -173,24 +173,27 @@ const LearnerProfile: React.FC = () => {
   };
 
   const handleUpdateProfile = async () => {
-
-    if (editableName.trim() && id) {
-      console.log(editableName, id);
-
-      try {
-        const result = await dispatch(updateLearnerProfile({
-          name: editableName.trim()
-        })).unwrap();
-
-        console.log(result);
-        const newName = editableName.trim()
-
-        dispatch(setLearnerName({ name: newName }))
-        toast.success(result.message);
-      } catch (error) {
-        toast.error(error as string)
-      }
+    const newName=editableName.trim();
+    if (!newName || !id) {
+      toast.error('Name cannot be empty');
+      return
     }
+    if(newName.length>20){
+      toast.error('Name should not exceed 15 characters.');
+      return
+    }
+    
+    try {
+      const result = await dispatch(updateLearnerProfile({
+        name: newName
+      })).unwrap();
+
+      dispatch(setLearnerName({ name: newName }))
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(error as string)
+    }
+    
   };
 
 
@@ -327,6 +330,7 @@ const LearnerProfile: React.FC = () => {
                         </label>
                         <input
                           type="text"
+                          maxLength={20}
                           value={editableName}
                           onChange={(e) => setEditableName(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
@@ -367,6 +371,7 @@ const LearnerProfile: React.FC = () => {
                           <div className="relative">
                             <input
                               type={showCurrentPassword ? "text" : "password"}
+                              maxLength={20}
                               value={passwordForm.currentPassword}
                               onChange={(e) =>
                                 handlePasswordChange("currentPassword", e.target.value)
@@ -405,6 +410,7 @@ const LearnerProfile: React.FC = () => {
                             <input
                               type={showNewPassword ? "text" : "password"}
                               value={passwordForm.newPassword}
+                              maxLength={20}
                               onChange={(e) =>
                                 handlePasswordChange("newPassword", e.target.value)
                               }
@@ -441,6 +447,7 @@ const LearnerProfile: React.FC = () => {
                           <div className="relative">
                             <input
                               type={showConfirmPassword ? "text" : "password"}
+                              maxLength={20}
                               value={passwordForm.confirmPassword}
                               onChange={(e) =>
                                 handlePasswordChange("confirmPassword", e.target.value)

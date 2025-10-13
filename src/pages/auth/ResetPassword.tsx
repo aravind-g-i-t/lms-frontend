@@ -105,6 +105,7 @@ export default function ResetPassword() {
                   <input
                     type="password"
                     value={password}
+                    maxLength={20}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (error) setError("");
@@ -123,6 +124,7 @@ export default function ResetPassword() {
                   <input
                     type="password"
                     value={confirm}
+                    maxLength={20}
                     onChange={(e) => {
                       setConfirm(e.target.value);
                       if (error) setError("");

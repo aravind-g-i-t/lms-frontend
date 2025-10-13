@@ -453,6 +453,7 @@ export default function ManageBusinesses() {
                           <input
                             type="text"
                             ref={remarksRef}
+                            maxLength={100}
                             className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                             placeholder="Enter reason for rejection..."
                           />

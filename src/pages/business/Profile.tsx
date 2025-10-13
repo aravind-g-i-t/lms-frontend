@@ -266,7 +266,14 @@ const BusinessProfile = () => {
 
                 {/* Business Info */}
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">{name || 'Business Name'}</h2>
+                  {isEditing?(
+                    <input maxLength={20} autoFocus className="text-3xl font-bold mb-2" value={name} onChange={(e)=>setName(e.target.value )} type="text" />
+
+                  ):(
+                    <h2 className="text-3xl font-bold mb-2">{name || 'Business Name'}</h2>
+
+                  )
+                  }
                   <p className="text-blue-100 text-lg mb-3">{businessDomain || 'Business Domain'}</p>
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
@@ -337,6 +344,7 @@ const BusinessProfile = () => {
                   </label>
                   <input
                     type="text"
+                    maxLength={20}
                     value={businessDomain || ""}
                     onChange={(e) => setBusinessDomain(e.target.value)}
                     className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -366,6 +374,7 @@ const BusinessProfile = () => {
                 {isEditing ? (
                   <input
                     type="url"
+                    maxLength={30}
                     value={website || ""}
                     onChange={(e) => setWebsite(e.target.value)}
                     className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -393,6 +402,7 @@ const BusinessProfile = () => {
                 {isEditing ? (
                   <input
                     type="text"
+                    maxLength={30}
                     value={location || ""}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -515,6 +525,7 @@ const BusinessProfile = () => {
                       <div className="space-y-3">
                         <input
                           type="password"
+                          maxLength={20}
                           placeholder="Current Password"
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
@@ -522,6 +533,7 @@ const BusinessProfile = () => {
                         />
                         <input
                           type="password"
+                          maxLength={20}
                           placeholder="New Password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -529,6 +541,7 @@ const BusinessProfile = () => {
                         />
                         <input
                           type="password"
+                          maxLength={20}
                           placeholder="Confirm Password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}

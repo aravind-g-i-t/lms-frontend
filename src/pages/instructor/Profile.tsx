@@ -451,6 +451,7 @@ const InstructorProfile = () => {
                   <input
                     onChange={(e) => setName(e.target.value)}
                     type="text"
+                    maxLength={20}
                     value={username || ''}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all"
@@ -461,6 +462,7 @@ const InstructorProfile = () => {
                   <input
                     onChange={(e) => setDesignation(e.target.value)}
                     type="text"
+                    maxLength={20}
                     value={designation || ""}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all"
@@ -484,6 +486,7 @@ const InstructorProfile = () => {
                     <Globe className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       onChange={(e) => setWebsite(e.target.value)}
+                      maxLength={30}
                       type="url"
                       value={website || ''}
                       disabled={!isEditing}
@@ -497,6 +500,7 @@ const InstructorProfile = () => {
                 <textarea
                   onChange={(e) => setBio(e.target.value)}
                   value={bio || ''}
+                  maxLength={500}
                   disabled={!isEditing}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 resize-none transition-all"
@@ -555,6 +559,7 @@ const InstructorProfile = () => {
                 <div className="flex items-center gap-3">
                   <input
                     type="text"
+                    maxLength={20}
                     placeholder="Add a new skill"
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
@@ -803,6 +808,7 @@ const InstructorProfile = () => {
                           </label>
                           <input
                             type="password"
+                            maxLength={20}
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
@@ -814,6 +820,7 @@ const InstructorProfile = () => {
                           </label>
                           <input
                             type="password"
+                            maxLength={20}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
@@ -825,6 +832,7 @@ const InstructorProfile = () => {
                           </label>
                           <input
                             type="password"
+                            maxLength={20}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
