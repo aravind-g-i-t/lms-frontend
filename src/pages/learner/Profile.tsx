@@ -11,10 +11,11 @@ import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../redux/services/learnerServices";
-import { uploadImageToCloudinary } from "../../config/cloudinary";
+// import { uploadImageToCloudinary } from "../../config/cloudinary";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { setLearnerImage, setLearnerName } from "../../redux/slices/learnerSlice";
 import { toast } from "react-toastify";
+import { getPresignedDownloadUrl, uploadImageToS3 } from "../../config/s3Config";
 
 const LearnerProfile: React.FC = () => {
   const { id } = useSelector(
@@ -146,31 +147,37 @@ const LearnerProfile: React.FC = () => {
     setPasswordErrors({});
   };
 
-  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  try {
+    const file = event.target.files?.[0];
+    if (!file || !id) return;
 
-    try {
-      const file = event.target.files?.[0];
-      if (!file) {
-        return
-      }
-      setImageLoading(true)
-      const imageURL = await uploadImageToCloudinary(file);
-      if (!imageURL || !id) {
-        return
-      }
-      const result = await dispatch(updateLearnerProfileImage({
-        imageURL
-      })).unwrap();
-      setProfilePic(imageURL)
-      dispatch(setLearnerImage({ profilePic: imageURL }))
-      toast.success(result.message);
-    } catch (err) {
-      toast.error(err as string)
-    } finally {
-      setImageLoading(false)
-    }
+    setImageLoading(true);
 
-  };
+    // Upload file to S3 and get the object key
+    const objectKey = await uploadImageToS3(file);
+
+    console.log("key",objectKey);
+    
+
+    // Send object key to backend to update learner profile
+    const result = await dispatch(updateLearnerProfileImage({ imageURL: objectKey })).unwrap();
+
+    // Generate a temporary presigned GET URL for immediate display (optional)
+    const presignedUrl = await getPresignedDownloadUrl(objectKey)
+    console.log(presignedUrl);
+    
+
+    setProfilePic(presignedUrl);
+    dispatch(setLearnerImage({ profilePic: presignedUrl }));
+    toast.success(result.message);
+  } catch (err) {
+    toast.error(err as string);
+  } finally {
+    setImageLoading(false);
+  }
+};
+
 
   const handleUpdateProfile = async () => {
     const newName=editableName.trim();

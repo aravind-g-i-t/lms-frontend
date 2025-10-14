@@ -18,9 +18,9 @@ import type { AppDispatch } from '../../redux/store';
 import { applyForInstructorVerification, getInstructorProfile, resetInstructorPassword, updateInstructorExpertise, updateInstructorIDProof, updateInstructorProfile, updateInstructorProfileImage, updateInstructorResume } from '../../redux/services/instructorServices';
 import { setInstructorImage, setInstructorName } from '../../redux/slices/instructorSlice';
 import { toast } from 'react-toastify';
-import { uploadImageToCloudinary, uploadPdfToCloudinary } from '../../config/cloudinary';
 import { validateConfirmPassword, validatePassword } from '../../utils/validation';
 import ReactModal from 'react-modal';
+import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from '../../config/s3Config';
 
 const InstructorProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -116,29 +116,31 @@ const InstructorProfile = () => {
 
 
 
-  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    try {
-      const file = event.target.files?.[0];
-      if (!file) {
-        return
-      }
-      setImageLoading(true)
-      const imageURL = await uploadImageToCloudinary(file);
-      if (!imageURL) {
-        return
-      }
-      const result = await dispatch(updateInstructorProfileImage({
-        imageURL
-      })).unwrap();
-      dispatch(setInstructorImage({ profilePic: imageURL }));
-      setProfilePic(imageURL);
-      toast.success(result.message)
-    } catch (err) {
-      toast.error(err as string)
-    } finally {
-      setImageLoading(false)
-    }
-  };
+const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  try {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImageLoading(true);
+
+    const objectKey = await uploadImageToS3(file);
+    if (!objectKey) return;
+
+    const downloadUrl = await getPresignedDownloadUrl(objectKey);
+
+    const result = await dispatch(updateInstructorProfileImage({ imageURL:objectKey })).unwrap();
+
+    dispatch(setInstructorImage({ profilePic: downloadUrl }));
+    setProfilePic(downloadUrl);
+
+    toast.success(result.message);
+  } catch (err) {
+    toast.error(err as string);
+  } finally {
+    setImageLoading(false);
+  }
+};
+
 
 
 
@@ -206,28 +208,31 @@ const InstructorProfile = () => {
 
 
   const handleSaveResume = async () => {
-    if (!resumeFile) return;
+  if (!resumeFile) return;
 
-    const uploadedUrl = await uploadPdfToCloudinary(resumeFile);
-    if (!uploadedUrl) {
+  try {
+    const objectKey = await uploadPdfToS3(resumeFile);
+    if (!objectKey) {
       toast.error("Resume upload failed");
       return;
     }
 
-    try {
-      const result = await dispatch(
-        updateInstructorResume({ resume: uploadedUrl })
-      ).unwrap();
+    const resumeUrl = await getPresignedDownloadUrl(objectKey);
 
-      setResume(uploadedUrl);
-      setResumeFile(null);
-      setIsResumeEditable(false);
+    const result = await dispatch(
+      updateInstructorResume({ resume: objectKey })
+    ).unwrap();
 
-      toast.success(result.message || "Resume updated successfully");
-    } catch (error) {
-      toast.error(error as string)
-    }
-  };
+    setResume(resumeUrl);
+    setResumeFile(null);
+    setIsResumeEditable(false);
+
+    toast.success(result.message || "Resume updated successfully");
+  } catch (error) {
+    toast.error(error as string);
+  }
+};
+
 
   const handleCancelResume = () => {
     setResumeFile(null);
@@ -235,28 +240,31 @@ const InstructorProfile = () => {
   };
 
   const handleSaveIdentityProof = async () => {
-    if (!identityProofFile) return;
+  if (!identityProofFile) return;
 
-    const uploadedUrl = await uploadImageToCloudinary(identityProofFile);
-    if (!uploadedUrl) {
+  try {
+    const objectKey = await uploadImageToS3(identityProofFile);
+    if (!objectKey) {
       toast.error("Identity proof upload failed");
       return;
     }
 
-    try {
-      const result = await dispatch(
-        updateInstructorIDProof({ identityProof: uploadedUrl })
-      ).unwrap();
+    const identityProofUrl = await getPresignedDownloadUrl(objectKey);
 
-      setIdentityProof(uploadedUrl);
-      setIdentityProofFile(null);
-      setIsIdentityEditable(false);
+    const result = await dispatch(
+      updateInstructorIDProof({ identityProof: objectKey })
+    ).unwrap();
 
-      toast.success(result.message || "Identity proof updated successfully");
-    } catch (error) {
-      toast.error(error as string)
-    }
+    setIdentityProof(identityProofUrl);
+    setIdentityProofFile(null);
+    setIsIdentityEditable(false);
+
+    toast.success(result.message || "Identity proof updated successfully");
+  } catch (error) {
+    toast.error(error as string);
   }
+};
+
 
   const handleCancelIdentityProof = () => {
     setIdentityProofFile(null);

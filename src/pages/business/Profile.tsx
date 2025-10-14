@@ -23,8 +23,8 @@ import { applyForBusinessVerification, getBusinessProfile, resetBusinessPassword
 import type { AppDispatch } from "../../redux/store";
 import { toast } from "react-toastify";
 import { setBusinessImage, setBusinessName } from "../../redux/slices/businessSlice";
-import { uploadImageToCloudinary, uploadPdfToCloudinary } from "../../config/cloudinary";
 import { validateConfirmPassword, validatePassword } from "../../utils/validation";
+import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from "../../config/s3Config";
 
 const BusinessProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -94,19 +94,26 @@ const BusinessProfile = () => {
       const file = event.target.files?.[0];
       if (!file) return;
 
-      setImageLoading(true)
-      const imageURL = await uploadImageToCloudinary(file);
-      if (!imageURL) return;
-      const result = await dispatch(updateBusinessProfileImage({ imageURL })).unwrap();
+      setImageLoading(true);
+
+      const objectKey = await uploadImageToS3(file);
+      if (!objectKey) return;
+
+      const imageURL = await getPresignedDownloadUrl(objectKey);
+
+      const result = await dispatch(updateBusinessProfileImage({ imageURL: objectKey })).unwrap();
+
       dispatch(setBusinessImage({ profilePic: imageURL }));
       setProfilePic(imageURL);
+
       toast.success(result.message);
     } catch (err) {
-      toast.error(err as string)
+      toast.error(err as string);
     } finally {
-      setImageLoading(false)
+      setImageLoading(false);
     }
   };
+
 
   const handleResetPassword = async () => {
     let errorMsg = validatePassword(currentPassword);
@@ -144,24 +151,28 @@ const BusinessProfile = () => {
 
 
   const handleLicenseUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      toast.error("Please upload a valid PDF file");
-      return;
-    }
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.type !== "application/pdf") {
+    toast.error("Please upload a valid PDF file");
+    return;
+  }
 
-    const pdfURL = await uploadPdfToCloudinary(file);
-    if (!pdfURL) return;
+  try {
+    const objectKey = await uploadPdfToS3(file);
+    if (!objectKey) return;
 
-    try {
-      await dispatch(updateBusinessLicense({ license: pdfURL })).unwrap();
-      setLicense(pdfURL);
-      toast.success("Business license uploaded successfully");
-    } catch (error) {
-      toast.error(error as string)
-    }
-  };
+    await dispatch(updateBusinessLicense({ license: objectKey })).unwrap();
+
+    const pdfURL = await getPresignedDownloadUrl(objectKey);
+    setLicense(pdfURL);
+
+    toast.success("Business license uploaded successfully");
+  } catch (error) {
+    toast.error(error as string);
+  }
+};
+
 
 
   const getVerificationBadge = () => {
@@ -266,10 +277,10 @@ const BusinessProfile = () => {
 
                 {/* Business Info */}
                 <div>
-                  {isEditing?(
-                    <input maxLength={20} autoFocus className="text-3xl font-bold mb-2" value={name} onChange={(e)=>setName(e.target.value )} type="text" />
+                  {isEditing ? (
+                    <input maxLength={20} autoFocus className="text-3xl font-bold mb-2" value={name} onChange={(e) => setName(e.target.value)} type="text" />
 
-                  ):(
+                  ) : (
                     <h2 className="text-3xl font-bold mb-2">{name || 'Business Name'}</h2>
 
                   )
