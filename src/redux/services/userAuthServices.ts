@@ -3,6 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
 import type { GoogleSigninRequest, OTPVerificationRequest, ResendOTPRequest, ResetPasswordRequest, SigninRequest, SignupRequest, VerifyEmailRequest, VerifyResetOTPRequest } from "../../types/api/auth";
 import axiosInstance from "../../config/axiosInstance";
+import { API } from "../../constants/api";
 
 
 
@@ -13,7 +14,7 @@ export const sendOTP = createAsyncThunk(
     "/send-otp",
     async (singupInput: SignupRequest, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post('/auth/signup', singupInput);
+            const result = await axiosInstance.post(API.AUTH.SIGNUP, singupInput);
             console.log(result);
 
             if (!result.data.success) {
@@ -36,7 +37,7 @@ export const verifyOTP = createAsyncThunk(
     async (inputData:OTPVerificationRequest, { rejectWithValue }) => {
         try {
             console.log(inputData);
-            const result = await axiosInstance.post('/auth/otp/send', inputData);
+            const result = await axiosInstance.post(API.AUTH.VERIFY_OTP, inputData);
             console.log(result);
 
             if (!result.data.success) {
@@ -57,7 +58,7 @@ export const resendOTP = createAsyncThunk(
     "/resend-otp",
     async (input:ResendOTPRequest, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post('/auth/otp/resend', input);
+            const result = await axiosInstance.post(API.AUTH.RESEND_OTP, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -80,7 +81,7 @@ export const signin = createAsyncThunk(
     "/signin",
     async (input:SigninRequest, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post(`/auth/signin`, input);
+            const result = await axiosInstance.post(API.AUTH.SIGNIN, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -102,7 +103,7 @@ export const logout = createAsyncThunk(
     "/logout",
     async (_, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post(`/auth/logout`);
+            const result = await axiosInstance.post(API.AUTH.LOGOUT);
             console.log(result);
 
             if (!result.data.success) {
@@ -126,7 +127,7 @@ export const userTokenRefresh = createAsyncThunk(
     "/auth/refresh",
     async (_, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post(`/auth/refresh`);
+            const result = await axiosInstance.post(API.AUTH.REFRESH);
             console.log(result);
             return result.data
         } catch (error: unknown) {
@@ -145,7 +146,7 @@ export const googleSignIn = createAsyncThunk(
     "/auth/googleAuth",
     async (payload:GoogleSigninRequest, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post(`/auth/google`,payload);
+            const result = await axiosInstance.post(API.AUTH.GOOGLE_SIGNIN,payload);
             console.log(result);
             return result.data
         } catch (error: unknown) {
@@ -165,7 +166,7 @@ export const verifyEmail = createAsyncThunk(
     async (input:VerifyEmailRequest, { rejectWithValue }) => {
         try {
             console.log(input);
-            const result = await axiosInstance.post('/auth/reset/email', input);
+            const result = await axiosInstance.post(API.AUTH.VERIFY_EMAIL, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -189,7 +190,7 @@ export const verifyResetOTP = createAsyncThunk(
     async (input:VerifyResetOTPRequest, { rejectWithValue }) => {
         try {
             console.log(input);
-            const result = await axiosInstance.post('/auth/reset/otp', input);
+            const result = await axiosInstance.post(API.AUTH.VERIFY_RESET_OTP, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -213,7 +214,7 @@ export const resetPassword = createAsyncThunk(
     async (input:ResetPasswordRequest, { rejectWithValue }) => {
         try {
             console.log(input);
-            const result = await axiosInstance.post('/auth/reset', input);
+            const result = await axiosInstance.post(API.AUTH.RESET_PASSWORD, input);
             console.log(result);
 
             if (!result.data.success) {

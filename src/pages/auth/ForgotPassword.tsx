@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "../../redux/store";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../redux/store";
 import { setSignupCredentials } from "../../redux/slices/signupSlice";
 import { useNavigate } from "react-router-dom";
 import { verifyEmail } from "../../redux/services/userAuthServices";
@@ -12,35 +12,46 @@ export default function ForgotPassword() {
   type Role = 'learner' | 'instructor' | 'business';
 
   const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.status.user);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("learner");
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [loading,setLoading]=useState(false)
+
+  // Simple email regex (RFC 5322 basic)
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return "Email is required";
+    if (!emailRegex.test(email)) return "Invalid email format";
+    return "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccessMsg("");
 
-    if (!email) {
-      setError("Please enter your email");
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    if (!role) {
+      setError("Please select a role");
       return;
     }
 
     try {
-      const result = await dispatch(verifyEmail({ email, role })).unwrap();
-      console.log(result);
-
+      setLoading(true)
+      await dispatch(verifyEmail({ email, role })).unwrap();
       dispatch(setSignupCredentials({ email, role }));
-      setSuccessMsg("OTP has been sent to your email.");
       navigate("/reset/verify-otp");
     } catch (err) {
       console.error("Password reset request failed", err);
-      toast.error(err as string)
-      setError("Failed to send OTP. Please try again.");
+      toast.error(err as string);
+    }finally{
+      setLoading(false)
     }
   };
 
@@ -62,7 +73,7 @@ export default function ForgotPassword() {
             <div className="relative z-10 p-12 h-full text-white flex flex-col justify-center">
               <h1 className="text-4xl font-bold mb-6">Forgot Password?</h1>
               <p className="text-lg text-gray-200">
-                Enter your registered email and select your role, we’ll send you
+                Enter your registered email and select your role, we'll send you
                 an OTP to reset your password.
               </p>
             </div>
@@ -81,11 +92,11 @@ export default function ForgotPassword() {
                 </div>
               )}
 
-              {successMsg && (
+              {/* {successMsg && (
                 <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
                   {successMsg}
                 </div>
-              )}
+              )} */}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -101,10 +112,9 @@ export default function ForgotPassword() {
                     }}
                     required
                     disabled={loading}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${error
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500"
-                      } ${loading ? "bg-gray-50" : "bg-white"}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                      error ? "border-red-300 focus:ring-red-500" : "border-gray-300 focus:ring-green-500"
+                    } ${loading ? "bg-gray-50" : "bg-white"}`}
                     placeholder="Enter your registered email"
                   />
                 </div>

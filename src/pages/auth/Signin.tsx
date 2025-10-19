@@ -1,11 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-// import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-// import { jwtDecode } from 'jwt-decode';
-import type { RootState, AppDispatch } from '../../redux/store';
-import { validateEmail, validatePassword } from '../../utils/validation';
-import { clearUserStatus } from '../../redux/slices/statusSlice';
+import type { AppDispatch } from '../../redux/store';
 import { signin } from '../../redux/services/userAuthServices';
 import { setLearner } from '../../redux/slices/learnerSlice';
 import { setInstructor } from '../../redux/slices/instructorSlice';
@@ -14,90 +10,91 @@ import { Eye, EyeOff } from "lucide-react";
 import GoogleSigninButton from '../../components/shared/GoogleSigninButton';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { toast } from 'react-toastify';
+import { useForm } from 'react-hook-form';
+import * as yup from 'yup';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 type Role = 'learner' | 'instructor' | 'business';
 
+interface SigninForm {
+  email: string;
+  password: string;
+}
+
+const getSchema = (role: Role) => yup.object().shape({
+  email: yup
+    .string()
+    .required(`${role === "business" ? "Company" : "Email"} is required`)
+    .matches(
+      /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/,
+      "Invalid email format"
+    )
+    .max(100, "Email cannot exceed 100 characters"),
+
+
+  password: yup
+    .string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(30, "Password cannot exceed 30 characters")
+    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+    .matches(/\d/, "Password must contain at least one number")
+    .matches(/[@$!%*?&#]/, "Password must contain at least one special character")
+});
+
 export default function Signin() {
-  const { errorMsg } = useSelector((state: RootState) => state.status.user);
-
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>()
-  useEffect(() => {
-    return () => {
+  const dispatch = useDispatch<AppDispatch>();
 
-      dispatch(clearUserStatus());
-    }
-  }, [dispatch])
 
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+
   const [show, setShow] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>('learner');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const roles = [
     { label: 'Learner', value: 'learner' },
     { label: 'Instructor', value: 'instructor' },
     { label: 'Business', value: 'business' }
   ] as const;
 
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<SigninForm>({
+    resolver: yupResolver(getSchema(selectedRole))
+  });
 
-  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-
-    const emailErr = validateEmail(email);
-    const passwordErr = validatePassword(password);
-    setEmailError(emailErr);
-    setPasswordError(passwordErr);
-    if (emailErr || passwordErr) {
-      return;
-    }
-    const signinInput = {
-      role: selectedRole,
-      email,
-      password
-    }
+  const onSubmit = async (data: SigninForm) => {
+    const signinInput = { role: selectedRole, ...data };
     try {
       const result = await dispatch(signin(signinInput)).unwrap();
-      const user = result.user
-      if (selectedRole === 'learner') {
-        dispatch(setLearner(user))
-      } else if (selectedRole === 'instructor') {
-        dispatch(setInstructor(user))
-      } else {
-        dispatch(setBusiness(user))
-      }
-      navigate(`/${selectedRole}/dashboard`)
+      const user = result.user;
+      if (selectedRole === 'learner') dispatch(setLearner(user));
+      else if (selectedRole === 'instructor') dispatch(setInstructor(user));
+      else dispatch(setBusiness(user));
 
+      navigate(`/${selectedRole}/dashboard`);
     } catch (err) {
       console.error("Signin failed:", err);
-      toast.error(err as string)
+      toast.error(err as string);
     }
   };
 
-
-  const handleRoleSelect = (role: Role) => setSelectedRole(role);
+  const handleRoleSelect = (role: Role) => {
+    setSelectedRole(role);
+    reset(); // reset form and errors when role changes
+  };
 
   return (
     <>
       <LearnerNav />
-
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full grid md:grid-cols-2">
           <div className="relative h-full min-h-[600px]">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-50" style={{
-              backgroundImage: `url('/images/auth.jpg')`
-            }} />
+            <div className="absolute inset-0 bg-cover bg-center" />
+            <div className="absolute inset-0 bg-black bg-opacity-50" style={{ backgroundImage: `url('/images/auth.jpg')` }} />
             <div className="relative z-10 p-12 flex flex-col justify-center h-full text-white">
               <h1 className="text-5xl font-bold mb-6 leading-tight">
                 Your gateway to knowledge, <br />skills, and opportunities
               </h1>
-              <p className="text-xl text-gray-200">
-                NligtN
-              </p>
+              <p className="text-xl text-gray-200">NligtN</p>
             </div>
           </div>
 
@@ -105,7 +102,7 @@ export default function Signin() {
             <div className="w-full max-w-sm mx-auto">
               <h2 className="text-3xl font-bold text-gray-900 mb-8">Sign in</h2>
 
-              <div className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">Role</label>
                   <div className="flex bg-gray-100 rounded-lg p-1">
@@ -124,9 +121,8 @@ export default function Signin() {
                     ))}
                   </div>
                 </div>
-                {errorMsg && (
-                  <p className="text-red-500 text-sm mt-2">{errorMsg}</p>
-                )}
+
+                {/* {errorMsg && <p className="text-red-500 text-sm mt-2">{errorMsg}</p>} */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -134,25 +130,19 @@ export default function Signin() {
                   </label>
                   <input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register('email')}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
-                    placeholder=""
                   />
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
                 </div>
-                {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
 
-                {/* Password Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                   <div className="relative">
                     <input
                       type={show ? "text" : "password"}
                       maxLength={20}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      {...register('password')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 pr-10"
                       placeholder="Enter your password"
                     />
@@ -164,48 +154,35 @@ export default function Signin() {
                       {show ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
+                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
                 </div>
-                {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
-                {/* Forgot Password */}
+
                 <div className="text-right">
                   <span className="text-sm text-gray-500">
                     Forgot password? <Link to="/reset/email" className="text-blue-500 hover:text-blue-600">Reset password</Link>
                   </span>
                 </div>
 
-                {/* Sign In Button */}
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
                   Sign in as {selectedRole}
                 </button>
-              </div>
+              </form>
 
-              {/* Terms */}
               <p className="text-xs text-gray-500 mt-4 leading-relaxed">
                 By signing in, you agree to our Terms of service and Privacy policy
               </p>
 
-              {/* Divider */}
               <div className="mt-8 flex items-center">
                 <div className="flex-1 border-t border-gray-300"></div>
                 <span className="mx-4 text-gray-500 text-sm">or</span>
                 <div className="flex-1 border-t border-gray-300"></div>
               </div>
 
-
-              {/* <GoogleLogin
-                onSuccess={handleGoogleSignIn}
-                onError={() => {
-                  console.log("Login Failed");
-                }}
-                useOneTap
-              /> */}
-
               <GoogleSigninButton role={selectedRole} />
             </div>
-
           </div>
         </div>
       </div>

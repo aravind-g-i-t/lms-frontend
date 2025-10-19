@@ -11,23 +11,44 @@ import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../redux/services/learnerServices";
-// import { uploadImageToCloudinary } from "../../config/cloudinary";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { setLearnerImage, setLearnerName } from "../../redux/slices/learnerSlice";
 import { toast } from "react-toastify";
 import { getPresignedDownloadUrl, uploadImageToS3 } from "../../config/s3Config";
+import * as yup from "yup";
+
+// Yup Validation Schemas
+const profileUpdateSchema = yup.object().shape({
+  name: yup
+    .string()
+    .required("Name is required")
+    .trim()
+    .matches(/^[A-Za-z\s]+$/, "Name can only contain alphabets and spaces")
+    .min(1, "Name cannot be empty")
+    .max(20, "Name should not exceed 20 characters"),
+});
+
+const passwordUpdateSchema = yup.object().shape({
+  currentPassword: yup
+    .string()
+    .required("Current password is required"),
+  newPassword: yup
+    .string()
+    .required("New password is required")
+    .min(8, "Password must be at least 8 characters long")
+    .max(20, "Password should not exceed 20 characters"),
+  confirmPassword: yup
+    .string()
+    .required("Please confirm your password")
+    .oneOf([yup.ref("newPassword")], "Passwords do not match"),
+});
 
 const LearnerProfile: React.FC = () => {
   const { id } = useSelector(
     (state: RootState) => state.learner
   );
 
-
-
   const dispatch = useDispatch<AppDispatch>();
-
-
-
 
   const [editableName, setEditableName] = useState("");
   const [email, setEmail] = useState('');
@@ -43,28 +64,23 @@ const LearnerProfile: React.FC = () => {
     confirmPassword: "",
   });
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false)
-  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>(
-    {}
-  );
-
-
-
+  const [imageLoading, setImageLoading] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  const [nameError, setNameError] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await dispatch(getLearnerProfile()).unwrap();
         const learner = response.learner;
-        setEditableName(learner.name)
-        setEmail(learner.email)
+        setEditableName(learner.name);
+        setEmail(learner.email);
         setProfilePic(learner.profilePic);
         setHasPassword(learner.hasPassword);
         setJoiningDate(learner.joiningDate);
-
       } catch (err) {
         console.error("Failed to fetch learners:", err);
-        toast.error(err as string)
+        toast.error(err as string);
       }
     };
 
@@ -77,6 +93,7 @@ const LearnerProfile: React.FC = () => {
       [field]: value,
     }));
 
+    // Clear specific field error when user starts typing
     if (passwordErrors[field]) {
       setPasswordErrors((prev) => ({
         ...prev,
@@ -85,43 +102,51 @@ const LearnerProfile: React.FC = () => {
     }
   };
 
-  const validatePassword = () => {
-    const errors: Record<string, string> = {};
-
-    if (!passwordForm.currentPassword) {
-      errors.currentPassword = "Current password is required";
+  const handleNameChange = (value: string) => {
+    setEditableName(value);
+    // Clear name error when user starts typing
+    if (nameError) {
+      setNameError("");
     }
+  };
 
-    if (!passwordForm.newPassword) {
-      errors.newPassword = "New password is required";
-    } else if (passwordForm.newPassword.length < 8) {
-      errors.newPassword = "Password must be at least 8 characters long";
+  const validatePasswordWithYup = async () => {
+    try {
+      await passwordUpdateSchema.validate(passwordForm, { abortEarly: false });
+      return {};
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const errors: Record<string, string> = {};
+        err.inner.forEach((error) => {
+          if (error.path) {
+            errors[error.path] = error.message;
+          }
+        });
+        return errors;
+      }
+      return {};
     }
-
-    if (!passwordForm.confirmPassword) {
-      errors.confirmPassword = "Please confirm your password";
-    } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      errors.confirmPassword = "Passwords do not match";
-    }
-
-    return errors;
   };
 
   const handleUpdatePassword = async () => {
-    const errors = validatePassword();
+    const errors = await validatePasswordWithYup();
 
     if (Object.keys(errors).length > 0) {
       setPasswordErrors(errors);
       return;
     }
+
     const currentPassword = passwordForm.currentPassword;
     const newPassword = passwordForm.newPassword;
+    
     if (!id) {
-      return
+      return;
     }
-    const input = { id, currentPassword, newPassword }
+
+    const input = { id, currentPassword, newPassword };
+    
     try {
-      const result = await dispatch(learnerResetPassword(input)).unwrap()
+      const result = await dispatch(learnerResetPassword(input)).unwrap();
       setShowSuccessMessage(true);
       setPasswordForm({
         currentPassword: "",
@@ -129,12 +154,12 @@ const LearnerProfile: React.FC = () => {
         confirmPassword: "",
       });
       setPasswordErrors({});
-      toast.success(result.message)
+      toast.success(result.message);
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 3000);
     } catch (error) {
-      toast.error(error as string)
+      toast.error(error as string);
     }
   };
 
@@ -147,70 +172,71 @@ const LearnerProfile: React.FC = () => {
     setPasswordErrors({});
   };
 
-const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-  try {
-    const file = event.target.files?.[0];
-    if (!file || !id) return;
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file || !id) return;
 
-    setImageLoading(true);
+      setImageLoading(true);
 
-    // Upload file to S3 and get the object key
-    const objectKey = await uploadImageToS3(file);
+      // Upload file to S3 and get the object key
+      const objectKey = await uploadImageToS3(file);
 
-    console.log("key",objectKey);
-    
+      console.log("key", objectKey);
 
-    // Send object key to backend to update learner profile
-    const result = await dispatch(updateLearnerProfileImage({ imageURL: objectKey })).unwrap();
+      // Send object key to backend to update learner profile
+      const result = await dispatch(updateLearnerProfileImage({ imageURL: objectKey })).unwrap();
 
-    // Generate a temporary presigned GET URL for immediate display (optional)
-    const presignedUrl = await getPresignedDownloadUrl(objectKey)
-    console.log(presignedUrl);
-    
+      // Generate a temporary presigned GET URL for immediate display (optional)
+      const presignedUrl = await getPresignedDownloadUrl(objectKey);
+      console.log(presignedUrl);
 
-    setProfilePic(presignedUrl);
-    dispatch(setLearnerImage({ profilePic: presignedUrl }));
-    toast.success(result.message);
-  } catch (err) {
-    toast.error(err as string);
-  } finally {
-    setImageLoading(false);
-  }
-};
-
+      setProfilePic(presignedUrl);
+      dispatch(setLearnerImage({ profilePic: presignedUrl }));
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err as string);
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const handleUpdateProfile = async () => {
-    const newName=editableName.trim();
-    if (!newName || !id) {
-      toast.error('Name cannot be empty');
-      return
-    }
-    if(newName.length>20){
-      toast.error('Name should not exceed 15 characters.');
-      return
-    }
-    
     try {
+      // Validate name using Yup
+      await profileUpdateSchema.validate({ name: editableName }, { abortEarly: false });
+      
+      if (!id) {
+        toast.error('User ID not found');
+        return;
+      }
+
+      const newName = editableName.trim();
+
       const result = await dispatch(updateLearnerProfile({
         name: newName
       })).unwrap();
 
-      dispatch(setLearnerName({ name: newName }))
+      dispatch(setLearnerName({ name: newName }));
       toast.success(result.message);
-    } catch (error) {
-      toast.error(error as string)
+      setNameError("");
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const error = err.errors[0];
+        setNameError(error);
+        toast.error(error);
+      } else {
+        toast.error(err as string);
+      }
     }
-    
   };
-
-
 
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-
         {/* Header */}
         <LearnerNav />
+        
         {/* Main Content */}
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Breadcrumb */}
@@ -240,14 +266,12 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                   <div className="relative inline-block mb-4">
                     <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center bg-gray-100">
                       {imageLoading ? (
-                        // Spinner
                         <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-teal-500"></div>
                       ) : (
                         <img
                           src={profilePic || "/images/default-profile.jpg"}
                           alt="Profile"
                           className="w-full h-full object-cover"
-
                         />
                       )}
                     </div>
@@ -265,14 +289,8 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
 
                   {/* User Info */}
                   <h1 className="text-2xl font-bold text-gray-900 mb-1 text-center border-b focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    {/* {name||"fdfd"} */}
+                    {editableName}
                   </h1>
-                  {/* <input
-                  type="text"
-                  value={editableName}
-                  onChange={(e) => setEditableName(e.target.value)}
-                  className="text-2xl font-bold text-gray-900 mb-1 text-center border-b focus:outline-none focus:ring-2 focus:ring-teal-500"
-                /> */}
                   <p className="text-gray-600 mb-4">
                     {email}
                   </p>
@@ -283,33 +301,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                       day: 'numeric'
                     })}
                   </p>
-
-                  {/* <button
-                  onClick={handleUpdateProfile}
-                  className="mt-2 bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600"
-                >
-                  Save Name
-                </button> */}
-
-                  {/* Stats */}
-                  {/* <div className="border-t pt-6 mt-6">
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-teal-600">
-                        {userData.coursesCompleted}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Courses Completed
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-teal-600">
-                        {userData.totalHours}
-                      </p>
-                      <p className="text-sm text-gray-600">Hours Learned</p>
-                    </div>
-                  </div>
-                </div> */}
                 </div>
               </div>
             </div>
@@ -339,9 +330,16 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                           type="text"
                           maxLength={20}
                           value={editableName}
-                          onChange={(e) => setEditableName(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          onChange={(e) => handleNameChange(e.target.value)}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                            nameError ? "border-red-500" : "border-gray-300"
+                          }`}
                         />
+                        {nameError && (
+                          <p className="text-sm text-red-600 mt-1">
+                            {nameError}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -364,7 +362,7 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                   </div>
 
                   {/* Update Password */}
-                  {hasPassword &&
+                  {hasPassword && (
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 mb-4">
                         Update Password
@@ -383,10 +381,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                               onChange={(e) =>
                                 handlePasswordChange("currentPassword", e.target.value)
                               }
-                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${passwordErrors.currentPassword
+                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                                passwordErrors.currentPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
-                                }`}
+                              }`}
                               placeholder="Enter your current password"
                             />
                             <button
@@ -421,10 +420,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                               onChange={(e) =>
                                 handlePasswordChange("newPassword", e.target.value)
                               }
-                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${passwordErrors.newPassword
+                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                                passwordErrors.newPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
-                                }`}
+                              }`}
                               placeholder="Enter new password (min. 8 characters)"
                             />
                             <button
@@ -459,10 +459,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                               onChange={(e) =>
                                 handlePasswordChange("confirmPassword", e.target.value)
                               }
-                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${passwordErrors.confirmPassword
+                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                                passwordErrors.confirmPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
-                                }`}
+                              }`}
                               placeholder="Confirm your new password"
                             />
                             <button
@@ -500,7 +501,8 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                           </button>
                         </div>
                       </div>
-                    </div>}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

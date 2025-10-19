@@ -23,8 +23,56 @@ import { applyForBusinessVerification, getBusinessProfile, resetBusinessPassword
 import type { AppDispatch } from "../../redux/store";
 import { toast } from "react-toastify";
 import { setBusinessImage, setBusinessName } from "../../redux/slices/businessSlice";
-import { validateConfirmPassword, validatePassword } from "../../utils/validation";
 import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from "../../config/s3Config";
+import * as yup from "yup";
+
+const profileValidationSchema = yup.object().shape({
+  name: yup
+    .string()
+    .required("Business name is required")
+    .min(2, "Business name must be at least 2 characters")
+    .max(20, "Business name cannot exceed 20 characters")
+    .matches(/^[A-Za-z\s]+$/, "Name can only contain alphabets and spaces")
+    .trim(),
+  businessDomain: yup
+    .string()
+    .required("Business domain is required")
+    .min(2, "Business domain must be at least 2 characters")
+    .max(20, "Business domain cannot exceed 20 characters")
+    .trim(),
+  website: yup
+    .string()
+    .url("Website must be a valid URL")
+    .max(30, "Website cannot exceed 30 characters")
+    .nullable()
+    .transform((value) => value || null),
+  location: yup
+    .string()
+    .required("Location is required")
+    .min(2, "Location must be at least 2 characters")
+    .max(30, "Location cannot exceed 30 characters")
+    .trim(),
+});
+
+const passwordValidationSchema = yup.object().shape({
+  currentPassword: yup
+    .string()
+    .required("Current password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(20, "Password cannot exceed 20 characters"),
+  newPassword: yup
+    .string()
+    .required("New password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(20, "Password cannot exceed 20 characters")
+    .test("not-same", "New password must be different from current password", function(value) {
+      return value !== this.parent.currentPassword;
+    }),
+  confirmPassword: yup
+    .string()
+    .required("Confirm password is required")
+    .oneOf([yup.ref("newPassword")], "Passwords do not match"),
+});
 
 const BusinessProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -47,7 +95,9 @@ const BusinessProfile = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [license, setLicense] = useState<string | null>(null);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
-
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,7 +105,6 @@ const BusinessProfile = () => {
         const response = await dispatch(getBusinessProfile()).unwrap();
         const data = response.business;
         console.log(data);
-
 
         setName(data.name);
         setEmail(data.email);
@@ -77,11 +126,58 @@ const BusinessProfile = () => {
     fetchProfile();
   }, [dispatch]);
 
+  const validateForm = async (): Promise<boolean> => {
+    try {
+      const inputData = { name, businessDomain, website, location };
+      await profileValidationSchema.validate(inputData, { abortEarly: false });
+      setValidationErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const errors: Record<string, string> = {};
+        err.inner.forEach((error) => {
+          if (error.path) {
+            errors[error.path] = error.message;
+          }
+        });
+        setValidationErrors(errors);
+      }
+      return false;
+    }
+  };
+
+  const validatePassword = async (): Promise<boolean> => {
+    try {
+      const passwordData = { currentPassword, newPassword, confirmPassword };
+      await passwordValidationSchema.validate(passwordData, { abortEarly: false });
+      setPasswordErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const errors: Record<string, string> = {};
+        err.inner.forEach((error) => {
+          if (error.path) {
+            errors[error.path] = error.message;
+          }
+        });
+        setPasswordErrors(errors);
+      }
+      return false;
+    }
+  };
+
   const handleSave = async () => {
+    const isValid = await validateForm();
+    if (!isValid) {
+      toast.error("Please fix the validation errors before saving");
+      return;
+    }
+
     try {
       const inputData = { name, businessDomain, website, location };
       const result = await dispatch(updateBusinessProfile(inputData)).unwrap();
       setIsEditing(false);
+      setValidationErrors({});
       dispatch(setBusinessName({ name }));
       toast.success(result.message)
     } catch (err) {
@@ -114,22 +210,25 @@ const BusinessProfile = () => {
     }
   };
 
-
   const handleResetPassword = async () => {
-    let errorMsg = validatePassword(currentPassword);
-    if (errorMsg) { toast.error(errorMsg); return; }
-    errorMsg = validatePassword(newPassword);
-    if (errorMsg) { toast.error(errorMsg); return; }
-    errorMsg = validateConfirmPassword(confirmPassword, newPassword);
-    if (errorMsg) { toast.error(errorMsg); return; }
+    const isValid = await validatePassword();
+    if (!isValid) {
+      return;
+    }
 
+    setIsChangingPassword(true);
     try {
       const response = await dispatch(resetBusinessPassword({ currentPassword, newPassword })).unwrap();
       setShowResetForm(false);
-      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordErrors({});
       toast.success(response.message);
     } catch (error) {
       toast.error(error as string)
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -149,29 +248,28 @@ const BusinessProfile = () => {
     }
   };
 
-
   const handleLicenseUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  if (file.type !== "application/pdf") {
-    toast.error("Please upload a valid PDF file");
-    return;
-  }
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Please upload a valid PDF file");
+      return;
+    }
 
-  try {
-    const objectKey = await uploadPdfToS3(file);
-    if (!objectKey) return;
+    try {
+      const objectKey = await uploadPdfToS3(file);
+      if (!objectKey) return;
 
-    await dispatch(updateBusinessLicense({ license: objectKey })).unwrap();
+      await dispatch(updateBusinessLicense({ license: objectKey })).unwrap();
 
-    const pdfURL = await getPresignedDownloadUrl(objectKey);
-    setLicense(pdfURL);
+      const pdfURL = await getPresignedDownloadUrl(objectKey);
+      setLicense(pdfURL);
 
-    toast.success("Business license uploaded successfully");
-  } catch (error) {
-    toast.error(error as string);
-  }
-};
+      toast.success("Business license uploaded successfully");
+    } catch (error) {
+      toast.error(error as string);
+    }
+  };
 
 
 
@@ -278,7 +376,19 @@ const BusinessProfile = () => {
                 {/* Business Info */}
                 <div>
                   {isEditing ? (
-                    <input maxLength={20} autoFocus className="text-3xl font-bold mb-2" value={name} onChange={(e) => setName(e.target.value)} type="text" />
+                    <div>
+                      <input 
+                        maxLength={20} 
+                        autoFocus 
+                        className={`text-3xl font-bold mb-2 bg-blue-700 text-white px-2 py-1 rounded ${validationErrors.name ? 'ring-2 ring-red-500' : ''}`} 
+                        value={name} 
+                        onChange={(e) => setName(e.target.value)} 
+                        type="text" 
+                      />
+                      {validationErrors.name && (
+                        <p className="text-red-300 text-sm mt-1">{validationErrors.name}</p>
+                      )}
+                    </div>
 
                   ) : (
                     <h2 className="text-3xl font-bold mb-2">{name || 'Business Name'}</h2>
@@ -319,7 +429,10 @@ const BusinessProfile = () => {
                       Save
                     </button>
                     <button
-                      onClick={() => setIsEditing(false)}
+                      onClick={() => {
+                        setIsEditing(false);
+                        setValidationErrors({});
+                      }}
                       className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 font-semibold flex items-center gap-2"
                     >
                       <X className="w-5 h-5" />
@@ -348,7 +461,7 @@ const BusinessProfile = () => {
             {/* Business Domain */}
             {isEditing && (
               <div className="group">
-                <div className="bg-gray-700 rounded-2xl p-6 border border-gray-600 hover:bg-gray-600 hover:border-blue-500/50 transition-all duration-300">
+                <div className={`bg-gray-700 rounded-2xl p-6 border-2 ${validationErrors.businessDomain ? 'border-red-500' : 'border-gray-600'} hover:bg-gray-600 hover:border-blue-500/50 transition-all duration-300`}>
                   <label className="flex items-center text-sm font-semibold text-gray-300 mb-3">
                     <Building2 className="w-4 h-4 mr-2 text-blue-400" />
                     Business Domain
@@ -360,6 +473,9 @@ const BusinessProfile = () => {
                     onChange={(e) => setBusinessDomain(e.target.value)}
                     className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
+                  {validationErrors.businessDomain && (
+                    <p className="text-red-400 text-sm mt-2">{validationErrors.businessDomain}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -377,19 +493,24 @@ const BusinessProfile = () => {
 
             {/* Website */}
             <div className="group">
-              <div className="bg-gray-700 rounded-2xl p-6 border border-gray-600 hover:bg-gray-600 hover:border-blue-500/50 transition-all duration-300">
+              <div className={`bg-gray-700 rounded-2xl p-6 border-2 ${isEditing && validationErrors.website ? 'border-red-500' : 'border-gray-600'} hover:bg-gray-600 hover:border-blue-500/50 transition-all duration-300`}>
                 <label className="flex items-center text-sm font-semibold text-gray-300 mb-3">
                   <Globe className="w-4 h-4 mr-2 text-blue-400" />
                   Website
                 </label>
                 {isEditing ? (
-                  <input
-                    type="url"
-                    maxLength={30}
-                    value={website || ""}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  />
+                  <div>
+                    <input
+                      type="url"
+                      maxLength={30}
+                      value={website || ""}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    />
+                    {validationErrors.website && (
+                      <p className="text-red-400 text-sm mt-2">{validationErrors.website}</p>
+                    )}
+                  </div>
                 ) : (
                   <a
                     href={website || ""}
@@ -405,19 +526,24 @@ const BusinessProfile = () => {
 
             {/* Location */}
             <div className="group">
-              <div className="bg-gray-700 rounded-2xl p-6 border border-gray-600 hover:bg-gray-600 hover:border-blue-500/50 transition-all duration-300">
+              <div className={`bg-gray-700 rounded-2xl p-6 border-2 ${isEditing && validationErrors.location ? 'border-red-500' : 'border-gray-600'} hover:bg-gray-600 hover:border-blue-500/50 transition-all duration-300`}>
                 <label className="flex items-center text-sm font-semibold text-gray-300 mb-3">
                   <MapPin className="w-4 h-4 mr-2 text-blue-400" />
                   Location
                 </label>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    maxLength={30}
-                    value={location || ""}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      maxLength={30}
+                      value={location || ""}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    />
+                    {validationErrors.location && (
+                      <p className="text-red-400 text-sm mt-2">{validationErrors.location}</p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-white font-medium text-lg">{location || "Not provided"}</p>
                 )}
@@ -477,13 +603,13 @@ const BusinessProfile = () => {
                   bottom: "auto",
                   marginRight: "-50%",
                   transform: "translate(-50%, -50%)",
-                  width: "80%",       // adjust width
-                  height: "80%",      // adjust height
-                  maxWidth: "900px",  // optional max width
-                  maxHeight: "90vh",  // optional max height
+                  width: "80%",
+                  height: "80%",
+                  maxWidth: "900px",
+                  maxHeight: "90vh",
                   padding: "1rem",
                   borderRadius: "1rem",
-                  backgroundColor: "#1f2937" // match your theme
+                  backgroundColor: "#1f2937"
                 },
                 overlay: {
                   backgroundColor: "rgba(0, 0, 0, 0.7)"
@@ -506,9 +632,6 @@ const BusinessProfile = () => {
                 className="rounded-lg"
               />
             </ReactModal>
-
-
-
 
             {/* Joining Date */}
             <div className="group">
@@ -534,33 +657,89 @@ const BusinessProfile = () => {
                   <>
                     {showResetForm ? (
                       <div className="space-y-3">
-                        <input
-                          type="password"
-                          maxLength={20}
-                          placeholder="Current Password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        />
-                        <input
-                          type="password"
-                          maxLength={20}
-                          placeholder="New Password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        />
-                        <input
-                          type="password"
-                          maxLength={20}
-                          placeholder="Confirm Password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full bg-gray-600 border-2 border-gray-500 rounded-xl px-4 py-3 text-white placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        />
-                        <div className="flex gap-3">
-                          <button onClick={handleResetPassword} className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 font-semibold transition-colors">Reset</button>
-                          <button onClick={() => setShowResetForm(false)} className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 font-semibold transition-colors">Cancel</button>
+                        <div>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              maxLength={20}
+                              placeholder="Current Password"
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              className={`w-full bg-gray-600 border-2 rounded-xl px-4 py-3 text-white placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${passwordErrors.currentPassword ? 'border-red-500 pr-10' : 'border-gray-500'}`}
+                            />
+                            {passwordErrors.currentPassword && (
+                              <AlertCircle className="w-5 h-5 text-red-400 absolute right-3 top-3" />
+                            )}
+                          </div>
+                          {passwordErrors.currentPassword && (
+                            <p className="text-red-400 text-sm mt-2 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              {passwordErrors.currentPassword}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              maxLength={20}
+                              placeholder="New Password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className={`w-full bg-gray-600 border-2 rounded-xl px-4 py-3 text-white placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${passwordErrors.newPassword ? 'border-red-500 pr-10' : 'border-gray-500'}`}
+                            />
+                            {passwordErrors.newPassword && (
+                              <AlertCircle className="w-5 h-5 text-red-400 absolute right-3 top-3" />
+                            )}
+                          </div>
+                          {passwordErrors.newPassword && (
+                            <p className="text-red-400 text-sm mt-2 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              {passwordErrors.newPassword}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              maxLength={20}
+                              placeholder="Confirm Password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className={`w-full bg-gray-600 border-2 rounded-xl px-4 py-3 text-white placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${passwordErrors.confirmPassword ? 'border-red-500 pr-10' : 'border-gray-500'}`}
+                            />
+                            {passwordErrors.confirmPassword && (
+                              <AlertCircle className="w-5 h-5 text-red-400 absolute right-3 top-3" />
+                            )}
+                          </div>
+                          {passwordErrors.confirmPassword && (
+                            <p className="text-red-400 text-sm mt-2 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              {passwordErrors.confirmPassword}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            onClick={handleResetPassword}
+                            disabled={isChangingPassword}
+                            className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold transition-colors"
+                          >
+                            {isChangingPassword ? "Updating..." : "Reset"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowResetForm(false);
+                              setCurrentPassword("");
+                              setNewPassword("");
+                              setConfirmPassword("");
+                              setPasswordErrors({});
+                            }}
+                            className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 font-semibold transition-colors"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
                     ) : (

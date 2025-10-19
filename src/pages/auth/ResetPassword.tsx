@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
-// import { resetPassword } from "../../redux/services/userAuthServices";
-import { clearUserStatus } from "../../redux/slices/statusSlice";
 import { useNavigate } from "react-router-dom";
 import { resetPassword } from "../../redux/services/userAuthServices";
 import { clearSignup } from "../../redux/slices/signupSlice";
@@ -13,45 +11,48 @@ export default function ResetPassword() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { email, role } = useSelector((state: RootState) => state.signup);
-  const { loading } = useSelector((state: RootState) => state.status.user);
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [loading,setLoading]=useState(false)
+
+  const validatePassword = (pwd: string, confirmPwd: string) => {
+    if (!pwd || !confirmPwd) return "Both fields are required";
+    if (pwd.length < 6) return "Password must be at least 6 characters";
+    if (pwd !== confirmPwd) return "Passwords do not match";
+    return "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
 
-    if (!password || !confirm) {
-      setError("Both fields are required");
+    const validationError = validatePassword(password, confirm);
+    if (validationError) {
+      setError(validationError);
       return;
     }
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+
+    if (!role || !email) {
+      setError("Unexpected error. Please try again.");
       return;
     }
 
     try {
-      if (!role) {
-        return;
-      }
-      await dispatch(resetPassword({ role, password, email })).unwrap();
-      setSuccessMsg("Password reset successful! Redirecting to Sign In...");
+      setLoading(true)
+      await dispatch(resetPassword({ role, email, password })).unwrap();
+      toast.success("Password reset successful!");
       dispatch(clearSignup());
-      dispatch(clearUserStatus())
-      navigate("/signin")
-
+      navigate("/signin");
     } catch (err) {
       console.error("Reset password failed", err);
       setError("Failed to reset password. Please try again.");
-      toast.error(err as string)
+      toast.error(err as string);
+    }finally{
+      setLoading(false)
     }
   };
 

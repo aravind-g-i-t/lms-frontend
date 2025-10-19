@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { adminLogout, adminSignin, adminTokenRefresh } from "../services/adminServices";
+import { adminLogout, adminSignin } from "../services/adminServices";
+import { userTokenRefresh } from "../services/userAuthServices";
 
 
 interface AdminState {
@@ -35,7 +36,7 @@ const adminSlice = createSlice({
                 state.id = null;
                 state.email = null;
             })
-            .addCase(adminTokenRefresh.rejected, (state) => {
+            .addCase(userTokenRefresh.rejected, (state) => {
                 state.email = null;
                 state.id = null;
             })

@@ -18,9 +18,65 @@ import type { AppDispatch } from '../../redux/store';
 import { applyForInstructorVerification, getInstructorProfile, resetInstructorPassword, updateInstructorExpertise, updateInstructorIDProof, updateInstructorProfile, updateInstructorProfileImage, updateInstructorResume } from '../../redux/services/instructorServices';
 import { setInstructorImage, setInstructorName } from '../../redux/slices/instructorSlice';
 import { toast } from 'react-toastify';
-import { validateConfirmPassword, validatePassword } from '../../utils/validation';
 import ReactModal from 'react-modal';
 import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from '../../config/s3Config';
+import * as yup from 'yup';
+
+const profileValidationSchema = yup.object().shape({
+  username: yup
+    .string()
+    .required("Full name is required")
+    .min(2, "Full name must be at least 2 characters")
+    .max(20, "Full name cannot exceed 20 characters")
+    .matches(/^[A-Za-z\s]+$/, "Name can only contain alphabets and spaces")
+    .trim(),
+  designation: yup
+    .string()
+    .required("Professional title is required")
+    .min(2, "Professional title must be at least 2 characters")
+    .max(20, "Professional title cannot exceed 20 characters")
+    .trim(),
+  website: yup
+    .string()
+    .url("Website must be a valid URL")
+    .max(30, "Website cannot exceed 30 characters")
+    .nullable()
+    .transform((value) => value || null),
+  bio: yup
+    .string()
+    .max(500, "Bio cannot exceed 500 characters")
+    .nullable()
+    .transform((value) => value || null),
+});
+
+const skillValidationSchema = yup.object().shape({
+  skill: yup
+    .string()
+    .required("Skill cannot be empty")
+    .min(1, "Skill must be at least 1 character")
+    .max(20, "Skill cannot exceed 20 characters")
+    .trim(),
+});
+
+const passwordValidationSchema = yup.object().shape({
+  currentPassword: yup
+    .string()
+    .required("Current password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(20, "Password cannot exceed 20 characters"),
+  newPassword: yup
+    .string()
+    .required("New password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(20, "Password cannot exceed 20 characters")
+    .test("not-same", "New password must be different from current password", function(value) {
+      return value !== this.parent.currentPassword;
+    }),
+  confirmPassword: yup
+    .string()
+    .required("Confirm password is required")
+    .oneOf([yup.ref("newPassword")], "Passwords do not match"),
+});
 
 const InstructorProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -60,6 +116,8 @@ const InstructorProfile = () => {
 
   const [identityProofFile, setIdentityProofFile] = useState<File | null>(null)
   const [imageLoading, setImageLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [skillError, setSkillError] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -90,11 +148,45 @@ const InstructorProfile = () => {
     fetchProfile();
   }, [dispatch]);
 
+  const validateForm = async (): Promise<boolean> => {
+    try {
+      const inputData = { username, designation, website, bio };
+      await profileValidationSchema.validate(inputData, { abortEarly: false });
+      setValidationErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const errors: Record<string, string> = {};
+        err.inner.forEach((error) => {
+          if (error.path) {
+            errors[error.path] = error.message;
+          }
+        });
+        setValidationErrors(errors);
+      }
+      return false;
+    }
+  };
 
-
-
+  const validateSkill = async (): Promise<boolean> => {
+    try {
+      await skillValidationSchema.validate({ skill: newSkill }, { abortEarly: false });
+      setSkillError("");
+      return true;
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        setSkillError(err.inner[0]?.message || "Invalid skill");
+      }
+      return false;
+    }
+  };
 
   const handleSave = async () => {
+    const isValid = await validateForm();
+    if (!isValid) {
+      toast.error("Please fix the validation errors before saving");
+      return;
+    }
 
     const inputData = {
       name: username.trim(),
@@ -106,6 +198,7 @@ const InstructorProfile = () => {
     try {
       const result = await dispatch(updateInstructorProfile(inputData)).unwrap();
       setIsEditing(false);
+      setValidationErrors({});
       dispatch(setInstructorName({ name: username }))
       toast.success(result.message);
     } catch (error) {
@@ -113,53 +206,49 @@ const InstructorProfile = () => {
     }
   };
 
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
+      setImageLoading(true);
 
+      const objectKey = await uploadImageToS3(file);
+      if (!objectKey) return;
 
-const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-  try {
-    const file = event.target.files?.[0];
-    if (!file) return;
+      const downloadUrl = await getPresignedDownloadUrl(objectKey);
 
-    setImageLoading(true);
+      const result = await dispatch(updateInstructorProfileImage({ imageURL: objectKey })).unwrap();
 
-    const objectKey = await uploadImageToS3(file);
-    if (!objectKey) return;
+      dispatch(setInstructorImage({ profilePic: downloadUrl }));
+      setProfilePic(downloadUrl);
 
-    const downloadUrl = await getPresignedDownloadUrl(objectKey);
-
-    const result = await dispatch(updateInstructorProfileImage({ imageURL:objectKey })).unwrap();
-
-    dispatch(setInstructorImage({ profilePic: downloadUrl }));
-    setProfilePic(downloadUrl);
-
-    toast.success(result.message);
-  } catch (err) {
-    toast.error(err as string);
-  } finally {
-    setImageLoading(false);
-  }
-};
-
-
-
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err as string);
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const handleResetPassword = async () => {
-    let errorMsg = validatePassword(currentPassword);
-    if (errorMsg) {
-      toast.error(errorMsg);
-      return;
+    try {
+      const passwordData = { currentPassword, newPassword, confirmPassword };
+      await passwordValidationSchema.validate(passwordData, { abortEarly: false });
+      setValidationErrors({});
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const errors: Record<string, string> = {};
+        err.inner.forEach((error) => {
+          if (error.path) {
+            errors[error.path] = error.message;
+          }
+        });
+        setValidationErrors(errors);
+        return;
+      }
     }
-    errorMsg = validatePassword(newPassword)
-    if (errorMsg) {
-      toast.error(errorMsg);
-      return;
-    }
-    errorMsg = validateConfirmPassword(confirmPassword, newPassword);
-    if (errorMsg) {
-      toast.error(errorMsg);
-      return;
-    }
+
     setIsChangingPassword(true);
     try {
       const response = await dispatch(resetInstructorPassword({ currentPassword, newPassword })).unwrap()
@@ -167,6 +256,7 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
       setCurrentPassword("")
       setNewPassword("");
       setConfirmPassword("");
+      setValidationErrors({});
       toast.success(response.message)
 
     } catch (err) {
@@ -175,8 +265,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
       setIsChangingPassword(false);
     }
   };
-
-
 
   const deleteSkill = async (index: number) => {
     try {
@@ -191,7 +279,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
   }
 
   const addSkill = async () => {
-    if (!newSkill.trim() || expertise.includes(newSkill.trim())) {
+    const isValid = await validateSkill();
+    if (!isValid) return;
+
+    if (expertise.includes(newSkill.trim())) {
+      setSkillError("This skill is already added");
       return
     }
     try {
@@ -201,38 +293,37 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
 
       setExpertise([...expertise, newSkill.trim()]);
       setNewSkill("");
+      setSkillError("");
     } catch (error) {
       toast.error(error as string)
     }
   }
 
-
   const handleSaveResume = async () => {
-  if (!resumeFile) return;
+    if (!resumeFile) return;
 
-  try {
-    const objectKey = await uploadPdfToS3(resumeFile);
-    if (!objectKey) {
-      toast.error("Resume upload failed");
-      return;
+    try {
+      const objectKey = await uploadPdfToS3(resumeFile);
+      if (!objectKey) {
+        toast.error("Resume upload failed");
+        return;
+      }
+
+      const resumeUrl = await getPresignedDownloadUrl(objectKey);
+
+      const result = await dispatch(
+        updateInstructorResume({ resume: objectKey })
+      ).unwrap();
+
+      setResume(resumeUrl);
+      setResumeFile(null);
+      setIsResumeEditable(false);
+
+      toast.success(result.message || "Resume updated successfully");
+    } catch (error) {
+      toast.error(error as string);
     }
-
-    const resumeUrl = await getPresignedDownloadUrl(objectKey);
-
-    const result = await dispatch(
-      updateInstructorResume({ resume: objectKey })
-    ).unwrap();
-
-    setResume(resumeUrl);
-    setResumeFile(null);
-    setIsResumeEditable(false);
-
-    toast.success(result.message || "Resume updated successfully");
-  } catch (error) {
-    toast.error(error as string);
-  }
-};
-
+  };
 
   const handleCancelResume = () => {
     setResumeFile(null);
@@ -240,38 +331,35 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
   };
 
   const handleSaveIdentityProof = async () => {
-  if (!identityProofFile) return;
+    if (!identityProofFile) return;
 
-  try {
-    const objectKey = await uploadImageToS3(identityProofFile);
-    if (!objectKey) {
-      toast.error("Identity proof upload failed");
-      return;
+    try {
+      const objectKey = await uploadImageToS3(identityProofFile);
+      if (!objectKey) {
+        toast.error("Identity proof upload failed");
+        return;
+      }
+
+      const identityProofUrl = await getPresignedDownloadUrl(objectKey);
+
+      const result = await dispatch(
+        updateInstructorIDProof({ identityProof: objectKey })
+      ).unwrap();
+
+      setIdentityProof(identityProofUrl);
+      setIdentityProofFile(null);
+      setIsIdentityEditable(false);
+
+      toast.success(result.message || "Identity proof updated successfully");
+    } catch (error) {
+      toast.error(error as string);
     }
-
-    const identityProofUrl = await getPresignedDownloadUrl(objectKey);
-
-    const result = await dispatch(
-      updateInstructorIDProof({ identityProof: objectKey })
-    ).unwrap();
-
-    setIdentityProof(identityProofUrl);
-    setIdentityProofFile(null);
-    setIsIdentityEditable(false);
-
-    toast.success(result.message || "Identity proof updated successfully");
-  } catch (error) {
-    toast.error(error as string);
-  }
-};
-
+  };
 
   const handleCancelIdentityProof = () => {
     setIdentityProofFile(null);
     setIsIdentityEditable(false)
   }
-
-
 
   const applyForVerification = async () => {
     try {
@@ -329,10 +417,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
           <p className="text-gray-600 mt-2">Manage your profile information and account settings</p>
         </div>
 
-
-
-        {/* Profile Header */}
-
         {verificationStatus === "Rejected" && verificationRemarks && (
           <div className="bg-red-50 border-l-4 border-red-500 p-6 mb-6 rounded-lg shadow-sm">
             <div className="flex items-start">
@@ -365,7 +449,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                 <div className="relative">
                   <div className="w-28 h-28 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center overflow-hidden border-4 border-white/30 shadow-xl">
                     {imageLoading ? (
-                      // Spinner loader
                       <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
                     ) : (
                       <img
@@ -415,18 +498,21 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                 )}
 
                 <button
-                  onClick={() => setIsEditing(!isEditing)}
+                  onClick={() => {
+                    setIsEditing(!isEditing);
+                    if (isEditing) {
+                      setValidationErrors({});
+                    }
+                  }}
                   className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 font-semibold flex items-center gap-2"
                 >
-                  <Edit className="w-5 h-5 " />
+                  <Edit className="w-5 h-5" />
                   {isEditing ? 'Cancel Edit' : 'Edit Profile'}
                 </button>
               </div>
             </div>
           </div>
         </div>
-
-
 
         {/* Tab Navigation */}
         <div className="flex space-x-2 mb-6 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
@@ -462,8 +548,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                     maxLength={20}
                     value={username || ''}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all ${validationErrors.username && isEditing ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {validationErrors.username && isEditing && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.username}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Professional Title</label>
@@ -473,8 +562,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                     maxLength={20}
                     value={designation || ""}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all ${validationErrors.designation && isEditing ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {validationErrors.designation && isEditing && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.designation}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
@@ -498,9 +590,12 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                       type="url"
                       value={website || ''}
                       disabled={!isEditing}
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all"
+                      className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-all ${validationErrors.website && isEditing ? 'border-red-500' : 'border-gray-300'}`}
                     />
                   </div>
+                  {validationErrors.website && isEditing && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.website}</p>
+                  )}
                 </div>
               </div>
               <div className="mt-6">
@@ -511,8 +606,11 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                   maxLength={500}
                   disabled={!isEditing}
                   rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 resize-none transition-all"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 resize-none transition-all ${validationErrors.bio && isEditing ? 'border-red-500' : 'border-gray-300'}`}
                 />
+                {validationErrors.bio && isEditing && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.bio}</p>
+                )}
               </div>
               {isEditing && (
                 <div className="flex justify-end mt-6">
@@ -539,7 +637,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                 </button>
               </div>
 
-
               {expertise.length ? (
                 <div className="flex flex-wrap gap-3 mb-6">
                   {expertise.map((skill, index) => (
@@ -564,27 +661,29 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
               )}
 
               {isSkillEditable && (
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    maxLength={20}
-                    placeholder="Add a new skill"
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    onClick={addSkill}
-                    className="px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 font-semibold shadow-lg transition-all"
-                  >
-                    Add
-                  </button>
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <input
+                      type="text"
+                      maxLength={20}
+                      placeholder="Add a new skill"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      className={`flex-1 px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${skillError ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    <button
+                      onClick={addSkill}
+                      className="px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 font-semibold shadow-lg transition-all"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {skillError && (
+                    <p className="text-red-500 text-sm">{skillError}</p>
+                  )}
                 </div>
               )}
-
             </div>
-
-
 
             {/* Resume Section */}
             <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
@@ -641,7 +740,7 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                   </button>
                 </div>
               ) : (
-                <p className="text-gray-500 ">No resume uploaded</p>
+                <p className="text-gray-500">No resume uploaded</p>
               )}
             </div>
 
@@ -672,7 +771,7 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
               }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-white font-bold text-xl">Business License</h2>
+                <h2 className="text-white font-bold text-xl">Resume</h2>
                 <button
                   onClick={() => setShowResumeModal(false)}
                   className="text-white hover:text-gray-300"
@@ -687,7 +786,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                 className="rounded-lg"
               />
             </ReactModal>
-
 
             {/* Identity Proof */}
             <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
@@ -749,7 +847,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                 <p className="text-gray-500">No identity proof uploaded</p>
               )}
             </div>
-
           </div>
         )}
 
@@ -814,39 +911,84 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Current Password
                           </label>
-                          <input
-                            type="password"
-                            maxLength={20}
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                          />
+                          <div className="relative">
+                            <input
+                              type="password"
+                              maxLength={20}
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${validationErrors.currentPassword ? 'border-red-500 pr-10' : 'border-gray-300'}`}
+                            />
+                            {validationErrors.currentPassword && (
+                              <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-3" />
+                            )}
+                          </div>
+                          {validationErrors.currentPassword && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              {validationErrors.currentPassword}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             New Password
                           </label>
-                          <input
-                            type="password"
-                            maxLength={20}
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                          />
+                          <div className="relative">
+                            <input
+                              type="password"
+                              maxLength={20}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${validationErrors.newPassword ? 'border-red-500 pr-10' : 'border-gray-300'}`}
+                            />
+                            {validationErrors.newPassword && (
+                              <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-3" />
+                            )}
+                          </div>
+                          {validationErrors.newPassword && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              {validationErrors.newPassword}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Confirm New Password
                           </label>
-                          <input
-                            type="password"
-                            maxLength={20}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                          />
+                          <div className="relative">
+                            <input
+                              type="password"
+                              maxLength={20}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${validationErrors.confirmPassword ? 'border-red-500 pr-10' : 'border-gray-300'}`}
+                            />
+                            {validationErrors.confirmPassword && (
+                              <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-3" />
+                            )}
+                          </div>
+                          {validationErrors.confirmPassword && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              {validationErrors.confirmPassword}
+                            </p>
+                          )}
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => {
+                              setShowChangePassword(false);
+                              setCurrentPassword("");
+                              setNewPassword("");
+                              setConfirmPassword("");
+                              setValidationErrors({});
+                            }}
+                            className="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 font-semibold transition-all"
+                          >
+                            Cancel
+                          </button>
                           <button
                             onClick={handleResetPassword}
                             disabled={isChangingPassword}
@@ -860,9 +1002,7 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
                   </>
                 )}
               </div>
-
             </div>
-
 
             {/* Account Info */}
             {joiningDate && (
@@ -883,7 +1023,6 @@ const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
           </div>
         )}
       </div>
-
     </>
   );
 };

@@ -14,7 +14,7 @@ import ResetOtpVerification from "../pages/auth/ResetOTPVerify";
 import Home from "../pages/learner/Home";
 
 const AppRoutes = () => {
-  const { role } = useSelector((state: RootState) => state.auth);
+  const { role } = useSelector((state: RootState) =>state.auth);
   const { email}=useSelector((state:RootState)=> state.signup)
   return (
     <Routes>
