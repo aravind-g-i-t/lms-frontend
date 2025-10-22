@@ -337,3 +337,96 @@ export const updateBusinessVerificationStatus = createAsyncThunk(
         }
     },
 )
+
+export const addCategory = createAsyncThunk(
+    "/category/add",
+    async ({ name, description,isActive }:{name:string;description:string,isActive:boolean} , { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.post(API.ADMIN.CATEGORY, { name,description ,isActive});
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data;
+            
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const updateCategory = createAsyncThunk(
+    "/category/update",
+    async ({id, name, description,isActive }:{id:string,name:string;description:string,isActive:boolean} , { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.put(API.ADMIN.CATEGORY, {id, name,description ,isActive});
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const toggleCategoryStatus = createAsyncThunk(
+    "/category/status",
+    async ({id }:{id:string} , { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.patch(API.ADMIN.STATUS, {id});
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const getCategories = createAsyncThunk(
+    "admin/categories",
+    async (
+        { page, limit, search, status }: { page: number; limit: number; search: string; status: 'All' | 'Active' | 'Blocked' },
+        { rejectWithValue }
+    ) => {
+        try {
+            console.log(page, status, limit, search);
+
+            const res = await axiosInstance.get(API.ADMIN.CATEGORIES, {
+                params: { page, limit, search, status },
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

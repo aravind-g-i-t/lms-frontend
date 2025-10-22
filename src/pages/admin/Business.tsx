@@ -238,20 +238,20 @@ export default function ManageBusinesses() {
   if (fetchFailure) return <FallbackUI />;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="h-full flex flex-col overflow-hidden">
+  <div className="flex-shrink-0">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
+        <div className="mb-4">
+      <h1 className="text-2xl font-bold">
             Manage Businesses
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-sm text-gray-600 mt-1">
             View and manage all registered businesses
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-6 transition-all hover:shadow-md">
+    <div className="bg-card rounded-lg shadow-sm border p-4 mb-4">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <SearchBar
               value={search}
@@ -289,12 +289,12 @@ export default function ManageBusinesses() {
         </div>
 
         {/* Table */}
-        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden transition-all hover:shadow-md">
+  <div className="flex-1 overflow-auto">
           <Table<Business> columns={columns} data={businesses} />
         </div>
 
         {/* Pagination */}
-        <div className="mt-6 flex justify-center">
+  <div className="flex-shrink-0 mt-4 flex justify-center">
           <Pagination
             currentPage={page}
             totalPages={totalPages}

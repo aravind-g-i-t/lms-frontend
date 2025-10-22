@@ -1,48 +1,61 @@
-// components/common/Pagination.tsx
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getPaginationRange } from "../../utils/paginationRange";
 
 type PaginationProps = {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
 };
 
 export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  const pages = getPaginationRange(currentPage, totalPages);
+    const pages = getPaginationRange(currentPage, totalPages);
 
-  return (
-    <div className="flex items-center gap-2 justify-center mt-4">
-      <button
-        className="px-3 py-1 border rounded disabled:opacity-50"
-        disabled={currentPage === 1}
-        onClick={() => onPageChange(currentPage - 1)}
-      >
-        {"<"}
-      </button>
+    if (totalPages <= 1) return null;
 
-      {pages.map((page, idx) =>
-        page === "..." ? (
-          <span key={idx} className="px-2">...</span>
-        ) : (
-          <button
-            key={idx}
-            onClick={() => onPageChange(page as number)}
-            className={`px-3 py-1 border rounded ${
-              page === currentPage ? "bg-blue-500 text-white" : ""
-            }`}
-          >
-            {page}
-          </button>
-        )
-      )}
+    return (
+        <div className="flex items-center gap-1">
+            {/* Previous Button */}
+            <button
+                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                disabled={currentPage === 1}
+                onClick={() => onPageChange(currentPage - 1)}
+                aria-label="Previous page"
+            >
+                <ChevronLeft className="w-4 h-4" />
+            </button>
 
-      <button
-        className="px-3 py-1 border rounded disabled:opacity-50"
-        disabled={currentPage === totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-      >
-        {">"}
-      </button>
-    </div>
-  );
+            {/* Page Numbers */}
+            {pages.map((page, idx) =>
+                page === "..." ? (
+                    <span key={idx} className="px-3 py-2 text-gray-500 text-sm">
+                        ...
+                    </span>
+                ) : (
+                    <button
+                        key={idx}
+                        onClick={() => onPageChange(page as number)}
+                        className={`min-w-[36px] px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                            page === currentPage
+                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        }`}
+                        aria-label={`Page ${page}`}
+                        aria-current={page === currentPage ? "page" : undefined}
+                    >
+                        {page}
+                    </button>
+                )
+            )}
+
+            {/* Next Button */}
+            <button
+                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                disabled={currentPage === totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
+                aria-label="Next page"
+            >
+                <ChevronRight className="w-4 h-4" />
+            </button>
+        </div>
+    );
 }

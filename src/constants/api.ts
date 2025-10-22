@@ -10,6 +10,9 @@ export const API = {
         BUSINESS_STATUS:"/admin/business/status",
         INSTRUCTOR_VERIFICATION:"/admin/instructor/verifcation",
         BUSINESS_VERIFICATION:"admin/business/verification",
+        CATEGORY:"/admin/category",
+        CATEGORIES:"/admin/categories",
+        STATUS:"/admin/category/status"
 
     },
     AUTH: {
@@ -53,4 +56,5 @@ export const API = {
         PASSWORD:`/business/password`,
         VERIFICATION:`/business/verification`
     },
+
 } as const;

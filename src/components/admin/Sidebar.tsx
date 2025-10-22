@@ -24,7 +24,7 @@ const navigationItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
   { name: "Learners", icon: Users, href: "/admin/learners" },
   { name: "Instructors", icon: GraduationCap, href: "/admin/instructors" },
-  { name: "Businesses", icon: Building2, href: "/admin/business" },
+  { name: "Businesses", icon: Building2, href: "/admin/businesses" },
   { name: "Courses", icon: BookOpen, href: "/admin/courses" },
   { name: "Categories", icon: FolderOpen, href: "/admin/categories" },
   { name: "Offers", icon: Tag, href: "/admin/offers" },

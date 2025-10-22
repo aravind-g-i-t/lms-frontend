@@ -14,7 +14,7 @@ type TableProps<T> = {
 
 export function Table<T>({ columns, data, loading = false }: TableProps<T>) {
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -22,25 +22,25 @@ export function Table<T>({ columns, data, loading = false }: TableProps<T>) {
               {columns.map((col, index) => (
                 <th
                   key={col.header}
-                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-700 ${
-                    index === 0 ? "pl-8" : ""
-                  } ${index === columns.length - 1 ? "pr-8" : ""}`}
+                  className={`px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider ${
+                    index === 0 ? "pl-6" : ""
+                  } ${index === columns.length - 1 ? "pr-6" : ""}`}
                 >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 bg-white">
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="px-6 py-12 text-center">
+                <td colSpan={columns.length} className="px-6 py-8 text-center">
                   <div className="flex items-center justify-center space-x-2">
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-blue-400 [animation-delay:-0.3s]"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-blue-400 [animation-delay:-0.15s]"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-blue-400"></div>
                   </div>
-                  <p className="mt-3 text-sm text-gray-500">Loading...</p>
+                  <p className="mt-2 text-xs text-gray-500">Loading...</p>
                 </td>
               </tr>
             ) : data.length > 0 ? (
@@ -52,9 +52,9 @@ export function Table<T>({ columns, data, loading = false }: TableProps<T>) {
                   {columns.map((col, index) => (
                     <td
                       key={col.header}
-                      className={`px-6 py-4 text-sm text-gray-700 ${
-                        index === 0 ? "pl-8 font-medium" : ""
-                      } ${index === columns.length - 1 ? "pr-8" : ""}`}
+                      className={`px-4 py-3 text-sm text-gray-700 ${
+                        index === 0 ? "pl-6 font-medium" : ""
+                      } ${index === columns.length - 1 ? "pr-6" : ""}`}
                     >
                       {col.render
                         ? col.render(row)
@@ -67,10 +67,10 @@ export function Table<T>({ columns, data, loading = false }: TableProps<T>) {
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="px-6 py-12 text-center">
+                <td colSpan={columns.length} className="px-6 py-8 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <svg
-                      className="mb-3 h-12 w-12 text-gray-300"
+                      className="mb-2 h-10 w-10 text-gray-300"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"

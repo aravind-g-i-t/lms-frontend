@@ -10,6 +10,7 @@ import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import { clearAdminStatus } from "../../redux/slices/statusSlice";
 import FallbackUI from "../../components/shared/FallbackUI";
 import { toast } from "react-toastify";
+import { X } from "lucide-react";
 
 type Learner = {
   id: string;
@@ -38,8 +39,8 @@ export default function ManageLearners() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<Status>("All");
   const [learnerView, setLearnerView] = useState<LearnerView | null>(null);
-  const [loading,setLoading]=useState(false);
-  const [fetchFailure,setFetchFailure]=useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetchFailure, setFetchFailure] = useState(false);
 
   useEffect(() => {
     const fetchLearners = async () => {
@@ -52,7 +53,7 @@ export default function ManageLearners() {
         setFetchFailure(true)
         console.error("Failed to fetch learners:", err);
         toast.error(err as string)
-      }finally{
+      } finally {
         setLoading(false)
       }
     };
@@ -67,10 +68,10 @@ export default function ManageLearners() {
   const handleToggleStatus = async (payload: { id: string }) => {
     try {
       await dispatch(toggleLearnerStatus(payload)).unwrap();
-    const updatedLearners = learners.map((learner) =>
-      learner.id === payload.id ? { ...learner, isActive: !learner.isActive } : learner
-    );
-    setLearners(updatedLearners);
+      const updatedLearners = learners.map((learner) =>
+        learner.id === payload.id ? { ...learner, isActive: !learner.isActive } : learner
+      );
+      setLearners(updatedLearners);
     } catch (error) {
       toast.error(error as string)
     }
@@ -79,7 +80,7 @@ export default function ManageLearners() {
   const handleViewLearner = async (id: string) => {
     try {
       const response = await dispatch(getLearnerData({ id })).unwrap();
-    setLearnerView(response.learner);
+      setLearnerView(response.learner);
     } catch (error) {
       toast.error(error as string)
     }
@@ -130,23 +131,20 @@ export default function ManageLearners() {
   ];
 
   if (loading) return <p>Loading learners...</p>;
+  if (fetchFailure) return <FallbackUI />
 
-  if(fetchFailure) return(
-    <FallbackUI/>
-  )
   return (
-  <div className="min-h-screen bg-background p-6">
-    <div className="max-w-7xl mx-auto">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Manage Learners</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="flex-shrink-0 mb-4">
+        <h1 className="text-2xl font-bold text-foreground">Manage Learners</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           View and manage all registered learners
         </p>
       </div>
 
       {/* Filters */}
-      <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-6 transition-all hover:shadow-md">
+      <div className="flex-shrink-0 bg-card rounded-lg shadow-sm border border-border p-4 mb-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <SearchBar
             value={search}
@@ -168,13 +166,15 @@ export default function ManageLearners() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden transition-all hover:shadow-md">
-        <Table<Learner> columns={columns} data={learners} />
+      {/* Table - Scrollable */}
+      <div className="flex-1 overflow-auto mb-4">
+        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <Table<Learner> columns={columns} data={learners} />
+        </div>
       </div>
 
       {/* Pagination */}
-      <div className="mt-6 flex justify-center">
+      <div className="flex-shrink-0 flex justify-center">
         <Pagination
           currentPage={page}
           totalPages={totalPages}
@@ -185,16 +185,16 @@ export default function ManageLearners() {
       {/* View Modal */}
       {learnerView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-xl p-4 animate-fade-in">
-          <div className="bg-card rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
             {/* Header */}
-            <div className="top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-foreground">Learner Details</h2>
               <button
                 onClick={() => setLearnerView(null)}
                 className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Close modal"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
@@ -209,20 +209,11 @@ export default function ManageLearners() {
                 <div className="flex-1">
                   <h3 className="text-2xl font-bold text-foreground mb-1">{learnerView.name}</h3>
                   <p className="text-muted-foreground mb-2">{learnerView.email}</p>
-                  {/* <span
-                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold mt-1 ${
-                      learnerView.isActive
-                        ? "bg-success/10 text-success"
-                        : "bg-destructive/10 text-destructive"
-                    }`}
-                  >
-                    {learnerView.isActive ? "Active" : "Blocked"}
-                  </span> */}
                 </div>
               </div>
 
               {/* Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-secondary/30 rounded-lg p-4">
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
                     Joining Date
@@ -233,34 +224,19 @@ export default function ManageLearners() {
                       : "N/A"}
                   </p>
                 </div>
-                {/* <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Courses Enrolled
-                  </p>
-                  <p className="text-foreground font-medium">
-                    {learnerView.courses?.length || 0}
-                  </p>
-                </div> */}
-              </div>
-
-              {/* Recent Activity */}
-              {/* <div className="space-y-4 mb-6">
                 <div className="bg-secondary/30 rounded-lg p-4">
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Recent Activity
+                    Account Type
                   </p>
-                  <p className="text-foreground">
-                    {learnerView.activity || "No recent activity"}
+                  <p className="text-foreground font-medium">
+                    {learnerView.hasPassword ? "Email/Password" : "Google Sign-In"}
                   </p>
                 </div>
-              </div> */}
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
-  </div>
-);
-
-
+  );
 }
