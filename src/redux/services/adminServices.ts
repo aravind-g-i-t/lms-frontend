@@ -194,6 +194,33 @@ export const toggleBusinessStatus = createAsyncThunk(
 )
 
 
+export const getCoursesForAdmin = createAsyncThunk(
+    "admin/courses",
+    async (
+        { page, limit, search, status,verificationStatus }: { page: number; limit: number; search: string; status?: string,verificationStatus?:string },
+        { rejectWithValue }
+    ) => {
+        try {
+            console.log(page, status, limit, search);
+
+            const res = await axiosInstance.get(API.ADMIN.COURSES, {
+                params: { page, limit, search, status,verificationStatus },
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+
 // export const adminTokenRefresh = createAsyncThunk(
 //     "/admin/refresh",
 //     async (_, { rejectWithValue }) => {

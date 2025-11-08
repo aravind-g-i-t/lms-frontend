@@ -58,3 +58,34 @@ export const getPresignedDownloadUrl = async (objectKey: string): Promise<string
   return data.url;
 };
 
+export const uploadVideoToS3 = async (file: File): Promise<string> => {
+  if (!file) throw new Error("No file provided for upload.");
+
+  const allowedTypes = [
+    "video/mp4",
+    "video/mpeg",
+    "video/ogg",
+    "video/webm",
+    "video/quicktime",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error("Invalid file type. Only MP4, MPEG, OGG, WEBM, MOV are allowed.");
+  }
+
+  const { data } = await axios.get(`${baseURL}/s3/presigned-url`, {
+    params: {
+      fileName: file.name,
+      fileType: file.type,
+      folder: "videos",
+    },
+  });
+
+  const { url, key } = data;
+
+  await axios.put(url, file, { headers: { "Content-Type": file.type } });
+
+  return key;
+};
+
+

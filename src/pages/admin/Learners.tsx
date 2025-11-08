@@ -115,13 +115,17 @@ export default function ManageLearners() {
         <div className="flex gap-2">
           <button
             onClick={() => handleToggleStatus({ id: row.id })}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${row.isActive ? "bg-red-500 text-white hover:bg-red-600" : "bg-green-500 text-white hover:bg-green-600"}`}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+              row.isActive
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-teal-600 text-white hover:bg-teal-700"
+            }`}
           >
             {row.isActive ? "Block" : "Unblock"}
           </button>
           <button
             onClick={() => handleViewLearner(row.id)}
-            className="px-3 py-1 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600"
+            className="px-3 py-1 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-700"
           >
             View
           </button>

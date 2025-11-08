@@ -17,6 +17,7 @@ import { toast } from "react-toastify";
 import { getPresignedDownloadUrl, uploadImageToS3 } from "../../config/s3Config";
 import * as yup from "yup";
 
+
 // Yup Validation Schemas
 const profileUpdateSchema = yup.object().shape({
   name: yup
@@ -27,6 +28,7 @@ const profileUpdateSchema = yup.object().shape({
     .min(1, "Name cannot be empty")
     .max(20, "Name should not exceed 20 characters"),
 });
+
 
 const passwordUpdateSchema = yup.object().shape({
   currentPassword: yup
@@ -43,12 +45,15 @@ const passwordUpdateSchema = yup.object().shape({
     .oneOf([yup.ref("newPassword")], "Passwords do not match"),
 });
 
+
 const LearnerProfile: React.FC = () => {
   const { id } = useSelector(
     (state: RootState) => state.learner
   );
 
+
   const dispatch = useDispatch<AppDispatch>();
+
 
   const [editableName, setEditableName] = useState("");
   const [email, setEmail] = useState('');
@@ -68,6 +73,7 @@ const LearnerProfile: React.FC = () => {
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   const [nameError, setNameError] = useState("");
 
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -84,14 +90,17 @@ const LearnerProfile: React.FC = () => {
       }
     };
 
+
     fetchProfile();
   }, [dispatch]);
+
 
   const handlePasswordChange = (field: string, value: string) => {
     setPasswordForm((prev) => ({
       ...prev,
       [field]: value,
     }));
+
 
     // Clear specific field error when user starts typing
     if (passwordErrors[field]) {
@@ -102,6 +111,7 @@ const LearnerProfile: React.FC = () => {
     }
   };
 
+
   const handleNameChange = (value: string) => {
     setEditableName(value);
     // Clear name error when user starts typing
@@ -109,6 +119,7 @@ const LearnerProfile: React.FC = () => {
       setNameError("");
     }
   };
+
 
   const validatePasswordWithYup = async () => {
     try {
@@ -128,13 +139,16 @@ const LearnerProfile: React.FC = () => {
     }
   };
 
+
   const handleUpdatePassword = async () => {
     const errors = await validatePasswordWithYup();
+
 
     if (Object.keys(errors).length > 0) {
       setPasswordErrors(errors);
       return;
     }
+
 
     const currentPassword = passwordForm.currentPassword;
     const newPassword = passwordForm.newPassword;
@@ -142,6 +156,7 @@ const LearnerProfile: React.FC = () => {
     if (!id) {
       return;
     }
+
 
     const input = { id, currentPassword, newPassword };
     
@@ -163,6 +178,7 @@ const LearnerProfile: React.FC = () => {
     }
   };
 
+
   const resetPasswordForm = () => {
     setPasswordForm({
       currentPassword: "",
@@ -172,24 +188,31 @@ const LearnerProfile: React.FC = () => {
     setPasswordErrors({});
   };
 
+
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     try {
       const file = event.target.files?.[0];
       if (!file || !id) return;
 
+
       setImageLoading(true);
+
 
       // Upload file to S3 and get the object key
       const objectKey = await uploadImageToS3(file);
 
+
       console.log("key", objectKey);
+
 
       // Send object key to backend to update learner profile
       const result = await dispatch(updateLearnerProfileImage({ imageURL: objectKey })).unwrap();
 
+
       // Generate a temporary presigned GET URL for immediate display (optional)
       const presignedUrl = await getPresignedDownloadUrl(objectKey);
       console.log(presignedUrl);
+
 
       setProfilePic(presignedUrl);
       dispatch(setLearnerImage({ profilePic: presignedUrl }));
@@ -201,6 +224,7 @@ const LearnerProfile: React.FC = () => {
     }
   };
 
+
   const handleUpdateProfile = async () => {
     try {
       // Validate name using Yup
@@ -211,11 +235,14 @@ const LearnerProfile: React.FC = () => {
         return;
       }
 
+
       const newName = editableName.trim();
+
 
       const result = await dispatch(updateLearnerProfile({
         name: newName
       })).unwrap();
+
 
       dispatch(setLearnerName({ name: newName }));
       toast.success(result.message);
@@ -231,6 +258,7 @@ const LearnerProfile: React.FC = () => {
     }
   };
 
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -242,31 +270,33 @@ const LearnerProfile: React.FC = () => {
           {/* Breadcrumb */}
           <div className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" />
-            <button className="hover:text-gray-900">
+            <button className="hover:text-teal-600 transition-colors">
               <Link to="/learner/dashboard">
                 Back to Dashboard
               </Link>
             </button>
           </div>
 
+
           {/* Success Message */}
           {showSuccessMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
-              <Check className="w-5 h-5 text-green-500 mr-3" />
-              <p className="text-green-700">Password updated successfully!</p>
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6 flex items-center">
+              <Check className="w-5 h-5 text-teal-600 mr-3" />
+              <p className="text-teal-700 font-medium">Password updated successfully!</p>
             </div>
           )}
+
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Information */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <div className="text-center">
                   {/* Profile Image */}
                   <div className="relative inline-block mb-4">
-                    <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center bg-gray-100">
+                    <div className="w-32 h-32 rounded-full border-4 border-teal-500 shadow-lg overflow-hidden flex items-center justify-center bg-gray-100">
                       {imageLoading ? (
-                        <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-teal-500"></div>
+                        <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-teal-600"></div>
                       ) : (
                         <img
                           src={profilePic || "/images/default-profile.jpg"}
@@ -276,7 +306,8 @@ const LearnerProfile: React.FC = () => {
                       )}
                     </div>
 
-                    <label className="absolute bottom-2 right-2 w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-teal-600 transition-colors">
+
+                    <label className="absolute bottom-2 right-2 w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-teal-700 transition-colors shadow-md">
                       <Camera className="w-5 h-5 text-white" />
                       <input
                         type="file"
@@ -287,11 +318,12 @@ const LearnerProfile: React.FC = () => {
                     </label>
                   </div>
 
+
                   {/* User Info */}
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1 text-center border-b focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1 text-center">
                     {editableName}
                   </h1>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-teal-600 font-medium mb-4">
                     {email}
                   </p>
                   <p className="text-sm text-gray-500 mb-6">
@@ -305,9 +337,10 @@ const LearnerProfile: React.FC = () => {
               </div>
             </div>
 
+
             {/* Settings */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 {/* Tab Header */}
                 <div className="border-b border-gray-200 px-6 py-4">
                   <h2 className="text-xl font-semibold text-gray-900">
@@ -315,10 +348,11 @@ const LearnerProfile: React.FC = () => {
                   </h2>
                 </div>
 
+
                 <div className="p-6">
                   {/* Personal Information */}
                   <div className="mb-8">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       Personal Information
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -331,7 +365,7 @@ const LearnerProfile: React.FC = () => {
                           maxLength={20}
                           value={editableName}
                           onChange={(e) => handleNameChange(e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
                             nameError ? "border-red-500" : "border-gray-300"
                           }`}
                         />
@@ -349,22 +383,23 @@ const LearnerProfile: React.FC = () => {
                           type="email"
                           value={email ?? ""}
                           disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                         />
                       </div>
                     </div>
                     <button
                       onClick={handleUpdateProfile}
-                      className="mt-3 bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600"
+                      className="mt-4 bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors font-medium"
                     >
                       Save Changes
                     </button>
                   </div>
 
+
                   {/* Update Password */}
                   {hasPassword && (
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    <div className="border-t border-gray-200 pt-8">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         Update Password
                       </h3>
                       <div className="space-y-4">
@@ -381,7 +416,7 @@ const LearnerProfile: React.FC = () => {
                               onChange={(e) =>
                                 handlePasswordChange("currentPassword", e.target.value)
                               }
-                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
                                 passwordErrors.currentPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
@@ -391,7 +426,7 @@ const LearnerProfile: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-teal-600"
                             >
                               {showCurrentPassword ? (
                                 <EyeOff className="w-4 h-4 text-gray-400" />
@@ -407,6 +442,7 @@ const LearnerProfile: React.FC = () => {
                           )}
                         </div>
 
+
                         {/* New Password */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -420,7 +456,7 @@ const LearnerProfile: React.FC = () => {
                               onChange={(e) =>
                                 handlePasswordChange("newPassword", e.target.value)
                               }
-                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
                                 passwordErrors.newPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
@@ -430,7 +466,7 @@ const LearnerProfile: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setShowNewPassword(!showNewPassword)}
-                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-teal-600"
                             >
                               {showNewPassword ? (
                                 <EyeOff className="w-4 h-4 text-gray-400" />
@@ -446,6 +482,7 @@ const LearnerProfile: React.FC = () => {
                           )}
                         </div>
 
+
                         {/* Confirm Password */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -459,7 +496,7 @@ const LearnerProfile: React.FC = () => {
                               onChange={(e) =>
                                 handlePasswordChange("confirmPassword", e.target.value)
                               }
-                              className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
                                 passwordErrors.confirmPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
@@ -469,7 +506,7 @@ const LearnerProfile: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-teal-600"
                             >
                               {showConfirmPassword ? (
                                 <EyeOff className="w-4 h-4 text-gray-400" />
@@ -485,17 +522,18 @@ const LearnerProfile: React.FC = () => {
                           )}
                         </div>
 
+
                         {/* Submit Buttons */}
                         <div className="flex space-x-3 pt-4">
                           <button
                             onClick={handleUpdatePassword}
-                            className="bg-teal-500 text-white px-6 py-2 rounded-lg hover:bg-teal-600 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors"
+                            className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors font-medium"
                           >
                             Update Password
                           </button>
                           <button
                             onClick={resetPasswordForm}
-                            className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                            className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                           >
                             Cancel
                           </button>
@@ -512,5 +550,6 @@ const LearnerProfile: React.FC = () => {
     </>
   );
 };
+
 
 export default LearnerProfile;

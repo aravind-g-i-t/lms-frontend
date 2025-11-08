@@ -16,7 +16,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
         <div className="flex items-center gap-1">
             {/* Previous Button */}
             <button
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 border border-gray-200 rounded-lg bg-white hover:bg-teal-50 text-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 disabled={currentPage === 1}
                 onClick={() => onPageChange(currentPage - 1)}
                 aria-label="Previous page"
@@ -27,18 +27,19 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
             {/* Page Numbers */}
             {pages.map((page, idx) =>
                 page === "..." ? (
-                    <span key={idx} className="px-3 py-2 text-gray-500 text-sm">
+                    <span key={idx} className="px-3 py-2 text-gray-400 text-sm font-medium">
                         ...
                     </span>
                 ) : (
                     <button
                         key={idx}
                         onClick={() => onPageChange(page as number)}
-                        className={`min-w-[36px] px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                            page === currentPage
-                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`min-w-[36px] px-3 py-2 text-sm font-semibold rounded-lg border transition-colors
+                            ${
+                                page === currentPage
+                                    ? "bg-teal-600 text-white border-teal-600 hover:bg-teal-700"
+                                    : "bg-white text-gray-700 border-gray-200 hover:bg-teal-50 focus:ring-2 focus:ring-teal-500"
+                            }`}
                         aria-label={`Page ${page}`}
                         aria-current={page === currentPage ? "page" : undefined}
                     >
@@ -49,7 +50,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
 
             {/* Next Button */}
             <button
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 border border-gray-200 rounded-lg bg-white hover:bg-teal-50 text-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 disabled={currentPage === totalPages}
                 onClick={() => onPageChange(currentPage + 1)}
                 aria-label="Next page"

@@ -35,15 +35,15 @@ export function SearchBar({
     };
 
     return (
-        <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2 w-full max-w-md bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
-            <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 w-full max-w-md bg-white shadow-sm focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 transition-all">
+            <Search className="w-4 h-4 text-teal-500 mr-2 flex-shrink-0" />
             <input
                 type="text"
                 value={query}
                 placeholder={placeholder}
                 onChange={(e) => handleChange(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 outline-none text-sm bg-transparent"
+                className="flex-1 outline-none text-sm bg-transparent text-gray-800 placeholder-gray-400"
             />
         </div>
     );

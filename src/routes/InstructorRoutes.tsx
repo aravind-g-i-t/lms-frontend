@@ -8,6 +8,9 @@ import InstructorLiveSessions from "../pages/instructor/LiveSessions"
 import InstructorMessages from "../pages/instructor/Messages"
 import InstructorWallet from "../pages/instructor/Wallet"
 import InstructorProfile from "../pages/instructor/Profile"
+import CreateCourse from "../pages/instructor/CreateCourse"
+import ViewCoursePage from "../pages/instructor/ViewCourse"
+import EditCoursePage from "../pages/instructor/EditCourse"
 
 const InstructorRoutes = () => {
   return (
@@ -21,6 +24,9 @@ const InstructorRoutes = () => {
           <Route path="live-sessions" element={<InstructorLiveSessions />} />
           <Route path="messages" element={<InstructorMessages />} />
           <Route path="wallet" element={<InstructorWallet />} />
+          <Route path="courses/create" element={< CreateCourse/>} />
+          <Route path="courses/:courseId/preview" element={< ViewCoursePage/>} />
+          <Route path="courses/:courseId/edit" element={< EditCoursePage/>} />
           
         </Route>
     </Routes>

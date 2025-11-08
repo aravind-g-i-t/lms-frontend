@@ -8,11 +8,12 @@ export const API = {
         LEARNER_STATUS:"/admin/learner/status",
         INSTRUCTOR_STATUS:"/admin/instructor/status",
         BUSINESS_STATUS:"/admin/business/status",
-        INSTRUCTOR_VERIFICATION:"/admin/instructor/verifcation",
+        INSTRUCTOR_VERIFICATION:"/admin/instructor/verification",
         BUSINESS_VERIFICATION:"admin/business/verification",
         CATEGORY:"/admin/category",
         CATEGORIES:"/admin/categories",
-        STATUS:"/admin/category/status"
+        STATUS:"/admin/category/status",
+        COURSES:"/admin/courses"
 
     },
     AUTH: {
@@ -37,14 +38,24 @@ export const API = {
     INSTRUCTOR: {
         DASHBOARD: "/instructor/dashboard",
         COURSES: "/instructor/courses",
-        CREATE_COURSE: "/instructor/courses/create",
         PROFILE:`/instructor/profile`,
         PROFILE_IMAGE:`/instructor/profile/image`,
         RESUME:`/instructor/profile/resume`,
         ID_PROOF:`/instructor/profile/identity-proof`,
         EXPERTISE:`/instructor/profile/expertise`,
         PASSWORD:`/instructor/password`,
-        VERIFICATION:`/instructor/verification`
+        VERIFICATION:`/instructor/verification`,
+        COURSE:"/instructor/course",
+        CATEGORIES:"/instructor/categories",
+        COURSE_INFO:"/instructor/course/info",
+        COURSE_THUMBNAIL:"/instructor/course/thumbnail",
+        COURSE_PREVIEW_VIDEO:"/instructor/course/preview-video",
+        COURSE_OBJECTIVES:"/instructor/course/objectives",
+        COURSE_TAGS:"/instructor/course/tags",
+        COURSE_PREREQUISITES:"instructor/course/prerequisites",
+        ADD_MODULE:"/instructor/course/module/add",
+        ADD_CHAPTER:"/instructor/course/chapter/add",
+        UPDATE_MODULE:"/instructor/course/module/update"
     },
     BUSINESS: {
         DASHBOARD: "/business/dashboard",

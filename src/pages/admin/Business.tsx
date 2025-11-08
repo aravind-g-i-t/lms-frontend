@@ -216,16 +216,17 @@ export default function ManageBusinesses() {
         <div className="flex gap-2">
           <button
             onClick={() => handleToggleStatus({ id: row.id })}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all shadow-sm hover:shadow ${row.isActive
-              ? "bg-red-500 hover:bg-red-600 active:bg-red-700"
-              : "bg-green-500 hover:bg-green-600 active:bg-green-700"
-              }`}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all shadow-sm hover:shadow ${
+              row.isActive
+                ? "bg-red-500 hover:bg-red-600 active:bg-red-700"
+                : "bg-teal-600 hover:bg-teal-700 active:bg-teal-800"
+            }`}
           >
             {row.isActive ? "Block" : "Unblock"}
           </button>
           <button
             onClick={() => handleViewBusiness(row.id)}
-            className="px-3.5 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white text-xs font-semibold transition-all shadow-sm hover:shadow"
+            className="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs font-semibold transition-all shadow-sm hover:shadow"
           >
             View
           </button>

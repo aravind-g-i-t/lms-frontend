@@ -6,21 +6,26 @@ import { resendOTP, verifyOTP } from "../../redux/services/userAuthServices";
 import { clearSignup } from "../../redux/slices/signupSlice";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { toast } from "react-toastify";
+import { AlertCircle } from "lucide-react";
+
 
 export default function OtpVerification() {
   const { email, otpExpiresAt, role } = useSelector(
     (state: RootState) => state.signup
   );
 
+
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+
 
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(0);
   const [OTPError, setError] = useState("");
   const [resendDisabled, setResendDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [resendLoading,setResendLoading]=useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+
 
   // Redirect if data missing (refresh case)
   useEffect(() => {
@@ -29,9 +34,11 @@ export default function OtpVerification() {
     }
   }, [email, otpExpiresAt, role, navigate]);
 
+
   // Timer setup
   useEffect(() => {
     if (!otpExpiresAt) return;
+
 
     const remainingSeconds = Math.max(
       Math.floor((new Date(otpExpiresAt).getTime() - Date.now()) / 1000),
@@ -41,9 +48,11 @@ export default function OtpVerification() {
     setResendDisabled(remainingSeconds > 0);
   }, [otpExpiresAt]);
 
+
   // Countdown
   useEffect(() => {
     if (!resendDisabled) return;
+
 
     const interval = setInterval(() => {
       setTimer((prev) => {
@@ -56,8 +65,10 @@ export default function OtpVerification() {
       });
     }, 1000);
 
+
     return () => clearInterval(interval);
   }, [resendDisabled]);
+
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -67,9 +78,11 @@ export default function OtpVerification() {
     return `${m}:${s}`;
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
 
     if (!otp.trim()) {
       setError("Please enter the OTP.");
@@ -80,15 +93,18 @@ export default function OtpVerification() {
       return;
     }
 
+
     if (!email || !role) {
       setError("Unexpected error. Please signup again.");
       return;
     }
 
+
     try {
       setLoading(true);
       const input = { role, email, otp };
       const response = await dispatch(verifyOTP(input)).unwrap();
+
 
       dispatch(clearSignup());
       toast.success(response.message);
@@ -102,16 +118,18 @@ export default function OtpVerification() {
     }
   };
 
+
   const handleResend = async () => {
     try {
-        setResendLoading(true)
+      setResendLoading(true)
       if (!email) return;
+
 
       setResendDisabled(true);
       setError("");
 
-      await dispatch(resendOTP({ email })).unwrap();
 
+      await dispatch(resendOTP({ email })).unwrap();
 
 
       toast.success("A new OTP has been sent to your email.");
@@ -120,20 +138,21 @@ export default function OtpVerification() {
       setError("Failed to resend OTP. Please try again.");
       setResendDisabled(false);
       toast.error(err as string);
-    }finally{
-        setResendLoading(false)
+    } finally {
+      setResendLoading(false)
     }
   };
+
 
   return (
     <>
       <LearnerNav />
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-        <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full grid md:grid-cols-2">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-lg max-w-4xl w-full grid md:grid-cols-2 overflow-hidden">
           {/* Left Side */}
-          <div className="relative min-h-[600px]">
+          <div className="relative min-h-[600px] hidden md:block">
             <div
-              className="absolute inset-0 bg-black bg-opacity-50"
+              className="absolute inset-0 bg-gradient-to-br from-teal-600/80 to-teal-800/80"
               style={{
                 backgroundImage: "url('/images/auth.jpg')",
                 backgroundSize: "cover",
@@ -141,44 +160,35 @@ export default function OtpVerification() {
               }}
             />
             <div className="relative z-10 p-12 h-full text-white flex flex-col justify-center">
-              <h1 className="text-4xl font-bold mb-6">Verify Your Email</h1>
-              <p className="text-lg text-gray-200">
-                Enter the 6-digit OTP sent to your email.
+              <h1 className="text-4xl font-bold mb-6 leading-tight">Verify Your Email</h1>
+              <p className="text-lg text-teal-100">
+                Enter the 6-digit OTP sent to your email to complete your registration.
               </p>
             </div>
           </div>
 
+
           {/* Right Side */}
-          <div className="p-12 flex flex-col justify-center bg-white">
+          <div className="p-8 sm:p-12 flex flex-col justify-center bg-white">
             <div className="w-full max-w-sm mx-auto">
               <h2 className="text-3xl font-bold text-gray-900 mb-8">
                 OTP Verification
               </h2>
 
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Error Box */}
                 {OTPError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    <div className="flex items-center">
-                      <svg
-                        className="h-5 w-5 text-red-500 mr-2"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className="text-sm font-medium">{OTPError}</span>
-                    </div>
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm font-medium">{OTPError}</span>
                   </div>
                 )}
 
+
                 {/* OTP Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     6-digit OTP
                   </label>
                   <input
@@ -193,20 +203,21 @@ export default function OtpVerification() {
                     maxLength={6}
                     required
                     disabled={loading}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all text-gray-900 placeholder-gray-500 ${
                       OTPError
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500"
-                    } ${loading ? "bg-gray-50" : "bg-white"}`}
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-teal-500 focus:border-transparent"
+                    } ${loading ? "bg-gray-50 cursor-not-allowed" : "bg-white"}`}
                     placeholder="Enter 6-digit OTP"
                   />
                 </div>
+
 
                 {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={loading || otp.length !== 6}
-                  className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg flex justify-center"
+                  className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg flex justify-center items-center transition-all shadow-md hover:shadow-lg"
                 >
                   {loading ? (
                     <>
@@ -235,25 +246,33 @@ export default function OtpVerification() {
                   )}
                 </button>
 
+
                 {/* Resend */}
-                <div className="text-center">
+                <div className="text-center pt-2">
                   {resendDisabled ? (
-                    <p className="text-sm text-gray-500">
-                    {resendLoading?"New OTP is being sent to you email":`Resend available in ${formatTime(timer)}`
-                    }
-                      
+                    <p className="text-sm text-gray-600">
+                      {resendLoading 
+                        ? "New OTP is being sent to your email..." 
+                        : `Resend available in `
+                      }
+                      {!resendLoading && <span className="font-semibold text-teal-600">{formatTime(timer)}</span>}
                     </p>
                   ) : (
                     <button
                       type="button"
                       onClick={handleResend}
-                      className="text-green-600 hover:text-green-700 font-medium text-sm underline"
+                      disabled={resendLoading}
+                      className="text-teal-600 hover:text-teal-700 font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Resend OTP
+                      {resendLoading ? "Sending OTP..." : "Resend OTP"}
                     </button>
                   )}
                 </div>
               </form>
+
+              <p className="text-center text-xs text-gray-500 mt-8">
+                Check your spam folder if you don't see the OTP in your inbox
+              </p>
             </div>
           </div>
         </div>
