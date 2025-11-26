@@ -4,8 +4,15 @@ import BusinessDashboard from "../pages/business/Dashboard"
 import CourseCatalogPage from "../pages/business/Courses"
 import TeamManagementPage from "../pages/business/Teams"
 import BusinessProfile from "../pages/business/Profile"
+import { useSelector } from "react-redux"
+import type { RootState } from "../redux/store"
 
 const BusinessRoutes = () => {
+  const { id } = useSelector((state: RootState) => state.business)
+
+  if (!id) {
+    return <Navigate to="/signin" replace />
+  }
   return (
     <Routes>
       <Route path="/" element={<BusinessLayout />}>

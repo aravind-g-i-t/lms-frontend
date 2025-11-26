@@ -6,7 +6,7 @@ import { API } from "../../constants/api";
 
 export const getLearnerProfile = createAsyncThunk(
     "learner/profile",
-    async (_ ,{ rejectWithValue }) => {
+    async (_, { rejectWithValue }) => {
         try {
             const result = await axiosInstance.get(API.LEARNER.PROFILE);
             console.log(result);
@@ -29,7 +29,7 @@ export const getLearnerProfile = createAsyncThunk(
 
 export const updateLearnerProfile = createAsyncThunk(
     "learner/profile/update",
-    async (data:{name:string}, { rejectWithValue }) => {
+    async (data: { name: string }, { rejectWithValue }) => {
         try {
             const result = await axiosInstance.patch(API.LEARNER.PROFILE, data);
             console.log(result);
@@ -51,7 +51,7 @@ export const updateLearnerProfile = createAsyncThunk(
 
 export const updateLearnerProfileImage = createAsyncThunk(
     "learner/profile/image/update",
-    async (data:{imageURL:string}, { rejectWithValue }) => {
+    async (data: { imageURL: string }, { rejectWithValue }) => {
         try {
             const result = await axiosInstance.patch(API.LEARNER.PROFILE_IMAGE, data);
             console.log(result);
@@ -96,11 +96,209 @@ export const updateLearnerProfileImage = createAsyncThunk(
 
 export const learnerResetPassword = createAsyncThunk(
     "learner/profile/password",
-    async (input:{id:string,currentPassword:string,newPassword:string}, { rejectWithValue }) => {
+    async (input: { id: string, currentPassword: string, newPassword: string }, { rejectWithValue }) => {
         try {
             const result = await axiosInstance.patch(API.LEARNER.PASSWORD, input);
             console.log(result);
 
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const getCoursesForLearners = createAsyncThunk(
+    "learner/courses",
+    async (input: { page?: number, limit: number, search?: string; sort: string; instructorIds?: string[]; categoryIds?: string[]; levels?: string[]; durationRange?: [number, number]; priceRange?: [number, number]; minRating?: number; },
+        { rejectWithValue }
+    ) => {
+        try {
+            console.log(input);
+
+            const res = await axiosInstance.get(API.LEARNER.COURSES, {
+                params: input,
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getCourseDetailsForLearner = createAsyncThunk(
+    "learner/course/preview",
+    async ({ courseId, learnerId }: { courseId: string, learnerId: string | null },
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/course/preview", {
+                params: { courseId, learnerId },
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getCourseDetailsForCheckout = createAsyncThunk(
+    "learner/course/checkout",
+    async ({ courseId }: { courseId: string },
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/course/checkout", {
+                params: { courseId }
+            });
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const createPaymentSession = createAsyncThunk(
+    "payment/initiate",
+    async (
+        {
+            courseId,
+            method,
+            coupon,
+        }: {
+            courseId: string;
+            method: string;
+            coupon: string | null;
+        },
+        { rejectWithValue }
+    ) => {
+        try {
+            console.log(courseId, method, coupon);
+
+            const res = await axiosInstance.post("/payment/initiate", {
+                courseId,
+                method,
+                coupon,
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.error("Payment session error:", error.response?.data);
+                return rejectWithValue(
+                    error.response?.data?.message || "Payment initialization failed"
+                );
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const verifyPayment = createAsyncThunk(
+    "payment/verify",
+    async (sessionId: string,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/payment/verify", {
+                params: { sessionId },
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getEnrollments = createAsyncThunk(
+    "learner/enrollments",
+    async (input: { page?: number, limit: number, search?: string; },
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.get("/learner/enrollments", {
+                params: input,
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getFullCourseForLearner = createAsyncThunk(
+    "learner/course",
+    async ({ courseId }: { courseId: string },
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/course/learn", {
+                params: { courseId },
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const markChapterAsCompleted = createAsyncThunk(
+    "learner/progress/chapter/complete",
+    async (data: { courseId: string; chapterId:string }, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.patch("learner/progress/chapter/complete", data);
+            console.log(result);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)

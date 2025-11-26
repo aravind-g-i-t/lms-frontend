@@ -566,4 +566,48 @@ export const deleteChapter = createAsyncThunk(
     },
 )
 
+export const submitCourseForReview = createAsyncThunk(
+    "instructor/course/verification",
+    async (input: { courseId:string}, { rejectWithValue }) => {
+        try {            
+            const result = await axiosInstance.patch("instructor/course/verification", input);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const updateCourseStatus = createAsyncThunk(
+    "instructor/course/status",
+    async (input: { courseId:string,status:string}, { rejectWithValue }) => {
+        try {            
+            const result = await axiosInstance.patch("instructor/course/status", input);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+
+
 

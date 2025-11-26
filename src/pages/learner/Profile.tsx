@@ -152,14 +152,14 @@ const LearnerProfile: React.FC = () => {
 
     const currentPassword = passwordForm.currentPassword;
     const newPassword = passwordForm.newPassword;
-    
+
     if (!id) {
       return;
     }
 
 
     const input = { id, currentPassword, newPassword };
-    
+
     try {
       const result = await dispatch(learnerResetPassword(input)).unwrap();
       setShowSuccessMessage(true);
@@ -229,7 +229,7 @@ const LearnerProfile: React.FC = () => {
     try {
       // Validate name using Yup
       await profileUpdateSchema.validate({ name: editableName }, { abortEarly: false });
-      
+
       if (!id) {
         toast.error('User ID not found');
         return;
@@ -264,7 +264,7 @@ const LearnerProfile: React.FC = () => {
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <LearnerNav />
-        
+
         {/* Main Content */}
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Breadcrumb */}
@@ -365,9 +365,8 @@ const LearnerProfile: React.FC = () => {
                           maxLength={20}
                           value={editableName}
                           onChange={(e) => handleNameChange(e.target.value)}
-                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
-                            nameError ? "border-red-500" : "border-gray-300"
-                          }`}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${nameError ? "border-red-500" : "border-gray-300"
+                            }`}
                         />
                         {nameError && (
                           <p className="text-sm text-red-600 mt-1">
@@ -416,11 +415,10 @@ const LearnerProfile: React.FC = () => {
                               onChange={(e) =>
                                 handlePasswordChange("currentPassword", e.target.value)
                               }
-                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
-                                passwordErrors.currentPassword
+                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${passwordErrors.currentPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
-                              }`}
+                                }`}
                               placeholder="Enter your current password"
                             />
                             <button
@@ -456,11 +454,10 @@ const LearnerProfile: React.FC = () => {
                               onChange={(e) =>
                                 handlePasswordChange("newPassword", e.target.value)
                               }
-                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
-                                passwordErrors.newPassword
+                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${passwordErrors.newPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
-                              }`}
+                                }`}
                               placeholder="Enter new password (min. 8 characters)"
                             />
                             <button
@@ -496,11 +493,10 @@ const LearnerProfile: React.FC = () => {
                               onChange={(e) =>
                                 handlePasswordChange("confirmPassword", e.target.value)
                               }
-                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
-                                passwordErrors.confirmPassword
+                              className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${passwordErrors.confirmPassword
                                   ? "border-red-500"
                                   : "border-gray-300"
-                              }`}
+                                }`}
                               placeholder="Confirm your new password"
                             />
                             <button

@@ -76,7 +76,7 @@ export default function LearnerNav() {
                 </Link>
               )}
               <Link
-                to="#"
+                to="/explore"
                 className="text-teal-50 hover:text-white px-3 py-2 rounded-lg transition-colors"
               >
                 Explore
@@ -99,13 +99,7 @@ export default function LearnerNav() {
             <div className="flex items-center space-x-2 sm:space-x-4">
               {name ? (
                 <>
-                  <Link
-                    to="#"
-                    title="Shopping Cart"
-                    className="p-2 rounded-lg hover:bg-teal-600 transition-colors hidden sm:block"
-                  >
-                    <ShoppingCart className="w-5 h-5" />
-                  </Link>
+  
                   <Link
                     to="#"
                     title="Notifications"
@@ -222,7 +216,7 @@ export default function LearnerNav() {
               </Link>
             )}
             <Link
-              to="#"
+              to="/explore"
               onClick={closeSidebar}
               className="text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-3 rounded-lg transition-colors"
             >

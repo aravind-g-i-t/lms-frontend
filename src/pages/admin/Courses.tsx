@@ -8,7 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import type { AppDispatch } from "../../redux/store";
-import { getCoursesForAdmin,  } from "../../redux/services/adminServices";
+import { getCoursesForAdmin, updateCourseVerification, } from "../../redux/services/adminServices";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked";
@@ -33,8 +33,8 @@ export interface Course {
   }
 }
 
-type Status = "All" | "Published" | "Draft" | "Archived";
-type VerStatus = "All" | "Verified" | "Rejected" | "Under Review" | "Not Verified" | "Blocked";
+type StatusLabel = "All" | "Published" | "Draft" | "Archived";
+type VerStatusLabel = "All" | "Verified" | "Rejected" | "Under Review" | "Not Verified" | "Blocked";
 
 const statusMap: Record<string, string | undefined> = {
   "All": undefined,
@@ -60,9 +60,13 @@ export default function ManageCourses() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<Status>("All");
-  const [verStatus, setVerStatus] = useState<VerStatus>("All");
+  const [status, setStatus] = useState<StatusLabel>("All");
+  const [verStatus, setVerStatus] = useState<VerStatusLabel>("All");
   const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"block" | "unblock" | null>(null);
+  const [remarks, setRemarks] = useState("");
+  const [selectedId,setSelectedId]= useState<string|null>(null)
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -89,16 +93,37 @@ export default function ManageCourses() {
     fetchCourses();
   }, [dispatch, page, search, status, verStatus]);
 
-  const handleToggleStatus = async (id: string) => {
+  const handleCourseApproval = async () => {
     try {
-      await dispatch(toggleCourseStatus({ id })).unwrap();
-      setCourses(courses =>
-        courses.map((c) =>
-          c.id === id ? { ...c, isActive: !c.isActive } : c
-        )
-      );
-    } catch (err) {
-      toast.error(err as string);
+      if (!modalType||!selectedId) return;
+
+      const statusMap = {
+        block: "blocked",
+        unblock: "verified",
+      } as const;
+
+      const result = await dispatch(
+        updateCourseVerification({
+          courseId:selectedId,
+          status: statusMap[modalType],
+          remarks: remarks.trim() || null,
+        })
+      ).unwrap();
+
+      const updated = courses.map((course) => {
+        if (course.id === selectedId) {
+          course.verification = result.verification
+        }
+        return course
+      });
+      setCourses(updated)
+
+      setModalOpen(false);
+      setRemarks("");
+      setModalType(null);
+      toast.success(`Course ${modalType.replace("_", " ") + "ed"} successfully.`);
+    } catch (error) {
+      toast.error(error as string);
     }
   };
 
@@ -173,15 +198,25 @@ export default function ManageCourses() {
       header: "Actions",
       render: (row) => (
         <div className="flex items-center gap-2">
-          {(row.verification.status === "verified"|| row.verification.status ==="blocked") && (
+          {(row.verification.status === "verified" || row.verification.status === "blocked") && (
+            
+
             <button
-              onClick={() => handleToggleStatus(row.id)}
-              className={`px-2 py-1 text-xs rounded ${row.verification.status==="verified"
+              onClick={() => {
+                setModalOpen(true);
+                setSelectedId(row.id)
+                if(row.verification.status === "verified"){
+                  setModalType("block")
+                }else{
+                  setModalType("unblock")
+                }
+              }}
+              className={`px-2 py-1 text-xs rounded ${row.verification.status === "verified"
                 ? "bg-red-100 text-red-700 hover:bg-red-200"
                 : "bg-teal-100 text-teal-700 hover:bg-teal-200"
                 }`}
             >
-              {row.isActive ? "Block" : "Unblock"}
+              {row.verification.status === "verified" ? "Block" : "Unblock"}
             </button>
           )}
           <button
@@ -216,7 +251,7 @@ export default function ManageCourses() {
             onSearch={(query) => setSearch(query)}
           />
           <div className="flex gap-3 flex-wrap">
-            <FilterDropdown<Status>
+            <FilterDropdown<StatusLabel>
               label="Course Status"
               value={status}
               options={["All", "Published", "Draft", "Archived"]}
@@ -225,7 +260,7 @@ export default function ManageCourses() {
                 setPage(1);
               }}
             />
-            <FilterDropdown<VerStatus>
+            <FilterDropdown<VerStatusLabel>
               label="Verification"
               value={verStatus}
               options={["All", "Verified", "Rejected", "Under Review", "Not Verified", "Blocked"]}
@@ -251,6 +286,56 @@ export default function ManageCourses() {
           onPageChange={setPage}
         />
       </div>
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h3 className="text-xl font-bold mb-2 capitalize">
+              {modalType === "block" && "Block Course"}
+              {modalType === "unblock" && "Unblock Course"}
+            </h3>
+            <p className="mb-4">
+              {modalType === "block"
+                ? "Please provide a reason for blocking this course."
+                : "Are you sure you want to unblock this course?"}
+            </p>
+
+            {(modalType === "block") && (
+              <textarea
+                className="w-full border rounded p-2 mb-4"
+                rows={3}
+                placeholder="Enter remarks..."
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                required
+              />
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setModalOpen(false);
+                  setRemarks("");
+                  setModalType(null);
+                }}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCourseApproval}
+                className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={
+                  (modalType === "block") && remarks.trim() === ""
+                }
+              >
+                {modalType === "block"
+                  ? "Block"
+                  : "Unblock"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,8 +11,15 @@ import InstructorProfile from "../pages/instructor/Profile"
 import CreateCourse from "../pages/instructor/CreateCourse"
 import ViewCoursePage from "../pages/instructor/ViewCourse"
 import EditCoursePage from "../pages/instructor/EditCourse"
+import { useSelector } from "react-redux"
+import type { RootState } from "../redux/store"
 
 const InstructorRoutes = () => {
+  const { id } = useSelector((state: RootState) => state.instructor)
+
+  if (!id) {
+    return <Navigate to="/signin" replace />
+  }
   return (
     <Routes>
       <Route path="/" element={<InstructorLayout />}>

@@ -4,7 +4,6 @@ import {
   Trash2,
   X,
   Eye,
-  Send,
   AlertCircle,
   CheckCircle,
   ArrowLeft,
@@ -20,7 +19,7 @@ import {
 
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
 import { addChapter, addNewModule, deleteChapter, deleteModule, getCategoryOptions, getCourseDetails, updateChapterInfo, updateCourseInfo, updateCourseObjectives, updateCoursePrerequisites, updateCoursePreviewVideo, updateCourseTags, updateCourseThumbnail, updateModuleInfo, updateVideo } from '../../redux/services/instructorServices';
 import { toast } from 'react-toastify';
@@ -109,8 +108,8 @@ interface Course {
 
 const EditCoursePage = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const navigate= useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
-  const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
 
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [previewVideoPreview, setPreviewVideoPreview] = useState<string | null>(null);
@@ -889,15 +888,7 @@ const EditCoursePage = () => {
   };
 
 
-  const toggleModule = (index: number) => {
-    const newExpanded = new Set(expandedModules);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedModules(newExpanded);
-  };
+
 
   const toggleVideo=(chapterId:string)=>{
     const newExpandedVideos= new Set(expandedVideos);
@@ -911,23 +902,7 @@ const EditCoursePage = () => {
 
 
 
-  const handleSubmitForReview = async () => {
-    setCourseData(prev =>
-      prev
-        ? ({ ...prev, verification: { status: "under_review", submittedAt: new Date() }, } as Course)
-        : prev
-    );
-    // await handleSave();
-  };
 
-  const handlePublish = async () => {
-    setCourseData(prev =>
-      prev
-        ? ({ ...prev, status: 'published', publishedAt: new Date() } as Course)
-        : prev
-    );
-    // await handleSave();
-  };
 
 
   const getStatusBadge = (status: CourseStatus) => {
@@ -964,6 +939,9 @@ const EditCoursePage = () => {
   if (!courseData) {
     return null
   }
+  if(courseData.verification.status==="verified"){
+    navigate("/instructor/courses")
+  }
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header */}
@@ -997,7 +975,7 @@ const EditCoursePage = () => {
                 Preview
               </Link>
 
-              {courseData.status === 'draft' && (
+              {/* {courseData.status === 'draft' && (
                 <button
                   onClick={handleSubmitForReview}
                   className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -1005,9 +983,9 @@ const EditCoursePage = () => {
                   <Send className="w-4 h-4 mr-2" />
                   Submit for Review
                 </button>
-              )}
+              )} */}
 
-              {courseData.verification.status === 'verified' && (
+              {/* {courseData.verification.status === 'verified' && (
                 <button
                   onClick={handlePublish}
                   className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -1015,15 +993,15 @@ const EditCoursePage = () => {
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Publish Course
                 </button>
-              )}
+              )} */}
 
-              <button
+              {/* <button
                 // onClick={handleSave}
                 className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Save Changes
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -1112,7 +1090,7 @@ const EditCoursePage = () => {
                   {/* Price */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price ($) *
+                      Price (₹) *
                     </label>
                     <input
                       type="number"
@@ -1144,7 +1122,7 @@ const EditCoursePage = () => {
 
             {/* Course Thumbnail - Separate Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Thumbnail</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Thumbnail *</h2>
 
               <div className="space-y-4">
                 {courseData.thumbnail ? (
@@ -1227,7 +1205,7 @@ const EditCoursePage = () => {
 
             {/* Preview Video - Separate Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Preview Video</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Preview Video *</h2>
 
               <div className="space-y-4">
                 {courseData.previewVideo ? (

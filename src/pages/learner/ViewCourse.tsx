@@ -5,56 +5,48 @@ import {
   BookOpen,
   CheckCircle,
   PlayCircle,
-  Download,
   ChevronDown,
   ChevronUp,
-  FileText,
   Calendar,
-  BarChart3,
   Award,
-  Eye,
-  Edit,
-  Archive,
-  ArrowLeft
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import type { AppDispatch } from '../../redux/store';
-import { getCourseDetails, submitCourseForReview, updateCourseStatus } from '../../redux/services/instructorServices';
+import type { AppDispatch, RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
+import LearnerNav from '../../components/learner/LearnerNav';
+import { getCourseDetailsForLearner } from '../../redux/services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
-// ✅ Replace enums with union types
-export type CourseLevel = "beginner" | "intermediate" | "advanced";
+type CourseLevel = "beginner" | "intermediate" | "advanced";
 
-export type CourseStatus = "draft" | "published" | "archived";
 
-export type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked"
-
-export type ResourceType = "pdf" | "docs" | "exe" | "zip" | "other";
-
-export interface Chapter {
+interface Chapter {
+  id: string;
   title: string;
   description: string;
-  thumbnail: string;
-  video: string;
   duration: number;
-  resources: Resource[];
 }
 
-export interface Resource {
-  title: string;
-  file: string;
-  size: number;
-  type: ResourceType;
-}
-
-export interface Module {
+interface Module {
+  id: string;
   title: string;
   description: string;
   duration: number;
   chapters: Chapter[];
+}
+
+interface Instructor {
+  id: string;
+  name: string;
+  profilePic: string | null;
+
+}
+
+export interface Category {
+  id: string;
+  name: string;
 }
 
 export interface Course {
@@ -63,49 +55,36 @@ export interface Course {
   description: string;
   prerequisites: string[];
   category: {
-    id: string,
-    name: string
+    name: string;
+    id: string;
   };
   enrollmentCount: number;
-  instructor: {
-    id: string;
-    name: string;
-    profilePic: string | null
-  };
-  whatYouWillLearn: string[] | null
+  instructor: Instructor;
   modules: Module[];
   level: CourseLevel;
   duration: number;
   tags: string[];
+  whatYouWillLearn: string[];
   totalRatings: number;
-  status: CourseStatus;
-  createdAt: Date;
-  updatedAt: Date;
   thumbnail: string | null;
   previewVideo: string | null;
   price: number;
   rating: number | null;
   publishedAt: Date | null;
-  verification: {
-    status: VerificationStatus;
-    reviewedAt: Date | null;
-    submittedAt: Date | null;
-    remarks: string | null;
-  };
+  isEnrolled: boolean;
+  enrolledAt: Date | null;
 }
 
 
-
-const ViewCoursePage = () => {
+const CourseOverviewPage = () => {
+  const { id } = useSelector((state: RootState) => state.learner);
   const { courseId } = useParams<{ courseId: string }>();
   console.log(courseId);
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
 
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
   const [showPreview, setShowPreview] = useState(false);
-  const [showRemarks, setShowRemarks] = useState(false);
-
 
 
 
@@ -129,21 +108,14 @@ const ViewCoursePage = () => {
     tags: [],
     whatYouWillLearn: [],
     totalRatings: 0,
-    status: 'draft',
-    createdAt: new Date(),
-    updatedAt: new Date(),
     thumbnail: null,
     previewVideo: null,
     price: 0,
     rating: null,
     publishedAt: null,
     modules: [],
-    verification: {
-      status: "not_verified",
-      submittedAt: null,
-      reviewedAt: null,
-      remarks: null
-    }
+    isEnrolled: false,
+    enrolledAt: null
   });
 
   useEffect(() => {
@@ -153,7 +125,10 @@ const ViewCoursePage = () => {
         if (!courseId) {
           return
         }
-        const response = await dispatch(getCourseDetails(courseId)).unwrap();
+        const response = await dispatch(getCourseDetailsForLearner({
+          courseId,
+          learnerId: id || null
+        })).unwrap();
         console.log(response.data);
         setCourse(response.data)
 
@@ -163,10 +138,7 @@ const ViewCoursePage = () => {
     };
 
     fetchCourseDetails();
-  }, [dispatch, courseId]);
-
-
-
+  }, [dispatch, courseId, id]);
 
   const toggleModule = (index: number) => {
     const newExpanded = new Set(expandedModules);
@@ -178,16 +150,7 @@ const ViewCoursePage = () => {
     setExpandedModules(newExpanded);
   };
 
-  const getStatusConfig = (status: CourseStatus) => {
-    switch (status) {
-      case 'draft':
-        return { label: 'Draft', className: 'bg-gray-100 text-gray-800', icon: Edit };
-      case 'published':
-        return { label: 'Published', className: 'bg-green-100 text-green-800', icon: Eye };
-      case 'archived':
-        return { label: 'Archived', className: 'bg-red-100 text-red-800', icon: Archive };
-    }
-  };
+
 
   const getLevelColor = (level: CourseLevel) => {
     switch (level) {
@@ -200,22 +163,9 @@ const ViewCoursePage = () => {
     }
   };
 
-  const getResourceIcon = (type: ResourceType) => {
-    switch (type) {
-      case 'pdf':
-      case 'docs':
-        return FileText;
-      case 'zip':
-      case 'exe':
-        return Download;
-      default:
-        return FileText;
-    }
-  };
 
-  const formatFileSize = (size: number) => {
-    return size >= 1 ? `${size.toFixed(1)} MB` : `${(size * 1024).toFixed(0)} KB`;
-  };
+
+
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A';
@@ -230,99 +180,22 @@ const ViewCoursePage = () => {
     return course.modules.reduce((total, module) => total + module.chapters.length, 0);
   };
 
-  const statusConfig = getStatusConfig(course.status);
-  const StatusIcon = statusConfig.icon;
-
-
-  const handleSubmitForVerification = async () => {
-    try {
-      await dispatch(submitCourseForReview({ courseId: course.id })).unwrap();
-
-      setCourse(prev =>
-        prev ? ({ ...prev, verification: {...course.verification,status:"under_review"} } as Course) : prev
-      );
-      toast.success("Course submitted for verification.")
-    } catch (error) {
-      toast.error(error as string)
-    }
-
-
-  }
-
-  const handlePublish = async () => {
-    try {
-      await dispatch(updateCourseStatus({ 
-        courseId: course.id,
-        status:"published"
-      })).unwrap();
-
-      setCourse(prev =>
-        prev ? ({ ...prev, status:"published" } as Course) : prev
-      );
-      toast.success("Course published successfully.")
-    } catch (error) {
-      toast.error(error as string)
-    }
-  }
-
-  const handleArchive = async () => {
-    try {
-      await dispatch(updateCourseStatus({ 
-        courseId: course.id,
-        status:"archived"
-      })).unwrap();
-
-      setCourse(prev =>
-        prev ? ({ ...prev, status:"archived" } as Course) : prev
-      );
-      toast.success("Course archived successfully.")
-    } catch (error) {
-      toast.error(error as string)
-    }
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Go Back */}
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-gray-600 hover:text-gray-900 transition"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          <span className="font-medium">Go Back</span>
-        </button>
 
-        {/* Right Action Button */}
-        {(course.verification.status === "not_verified" || course.verification.status === "rejected") && (
-          <button
-            onClick={handleSubmitForVerification}
-            className="bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-700 transition"
-          >
-            Submit for Verification
-          </button>
-        )}
-        {(course.verification.status === "verified" &&
-        course.status!=="published")&& (
-          <button
-            onClick={handlePublish}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
-          >
-            Publish Course
-          </button>
-        )}
-        {(course.verification.status === "verified" &&
-        course.status==="published")&& (
-          <button
-            onClick={handleArchive}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
-          >
-            Archive Course
-          </button>
-        )}
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <LearnerNav />
       {/* Hero Section with Thumbnail */}
       <div className="relative bg-gray-900 text-white">
+        {/* {course.thumbnail && (
+          <div className="absolute inset-0 opacity-30">
+            <img 
+              src={course.thumbnail} 
+              alt={course.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )} */}
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -332,17 +205,18 @@ const ViewCoursePage = () => {
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLevelColor(course.level)}`}>
                   {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
                 </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${statusConfig.className}`}>
-                  <StatusIcon className="w-4 h-4 mr-1" />
-                  {statusConfig.label}
-                </span>
+
               </div>
 
               <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
-              <p className="text-2xl font-semibold text-teal-400 mb-4">
-                ₹{course.price.toLocaleString()}
-                {/* <span className="text-sm text-gray-300 ml-2 font-normal">one-time payment</span> */}
-              </p>
+              <Link to={`/instructor/${course.instructor.id}`} className="flex items-center gap-3 mb-6">
+                <img
+                  src={course.instructor.profilePic || "/images/default-profile.jpg"}
+                  alt={course.instructor.name}
+                  className="w-10 h-10 rounded-full border border-teal-300 object-cover"
+                />
+                <span className="font-semibold text-lg text-white">{course.instructor.name}</span>
+              </Link>
               <p className="text-xl text-gray-300 mb-6">{course.description}</p>
 
               <div className="flex flex-wrap items-center gap-6 text-sm">
@@ -357,13 +231,12 @@ const ViewCoursePage = () => {
                 </div>
                 <div className="flex items-center text-gray-300">
                   <Clock className="w-5 h-5 mr-1" />
-                  <span>{formatDuration(course.duration)} total</span>
+                  <span>{formatDuration(course.duration)} </span>
                 </div>
               </div>
 
               <div className="mt-6 flex items-center text-gray-300 text-sm">
                 <Calendar className="w-4 h-4 mr-2" />
-                <span>Created {formatDate(course.createdAt)}</span>
                 {course.publishedAt && (
                   <>
                     <span className="mx-2">•</span>
@@ -400,8 +273,64 @@ const ViewCoursePage = () => {
                   </div>
                 )}
 
+                <div className="p-6">
+                  {course.isEnrolled ? (
+                    <>
+                      {/* Already Enrolled UI */}
+                      <div className="text-green-600 font-semibold mb-2">
+                        ✔ Enrolled on {course.enrolledAt ? formatDate(course.enrolledAt) : "N/A"}
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/learner/courses/${course.id}/learn`)}
+                        className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors mb-3"
+                      >
+                        Continue Learning
+                      </button>
+
+                      <button
+                        onClick={() => navigate('/learner/dashboard')}
+                        className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
+                      >
+                        Go to Dashboard
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Not Enrolled UI */}
+                      <div className="text-3xl font-bold text-gray-900 mb-4">
+                        ₹{course.price}
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/learner/checkout/${course.id}`)}
+                        className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors mb-3"
+                      >
+                        Enroll Now
+                      </button>
+
+                      <button className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors">
+                        Add to Wishlist
+                      </button>
+                    </>
+                  )}
 
 
+                  <div className="mt-6 space-y-3 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      <span>Lifetime access</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      <span>Certificate of completion</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      <span>24-hour money-back guarantee</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -417,14 +346,7 @@ const ViewCoursePage = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">What You'll Learn</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  'Build modern React applications from scratch',
-                  'Master React Hooks and functional components',
-                  'Implement state management with Redux',
-                  'Create responsive and accessible UIs',
-                  'Write clean and maintainable code',
-                  'Deploy production-ready applications'
-                ].map((item, index) => (
+                {course.whatYouWillLearn.map((item, index) => (
                   <div key={index} className="flex items-start">
                     <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-700">{item}</span>
@@ -453,7 +375,7 @@ const ViewCoursePage = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
                 <div className="text-sm text-gray-600">
-                  {course.modules.length} modules • {getTotalChapters()} chapters • {formatDuration(course.duration)} total
+                  {course.modules.length} modules • {getTotalChapters()} chapters • {formatDuration(course.duration)}
                 </div>
               </div>
 
@@ -498,22 +420,7 @@ const ViewCoursePage = () => {
                                   </div>
                                   <p className="text-sm text-gray-600 ml-6">{chapter.description}</p>
 
-                                  {chapter.resources.length > 0 && (
-                                    <div className="mt-3 ml-6 space-y-2">
-                                      {chapter.resources.map((resource, resIndex) => {
-                                        const ResourceIcon = getResourceIcon(resource.type);
-                                        return (
-                                          <div key={resIndex} className="flex items-center gap-2 text-sm text-gray-600">
-                                            <ResourceIcon className="w-4 h-4" />
-                                            <span>{resource.title}</span>
-                                            <span className="text-xs text-gray-500">
-                                              ({resource.type.toUpperCase()}, {formatFileSize(resource.size)})
-                                            </span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
+
                                 </div>
                                 <div className="text-sm text-gray-600 ml-4">
                                   {formatDuration(chapter.duration)}
@@ -606,73 +513,31 @@ const ViewCoursePage = () => {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Course Details</h3>
                 <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="text-gray-600">Course ID:</span>
-                    <p className="font-mono text-gray-900 mt-1">{course.id}</p>
-                  </div>
 
                   <div>
                     <span className="text-gray-600">Category:</span>
                     <p className="text-gray-900 mt-1">{course.category.name}</p>
                   </div>
-
                   <div>
                     <span className="text-gray-600">Instructor:</span>
                     <p className="font-mono text-gray-900 mt-1">{course.instructor.name}</p>
                   </div>
-
-                  {/* ✅ Verification Status with expandable remarks */}
-                  <div>
-                    <span className="text-gray-600">Verification Status:</span>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p
-                        className={`font-semibold capitalize ${course.verification.status === "verified"
-                            ? "text-green-600"
-                            : course.verification.status === "under_review"
-                              ? "text-amber-600"
-                              : course.verification.status === "rejected"
-                                ? "text-red-600"
-                                : "text-gray-500"
-                          }`}
-                      >
-                        {course.verification.status.replace("_", " ")}
-                      </p>
-
-                      {/* ⬇️ Show arrow only if remarks exist */}
-                      {course.verification.remarks && (
-                        <button
-                          onClick={() => setShowRemarks((prev) => !prev)}
-                          className="flex items-center text-gray-500 hover:text-gray-700 transition"
-                        >
-                          {showRemarks ? (
-                            <ChevronUp className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
-                          )}
-                        </button>
+                  {/* <div>
+                    <span className="text-gray-600">Status:</span>
+                    <p className="text-gray-900 mt-1 flex items-center">
+                      {course.isActive ? (
+                        <><CheckCircle className="w-4 h-4 text-green-500 mr-1" /> Active</>
+                      ) : (
+                        <><span className="w-4 h-4 mr-1">•</span> Inactive</>
                       )}
-                    </div>
+                    </p>
+                  </div> */}
 
-                    {/* 🧾 Remarks content */}
-                    {showRemarks && course.verification.remarks && (
-                      <div className="mt-2 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-700">
-                        <p className="text-sm whitespace-pre-line">
-                          {course.verification.remarks}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <span className="text-gray-600">Last Updated:</span>
-                    <p className="text-gray-900 mt-1">{formatDate(course.updatedAt)}</p>
-                  </div>
                 </div>
               </div>
 
-
               {/* Action Buttons (for instructors) */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              {/* <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Instructor Actions</h3>
                 <div className="space-y-2">
                   <Link
@@ -690,7 +555,7 @@ const ViewCoursePage = () => {
                     View Analytics
                   </Link>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -699,4 +564,4 @@ const ViewCoursePage = () => {
   );
 };
 
-export default ViewCoursePage;
+export default CourseOverviewPage;

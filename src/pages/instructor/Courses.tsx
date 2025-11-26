@@ -1,5 +1,5 @@
-import { 
-  Users, 
+import {
+  Users,
   Plus,
   Edit,
   Star,
@@ -17,10 +17,12 @@ import type { AppDispatch } from '../../redux/store';
 import { getCoursesForInstructor } from '../../redux/services/instructorServices';
 import { toast } from 'react-toastify';
 import { Pagination } from '../../components/shared/Pagination';
+import { formatDuration } from '../../utils/formats';
 
 // ✅ Use union type instead of enum
-export type CourseStatus = "draft"  | "published" | "archived";
+export type CourseStatus = "draft" | "published" | "archived";
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
+export type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked"
 
 interface Course {
   id: string;
@@ -33,48 +35,52 @@ interface Course {
   price: number;
   rating: number;
   createdAt: string;
+  verification: {
+    status: VerificationStatus
+  }
 }
 
 const InstructorCourses = () => {
   const navigate = useNavigate()
-  const dispatch=useDispatch<AppDispatch>()
+  const dispatch = useDispatch<AppDispatch>()
   const [selectedStatus, setSelectedStatus] = useState<CourseStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState("");
-  const [page,setPage]=useState(1);
-  const [totalPages,setTotalPages]=useState(1);
-  const [courses,setCourses]=useState<Course[]>([])
-  const [count,setCount]=useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [courses, setCourses] = useState<Course[]>([])
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-      const fetchCourses = async () => {
-        try {
-          const response = await dispatch(
-            getCoursesForInstructor({
-              page,
-              search: searchQuery,
-              status:selectedStatus,
-              limit: 5
-            })
-          ).unwrap();
-          console.log(response);
-          
-          setCourses(response.data.courses ?? []);
-          setTotalPages(response.data.pagination.totalPages ?? 1);
-          setCount(response.data.pagination.totalCount)
-        } catch (err) {
-          toast.error(err as string)
-        }      };
-  
-      fetchCourses();
-  
-    }, [dispatch, page, searchQuery, selectedStatus]);
+    const fetchCourses = async () => {
+      try {
+        const response = await dispatch(
+          getCoursesForInstructor({
+            page,
+            search: searchQuery,
+            status: selectedStatus,
+            limit: 5
+          })
+        ).unwrap();
+        console.log(response);
 
-  const handleEdit=(id:string)=>{
+        setCourses(response.data.courses ?? []);
+        setTotalPages(response.data.pagination.totalPages ?? 1);
+        setCount(response.data.pagination.totalCount)
+      } catch (err) {
+        toast.error(err as string)
+      }
+    };
+
+    fetchCourses();
+
+  }, [dispatch, page, searchQuery, selectedStatus]);
+
+  const handleEdit = (id: string) => {
     navigate(`/instructor/courses/${id}/edit`)
   }
 
-  const filteredCourses = selectedStatus === 'all' 
-    ? courses 
+  const filteredCourses = selectedStatus === 'all'
+    ? courses
     : courses.filter(course => course.status === selectedStatus);
 
   const getStatusConfig = (status: CourseStatus) => {
@@ -166,13 +172,12 @@ const InstructorCourses = () => {
               <button
                 key={key}
                 onClick={() => setSelectedStatus(key as CourseStatus | 'all')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  selectedStatus === key
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${selectedStatus === key
                     ? 'border-teal-500 text-teal-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
-                {label} {(selectedStatus===key)?"( "+count+" )":""}
+                {label} {(selectedStatus === key) ? "( " + count + " )" : ""}
               </button>
             ))}
           </nav>
@@ -189,8 +194,8 @@ const InstructorCourses = () => {
             <div key={course.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Thumbnail */}
               <div className="relative h-40 bg-gray-200">
-                <img 
-                  src={course.thumbnail||'/images/learning.png'} 
+                <img
+                  src={course.thumbnail || '/images/learning.png'}
                   alt={course.title}
                   className="w-full h-full object-cover"
                 />
@@ -210,7 +215,7 @@ const InstructorCourses = () => {
               <div className="p-6">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">{course.title}</h3>
-                  
+
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 mb-3">
                     <div className="flex items-center">
                       <Users className="w-4 h-4 mr-1.5 text-gray-500" />
@@ -224,7 +229,7 @@ const InstructorCourses = () => {
                     )}
                     <div className="flex items-center">
                       <Clock className="w-4 h-4 mr-1.5 text-gray-500" />
-                      <span>{course.duration}h</span>
+                      <span>{formatDuration(course.duration)}</span>
                     </div>
                     <div className="flex items-center">
                       <IndianRupee className="w-4 h-4 mr-1.5 text-gray-500" />
@@ -239,15 +244,17 @@ const InstructorCourses = () => {
                 </div>
 
                 <div className="flex space-x-2">
-                  <button 
-                    onClick={()=>handleEdit(course.id)}
-                    className="flex-1 flex items-center justify-center px-3 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={course.status === 'archived'}
+                  <button
+                    onClick={() => handleEdit(course.id)}
+                    className="flex-1 flex items-center justify-center px-3 py-2 
+             bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 
+             transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={course.status === 'archived' || course.verification.status === "verified"}
                   >
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
                   </button>
-                  <Link 
+                  <Link
                     to={`/instructor/courses/${course.id}/preview`}
                     className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -265,23 +272,23 @@ const InstructorCourses = () => {
         <div className="text-center py-12">
           <div className="text-gray-500 text-lg mb-2">No courses found</div>
           <div className="text-gray-400 text-sm">
-            {selectedStatus === 'all' 
-              ? "You haven't created any courses yet." 
+            {selectedStatus === 'all'
+              ? "You haven't created any courses yet."
               : `No courses with "${getStatusConfig(selectedStatus as CourseStatus).label}" status.`
             }
           </div>
         </div>
       )}
       {/* Paginatgion */}
-            <div className="mt-4 flex justify-center">
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-            </div>
+      <div className="mt-4 flex justify-center">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      </div>
     </>
-    
+
   );
 };
 

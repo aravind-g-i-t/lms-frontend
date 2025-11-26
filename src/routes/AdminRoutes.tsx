@@ -10,7 +10,8 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../redux/store";
 import ManageCategories from "../pages/admin/Category";
 import ManageCourses from "../pages/admin/Courses";
-import ViewCourse from "../pages/admin/ViewCourse";
+import ViewCourseForAdmin from "../pages/admin/ViewCourse";
+import Verifications from "../pages/admin/Verification";
 
 const AdminRoutes = () => {
   const {role}=useSelector((state:RootState)=>state.auth)
@@ -26,7 +27,8 @@ const AdminRoutes = () => {
           <Route path="businesses" element={<ManageBusinesses />} />
           <Route path="categories" element={<ManageCategories />} />
           <Route path="courses" element={<ManageCourses />} />
-          <Route path="courses/:courseId" element={<ViewCourse />} />
+          <Route path="verifications" element={<Verifications />} />
+          <Route path="courses/:courseId" element={<ViewCourseForAdmin />} />
 
 
         </Route>

@@ -12,6 +12,8 @@ import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 import ResetOtpVerification from "../pages/auth/ResetOTPVerify";
 import Home from "../pages/learner/Home";
+import Explore from "../pages/learner/Explore";
+import CourseOverviewPage from "../pages/learner/ViewCourse";
 
 const AppRoutes = () => {
   const { role } = useSelector((state: RootState) =>state.auth);
@@ -19,6 +21,9 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/home" element={<Home/>}/>
+
+      <Route path="/explore" element={<Explore/>}/>
+      <Route path="/course/:courseId" element={<CourseOverviewPage/>}/>
       {!role &&<Route path="/signup" element={<UserSignup/>}/>}
       {!role && email && <Route path="/verify-otp" element={<OtpVerification/>}/>}
       {!role &&<Route path="/reset/email" element={<ForgotPassword/>}/>}
@@ -27,10 +32,9 @@ const AppRoutes = () => {
      { !role && <Route path="/signin" element={<Signin/>}/>}
 
       <Route path="/admin/*" element={<AdminRoutes />} />
-      {role === "learner" && <Route path="/learner/*" element={<LearnerRoutes />} />}
-      {role === "instructor" && <Route path="/instructor/*" element={<InstructorRoutes />} />}
-      {role === "business" && <Route path="/business/*" element={<BusinessRoutes />} />}
-
+      <Route path="/learner/*" element={<LearnerRoutes />} />
+      <Route path="/instructor/*" element={<InstructorRoutes />} />
+      <Route path="/business/*" element={<BusinessRoutes />} />
 
       <Route path="*" element={<Navigate to="/home" />} />
     </Routes>
