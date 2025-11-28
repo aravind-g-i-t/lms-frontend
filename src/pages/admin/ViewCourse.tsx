@@ -9,7 +9,6 @@ import {
   Star,
   CheckCircle,
   Clock,
-  Edit,
   BarChart3,
   PlayCircle,
   Users,
@@ -33,14 +32,12 @@ type VerificationStatus =
   | "rejected"
   | "blocked";
 type CourseLevel = "beginner" | "intermediate" | "advanced";
-type ResourceType = "pdf" | "docs" | "exe" | "zip" | "other";
 
 interface Resource {
   id: string;
-  title: string;
+  name: string;
   file: string;
   size: number;
-  type: ResourceType;
 }
 interface Chapter {
   id: string;
@@ -472,12 +469,12 @@ const ViewCourseForAdmin = () => {
                 </button>
               )}
 
-              <Link
+              {/* <Link
                 to={`/admin/courses/${course.id}/edit`}
                 className="block text-center py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
               >
                 <Edit className="inline w-4 h-4 mr-1" /> Edit Course
-              </Link>
+              </Link> */}
               <Link
                 to={`/admin/courses/${course.id}/analytics`}
                 className="block text-center py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100"

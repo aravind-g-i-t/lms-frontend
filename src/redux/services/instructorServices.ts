@@ -608,6 +608,45 @@ export const updateCourseStatus = createAsyncThunk(
     },
 )
 
+export const addResource = createAsyncThunk(
+    "instructor/course/resource/add",
+    async (input: { courseId:string,moduleId:string, chapterId:string,name:string,file:string,size:number}, { rejectWithValue }) => {
+        try {            
+            const result = await axiosInstance.patch("instructor/course/resource/add", input);
 
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
 
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const deleteResource = createAsyncThunk(
+    "instructor/course/resource/delete",
+    async (input: { courseId:string,moduleId:string,chapterId:string,resourceId:string}, { rejectWithValue }) => {
+        try {            
+            const result = await axiosInstance.patch("instructor/course/resource/delete", input);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
 

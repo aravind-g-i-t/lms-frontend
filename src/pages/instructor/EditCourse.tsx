@@ -14,25 +14,25 @@ import {
   Edit,
   Upload,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
-import { addChapter, addNewModule, deleteChapter, deleteModule, getCategoryOptions, getCourseDetails, updateChapterInfo, updateCourseInfo, updateCourseObjectives, updateCoursePrerequisites, updateCoursePreviewVideo, updateCourseTags, updateCourseThumbnail, updateModuleInfo, updateVideo } from '../../redux/services/instructorServices';
+import { addChapter, addNewModule, addResource, deleteChapter, deleteModule, deleteResource, getCategoryOptions, getCourseDetails, updateChapterInfo, updateCourseInfo, updateCourseObjectives, updateCoursePrerequisites, updateCoursePreviewVideo, updateCourseTags, updateCourseThumbnail, updateModuleInfo, updateVideo } from '../../redux/services/instructorServices';
 import { toast } from 'react-toastify';
-import { getPresignedDownloadUrl, uploadImageToS3, uploadVideoToS3 } from '../../config/s3Config';
+import { getPresignedDownloadUrl, uploadImageToS3, uploadResourceToS3, uploadVideoToS3 } from '../../config/s3Config';
 
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 export type CourseStatus = "draft" | "published" | "archived";
-export type ResourceType = "pdf" | "docs" | "exe" | "zip" | "other";
 export type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected";
 
 interface Chapter {
-  id:string;
+  id: string;
   title: string;
   description: string;
   video: string;
@@ -49,15 +49,14 @@ interface NewChapter {
 }
 
 interface Resource {
-  id:string;
-  title: string;
+  id: string;
+  name: string;
   file: string;
   size: number;
-  type: ResourceType;
 }
 
 interface Module {
-  id:string;
+  id: string;
   title: string;
   description: string;
   duration: number;
@@ -108,7 +107,7 @@ interface Course {
 
 const EditCoursePage = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const navigate= useNavigate();
+  const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
 
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -120,42 +119,7 @@ const EditCoursePage = () => {
 
 
   // Form state
-  const [courseData, setCourseData] = useState<Course | null>({
-    id: '',
-    title: '',
-    description: "",
-    prerequisites: [],
-    category: {
-      id: "",
-      name: ""
-    },
-    enrollmentCount: 0,
-    instructor: {
-      id: "",
-      name: "",
-      profilePic: null
-    },
-    level: 'beginner',
-    duration: 0,
-    tags: [],
-    whatYouWillLearn: [],
-    totalRatings: 0,
-    status: 'draft',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    thumbnail: null,
-    previewVideo: null,
-    price: 0,
-    rating: null,
-    publishedAt: null,
-    modules: [],
-    verification: {
-      status: "not_verified",
-      reviewedAt: null,
-      submittedAt: null,
-      remarks: null
-    }
-  });
+  const [courseData, setCourseData] = useState<Course | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([])
 
@@ -437,7 +401,7 @@ const EditCoursePage = () => {
   }
 
 
-  const handleUpdateModule = async (moduleId: string,title:string,description:string) => {
+  const handleUpdateModule = async (moduleId: string, title: string, description: string) => {
     try {
       if (!courseData) {
         return
@@ -453,12 +417,12 @@ const EditCoursePage = () => {
     }
   }
 
-  const handleUpdateChapter = async (moduleId: string, chapterId: string,title:string,description:string) => {
+  const handleUpdateChapter = async (moduleId: string, chapterId: string, title: string, description: string) => {
     try {
       if (!courseData) {
         return
       }
-      
+
       await dispatch(updateChapterInfo({
         courseId: courseData.id,
         moduleId,
@@ -471,24 +435,24 @@ const EditCoursePage = () => {
     }
   }
 
-  const handleUpdateVideo = async (moduleId: string, chapterId: string,chapterDuration:number, videoFile: File) => {
+  const handleUpdateVideo = async (moduleId: string, chapterId: string, chapterDuration: number, videoFile: File) => {
     try {
       if (!courseData) {
         return
       }
-      
+
       const objectKey = await uploadVideoToS3(videoFile);
-      console.log("objectKey",objectKey);
-      
+      console.log("objectKey", objectKey);
+
       if (!objectKey) {
         toast.error("Video upload failed");
         return;
       }
       const videoDuration = await getVideoDuration(videoFile);
-      console.log("videoDuration",videoDuration);
-      
+      console.log("videoDuration", videoDuration);
+
       const videoURL = await getPresignedDownloadUrl(objectKey);
-      console.log("videoDuration",videoDuration);
+      console.log("videoDuration", videoDuration);
       await dispatch(updateVideo({
         courseId: courseData.id,
         moduleId,
@@ -497,7 +461,7 @@ const EditCoursePage = () => {
         duration: videoDuration
       })).unwrap();
 
-      
+
       setCourseData(prev =>
         prev
           ? ({
@@ -513,7 +477,7 @@ const EditCoursePage = () => {
                       ? {
                         ...chapter,
                         duration: chapter.duration - chapterDuration + videoDuration,
-                        video:videoURL,
+                        video: videoURL,
                       }
                       : chapter
                   ),
@@ -524,8 +488,8 @@ const EditCoursePage = () => {
           : prev
       );
 
-      console.log("courseData",courseData);
-      
+      console.log("courseData", courseData);
+
 
     } catch (error) {
       toast.error(error as string)
@@ -548,7 +512,7 @@ const EditCoursePage = () => {
   };
 
 
-  const handleDeleteModule = async (moduleId: string,moduleDuration:number) => {
+  const handleDeleteModule = async (moduleId: string, moduleDuration: number) => {
     try {
       if (!courseData) {
         return
@@ -557,7 +521,7 @@ const EditCoursePage = () => {
         courseId: courseData.id,
         moduleId,
       })).unwrap();
-      
+
       setCourseData(prev =>
         prev
           ? ({ ...prev, duration: prev.duration - moduleDuration, modules: prev.modules.filter((module) => module.id !== moduleId) } as Course)
@@ -568,7 +532,7 @@ const EditCoursePage = () => {
     }
   }
 
-  const handleDeleteChapter = async (moduleId: string, chapterId: string,chapterDuration:number) => {
+  const handleDeleteChapter = async (moduleId: string, chapterId: string, chapterDuration: number) => {
     try {
       if (!courseData) {
         return
@@ -579,7 +543,7 @@ const EditCoursePage = () => {
         moduleId,
         chapterId
       })).unwrap();
-      
+
 
       setCourseData(prev =>
         prev
@@ -696,7 +660,8 @@ const EditCoursePage = () => {
     } catch (error) {
       toast.error(error as string)
     }
-  };
+  }; 
+
 
   const removePrerequisite = async (index: number) => {
     try {
@@ -726,7 +691,7 @@ const EditCoursePage = () => {
   const handleSaveModule = async () => {
     try {
       if (!newModule || !courseData) return
-      const result=await dispatch(addNewModule({
+      const result = await dispatch(addNewModule({
         id: courseData.id,
         title: newModule.title,
         description: newModule.description
@@ -750,6 +715,7 @@ const EditCoursePage = () => {
   };
 
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateModule = (index: number, field: keyof Module, value: any) => {
     setCourseData(prev =>
       prev
@@ -771,6 +737,7 @@ const EditCoursePage = () => {
     moduleIndex: number,
     chapterIndex: number,
     field: keyof Chapter,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any
   ) => {
     setCourseData(prev =>
@@ -794,27 +761,45 @@ const EditCoursePage = () => {
 
 
 
-  const addResource = (moduleIndex: number, chapterIndex: number) => {
+  const handleAddResource = async (moduleId: string, chapterId: string, resource: File) => {
+    if (!courseData) {
+      return
+    }
+    const name = resource.name;
+    const size = resource.size;
+
+    const objectKey = await uploadResourceToS3(resource);
+    console.log("objectKey", objectKey);
+
+    if (!objectKey) {
+      toast.error("Failed to upload resource.");
+      return;
+    }
+
+    const result = await dispatch(addResource({
+      courseId: courseData.id,
+      moduleId,
+      chapterId,
+      name,
+      file: objectKey,
+      size
+    })).unwrap();
+
     setCourseData(prev =>
       prev
         ? ({
           ...prev,
-          modules: prev.modules.map((module, i) =>
-            i === moduleIndex
+          modules: prev.modules.map((module) =>
+            module.id === moduleId
               ? {
                 ...module,
-                chapters: module.chapters.map((chapter, j) =>
-                  j === chapterIndex
+                chapters: module.chapters.map((chapter) =>
+                  chapter.id === chapterId
                     ? {
                       ...chapter,
                       resources: [
                         ...chapter.resources,
-                        {
-                          title: 'New Resource',
-                          file: '',
-                          size: 0,
-                          type: 'pdf',
-                        },
+                        result.resource
                       ],
                     }
                     : chapter
@@ -827,55 +812,32 @@ const EditCoursePage = () => {
     );
   };
 
-  const updateResource = (
-    moduleIndex: number,
-    chapterIndex: number,
-    resourceIndex: number,
-    field: keyof Resource,
-    value: any
-  ) => {
-    setCourseData(prev =>
-      prev
-        ? ({
-          ...prev,
-          modules: prev.modules.map((module, i) =>
-            i === moduleIndex
-              ? {
-                ...module,
-                chapters: module.chapters.map((chapter, j) =>
-                  j === chapterIndex
-                    ? {
-                      ...chapter,
-                      resources: chapter.resources.map((resource, k) =>
-                        k === resourceIndex
-                          ? { ...resource, [field]: value }
-                          : resource
-                      ),
-                    }
-                    : chapter
-                ),
-              }
-              : module
-          ),
-        } as Course)
-        : prev
-    );
-  };
+  const handleDeleteResource = async (moduleId: string, chapterId: string, resourceId: string) => {
+    if (!courseData) {
+      return
+    }
 
-  const deleteResource = (moduleIndex: number, chapterIndex: number, resourceIndex: number) => {
+
+    await dispatch(deleteResource({
+      courseId: courseData.id,
+      moduleId,
+      chapterId,
+      resourceId
+    })).unwrap();
+
     setCourseData(prev =>
       prev
         ? ({
           ...prev,
-          modules: prev.modules.map((module, i) =>
-            i === moduleIndex
+          modules: prev.modules.map((module) =>
+            module.id === moduleId
               ? {
                 ...module,
-                chapters: module.chapters.map((chapter, j) =>
-                  j === chapterIndex
+                chapters: module.chapters.map((chapter) =>
+                  chapter.id === chapterId
                     ? {
                       ...chapter,
-                      resources: chapter.resources.filter((_, k) => k !== resourceIndex),
+                      resources: chapter.resources.filter(r => r.id !== resourceId),
                     }
                     : chapter
                 ),
@@ -890,8 +852,11 @@ const EditCoursePage = () => {
 
 
 
-  const toggleVideo=(chapterId:string)=>{
-    const newExpandedVideos= new Set(expandedVideos);
+
+
+
+  const toggleVideo = (chapterId: string) => {
+    const newExpandedVideos = new Set(expandedVideos);
     if (newExpandedVideos.has(chapterId)) {
       newExpandedVideos.delete(chapterId);
     } else {
@@ -939,7 +904,7 @@ const EditCoursePage = () => {
   if (!courseData) {
     return null
   }
-  if(courseData.verification.status==="verified"){
+  if (courseData.verification.status === "verified") {
     navigate("/instructor/courses")
   }
   return (
@@ -1428,7 +1393,7 @@ const EditCoursePage = () => {
                           />
                           <div className="flex justify-end">
                             <button
-                              onClick={() => handleUpdateModule(module.id,module.title,module.description)}
+                              onClick={() => handleUpdateModule(module.id, module.title, module.description)}
                               className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 cursor-pointer flex items-center gap-2">
                               <Upload className="w-4 h-4" />
                               Update Info
@@ -1440,7 +1405,7 @@ const EditCoursePage = () => {
                         <div className="flex gap-2">
 
                           <button
-                            onClick={() => handleDeleteModule(module.id,module.duration)}
+                            onClick={() => handleDeleteModule(module.id, module.duration)}
                             className="p-2 text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -1472,7 +1437,7 @@ const EditCoursePage = () => {
 
                               <div className="flex justify-end">
                                 <button
-                                  onClick={() => handleUpdateChapter(module.id, chapter.id,chapter.title,chapter.description)}
+                                  onClick={() => handleUpdateChapter(module.id, chapter.id, chapter.title, chapter.description)}
                                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 cursor-pointer flex items-center gap-2">
                                   <Upload className="w-4 h-4" />
                                   Update Info
@@ -1523,7 +1488,7 @@ const EditCoursePage = () => {
                                           className="hidden"
                                           onChange={(e) => {
                                             if (e.target.files && e.target.files[0]) {
-                                              handleUpdateVideo(module.id, chapter.id,chapter.duration, e.target.files[0]);
+                                              handleUpdateVideo(module.id, chapter.id, chapter.duration, e.target.files[0]);
                                             }
                                           }}
                                         />
@@ -1536,7 +1501,7 @@ const EditCoursePage = () => {
                             </div>
 
                             <button
-                              onClick={() => handleDeleteChapter(module.id, chapter.id,chapter.duration)}
+                              onClick={() => handleDeleteChapter(module.id, chapter.id, chapter.duration)}
                               className="p-2 text-red-500 hover:text-red-700"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1547,43 +1512,58 @@ const EditCoursePage = () => {
                           <div className="mt-4 border-t pt-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-gray-700">Resources</span>
-                              <button
-                                onClick={() => addResource(moduleIndex, chapterIndex)}
+                              <label
                                 className="text-xs text-teal-600 hover:text-teal-700 flex items-center"
                               >
                                 <Plus className="w-3 h-3 mr-1" />
                                 Add Resource
-                              </button>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mkv,.webm"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleAddResource(module.id, chapter.id, e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                              </label>
                             </div>
 
                             {chapter.resources.map((resource, resourceIndex) => (
-                              <div key={resourceIndex} className="flex items-center gap-2 mb-2">
-                                <input
-                                  type="text"
-                                  value={resource.title}
-                                  onChange={(e) => updateResource(moduleIndex, chapterIndex, resourceIndex, 'title', e.target.value)}
-                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                                  placeholder="Resource title"
-                                />
-                                <select
-                                  value={resource.type}
-                                  onChange={(e) => updateResource(moduleIndex, chapterIndex, resourceIndex, 'type', e.target.value)}
-                                  className="px-2 py-1 border border-gray-300 rounded text-sm"
-                                >
-                                  <option value="pdf">PDF</option>
-                                  <option value="docs">DOCS</option>
-                                  <option value="zip">ZIP</option>
-                                  <option value="exe">EXE</option>
-                                  <option value="other">Other</option>
-                                </select>
+                              <div
+                                key={resourceIndex}
+                                className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-2 shadow-sm hover:shadow transition"
+                              >
+                                {/* Left: icon + file info */}
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  {/* File Icon */}
+                                  <div className="flex items-center justify-center w-8 h-8 bg-white border border-gray-300 rounded-md shadow-sm">
+                                    <FileText className="w-4 h-4 text-gray-600" />
+                                  </div>
+
+                                  {/* File metadata */}
+                                  <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
+                                      {resource.name}
+                                    </span>
+
+                                    <span className="text-xs text-gray-500">
+                                      {(resource.size / 1024 / 1024).toFixed(2)} MB
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Right: delete button */}
                                 <button
-                                  onClick={() => deleteResource(moduleIndex, chapterIndex, resourceIndex)}
-                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() => handleDeleteResource(module.id, chapter.id, resource.id)}
+                                  className="text-red-500 hover:text-red-700 p-1"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
                               </div>
                             ))}
+
                           </div>
                         </div>
                       ))}

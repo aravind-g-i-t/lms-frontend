@@ -88,4 +88,24 @@ export const uploadVideoToS3 = async (file: File): Promise<string> => {
   return key;
 };
 
+export const uploadResourceToS3 = async (file: File): Promise<string> => {
+  if (!file) throw new Error("No file provided for upload.");
+
+  const { data } = await axios.get(`${baseURL}/s3/presigned-url`, {
+    params: {
+      fileName: file.name,
+      fileType: file.type || "application/octet-stream",
+      folder: "resources",
+    },
+  });
+
+  const { url, key } = data;
+
+  await axios.put(url, file, {
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+  });
+
+  return key;
+};
+
 

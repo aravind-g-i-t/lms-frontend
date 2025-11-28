@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { CheckCircle, XCircle, ArrowRight, Home, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, ArrowRight, RefreshCw } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
@@ -88,17 +88,17 @@ export default function PaymentResult() {
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
-                  onClick={() => navigate("/learner/my-courses")}
+                  onClick={() => navigate("/learner/dashboard")}
                   className="flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition"
                 >
                   Go to My Courses <ArrowRight className="w-4 h-4" />
                 </button>
 
                 <button
-                  onClick={() => navigate("/learner/dashboard")}
+                  onClick={() => navigate("/explore")}
                   className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-lg hover:bg-gray-50 transition"
                 >
-                  <Home className="w-4 h-4" /> Dashboard
+                 Continue Browsing
                 </button>
               </div>
             </>

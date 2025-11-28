@@ -5,17 +5,15 @@ import {
   BookOpen,
   CheckCircle,
   PlayCircle,
-  Download,
   ChevronDown,
   ChevronUp,
-  FileText,
   Calendar,
   BarChart3,
   Award,
   Eye,
   Edit,
   Archive,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -32,7 +30,6 @@ export type CourseStatus = "draft" | "published" | "archived";
 
 export type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked"
 
-export type ResourceType = "pdf" | "docs" | "exe" | "zip" | "other";
 
 export interface Chapter {
   title: string;
@@ -44,10 +41,10 @@ export interface Chapter {
 }
 
 export interface Resource {
-  title: string;
+  id: string;
+  name: string;
   file: string;
   size: number;
-  type: ResourceType;
 }
 
 export interface Module {
@@ -200,22 +197,11 @@ const ViewCoursePage = () => {
     }
   };
 
-  const getResourceIcon = (type: ResourceType) => {
-    switch (type) {
-      case 'pdf':
-      case 'docs':
-        return FileText;
-      case 'zip':
-      case 'exe':
-        return Download;
-      default:
-        return FileText;
-    }
-  };
 
-  const formatFileSize = (size: number) => {
-    return size >= 1 ? `${size.toFixed(1)} MB` : `${(size * 1024).toFixed(0)} KB`;
-  };
+
+  // const formatFileSize = (size: number) => {
+  //   return size >= 1 ? `${size.toFixed(1)} MB` : `${(size * 1024).toFixed(0)} KB`;
+  // };
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A';
@@ -239,7 +225,7 @@ const ViewCoursePage = () => {
       await dispatch(submitCourseForReview({ courseId: course.id })).unwrap();
 
       setCourse(prev =>
-        prev ? ({ ...prev, verification: {...course.verification,status:"under_review"} } as Course) : prev
+        prev ? ({ ...prev, verification: { ...course.verification, status: "under_review" } } as Course) : prev
       );
       toast.success("Course submitted for verification.")
     } catch (error) {
@@ -251,13 +237,13 @@ const ViewCoursePage = () => {
 
   const handlePublish = async () => {
     try {
-      await dispatch(updateCourseStatus({ 
+      await dispatch(updateCourseStatus({
         courseId: course.id,
-        status:"published"
+        status: "published"
       })).unwrap();
 
       setCourse(prev =>
-        prev ? ({ ...prev, status:"published" } as Course) : prev
+        prev ? ({ ...prev, status: "published" } as Course) : prev
       );
       toast.success("Course published successfully.")
     } catch (error) {
@@ -267,13 +253,13 @@ const ViewCoursePage = () => {
 
   const handleArchive = async () => {
     try {
-      await dispatch(updateCourseStatus({ 
+      await dispatch(updateCourseStatus({
         courseId: course.id,
-        status:"archived"
+        status: "archived"
       })).unwrap();
 
       setCourse(prev =>
-        prev ? ({ ...prev, status:"archived" } as Course) : prev
+        prev ? ({ ...prev, status: "archived" } as Course) : prev
       );
       toast.success("Course archived successfully.")
     } catch (error) {
@@ -303,23 +289,23 @@ const ViewCoursePage = () => {
           </button>
         )}
         {(course.verification.status === "verified" &&
-        course.status!=="published")&& (
-          <button
-            onClick={handlePublish}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
-          >
-            Publish Course
-          </button>
-        )}
+          course.status !== "published") && (
+            <button
+              onClick={handlePublish}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
+            >
+              Publish Course
+            </button>
+          )}
         {(course.verification.status === "verified" &&
-        course.status==="published")&& (
-          <button
-            onClick={handleArchive}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
-          >
-            Archive Course
-          </button>
-        )}
+          course.status === "published") && (
+            <button
+              onClick={handleArchive}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
+            >
+              Archive Course
+            </button>
+          )}
       </div>
       {/* Hero Section with Thumbnail */}
       <div className="relative bg-gray-900 text-white">
@@ -498,22 +484,61 @@ const ViewCoursePage = () => {
                                   </div>
                                   <p className="text-sm text-gray-600 ml-6">{chapter.description}</p>
 
-                                  {chapter.resources.length > 0 && (
+                                  {/* {chapter.resources.length > 0 && (
                                     <div className="mt-3 ml-6 space-y-2">
+
                                       {chapter.resources.map((resource, resIndex) => {
-                                        const ResourceIcon = getResourceIcon(resource.type);
+                                        const ext = resource.name.split(".").pop()?.toLowerCase() || "";
+
+
+                                        const Icon = (() => {
+                                          if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return ImageIcon;
+                                          if (["mp4", "mov", "webm", "mkv"].includes(ext)) return VideoIcon;
+                                          if (["zip", "rar", "7z"].includes(ext)) return Archive;
+                                          if (["pdf"].includes(ext)) return FileText;
+                                          return FileText; 
+                                        })();
+
                                         return (
-                                          <div key={resIndex} className="flex items-center gap-2 text-sm text-gray-600">
-                                            <ResourceIcon className="w-4 h-4" />
-                                            <span>{resource.title}</span>
-                                            <span className="text-xs text-gray-500">
-                                              ({resource.type.toUpperCase()}, {formatFileSize(resource.size)})
-                                            </span>
+                                          <div
+                                            key={resIndex}
+                                            className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm hover:shadow-md transition"
+                                          >
+                                      
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                              <div className="flex items-center justify-center w-9 h-9 bg-gray-100 border border-gray-300 rounded-md">
+                                                <Icon className="w-5 h-5 text-gray-700" />
+                                              </div>
+
+                                              <div className="flex flex-col overflow-hidden">
+                                                <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                                                  {resource.name}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                  {(resource.size / 1024 / 1024).toFixed(2)} MB
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                      
+                                            <a
+                                              href={resource.file}
+                                              download
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-teal-600 hover:text-teal-700 p-1"
+                                              title="Download"
+                                            >
+                                              <Download className="w-5 h-5" />
+                                            </a>
                                           </div>
                                         );
                                       })}
+
                                     </div>
-                                  )}
+                                  )} */}
+
+
                                 </div>
                                 <div className="text-sm text-gray-600 ml-4">
                                   {formatDuration(chapter.duration)}
@@ -627,12 +652,12 @@ const ViewCoursePage = () => {
                     <div className="mt-1 flex items-center gap-2">
                       <p
                         className={`font-semibold capitalize ${course.verification.status === "verified"
-                            ? "text-green-600"
-                            : course.verification.status === "under_review"
-                              ? "text-amber-600"
-                              : course.verification.status === "rejected"
-                                ? "text-red-600"
-                                : "text-gray-500"
+                          ? "text-green-600"
+                          : course.verification.status === "under_review"
+                            ? "text-amber-600"
+                            : course.verification.status === "rejected"
+                              ? "text-red-600"
+                              : "text-gray-500"
                           }`}
                       >
                         {course.verification.status.replace("_", " ")}

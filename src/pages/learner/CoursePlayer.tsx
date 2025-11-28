@@ -4,21 +4,22 @@ import { useDispatch } from 'react-redux';
 import {
     ChevronLeft, ChevronRight, CheckCircle, Circle,
     FileText, Download, Menu, X, List,
-    ChevronDown, ChevronUp, PlayCircle, Clock
+    ChevronDown, ChevronUp, PlayCircle, Clock,
+    ImageIcon,
+    VideoIcon,
+    Archive
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
 import { getFullCourseForLearner, markChapterAsCompleted } from '../../redux/services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
-export type ResourceType = "pdf" | "docs" | "exe" | "zip" | "other";
 
 export interface Resource {
     id: string;
-    title: string;
+    name: string;
     file: string;
     size: number;
-    type: ResourceType;
 }
 
 export interface Chapter {
@@ -208,18 +209,18 @@ const CoursePlayerPage = () => {
         return currentChapterIndex > 0 || currentModuleIndex > 0;
     };
 
-    const getResourceIcon = (type: ResourceType) => {
-        switch (type) {
-            case 'pdf': return <FileText className="w-4 h-4 text-red-500" />;
-            case 'docs': return <FileText className="w-4 h-4 text-blue-500" />;
-            case 'zip': return <Download className="w-4 h-4 text-yellow-500" />;
-            default: return <FileText className="w-4 h-4 text-gray-500" />;
-        }
-    };
+    // const getResourceIcon = (type: ResourceType) => {
+    //     switch (type) {
+    //         case 'pdf': return <FileText className="w-4 h-4 text-red-500" />;
+    //         case 'docs': return <FileText className="w-4 h-4 text-blue-500" />;
+    //         case 'zip': return <Download className="w-4 h-4 text-yellow-500" />;
+    //         default: return <FileText className="w-4 h-4 text-gray-500" />;
+    //     }
+    // };
 
-    const formatFileSize = (bytes: number) => {
-        return `${Math.round(bytes / 1024)} KB`;
-    };
+    // const formatFileSize = (bytes: number) => {
+    //     return `${Math.round(bytes / 1024)} KB`;
+    // };
 
     if (loading) {
         return (
@@ -370,7 +371,7 @@ const CoursePlayerPage = () => {
                                             <FileText className="w-4 h-4" />
                                             Resources ({currentChapter.resources.length})
                                         </button>
-                                        <button
+                                        {/* <button
                                             onClick={() => { setShowNotes(true); setShowResources(false); }}
                                             className={`pb-3 px-1 border-b-2 transition-colors ${showNotes
                                                 ? 'border-teal-500 text-teal-400'
@@ -378,7 +379,7 @@ const CoursePlayerPage = () => {
                                                 }`}
                                         >
                                             Notes
-                                        </button>
+                                        </button> */}
                                     </div>
                                 </div>
 
@@ -392,35 +393,68 @@ const CoursePlayerPage = () => {
 
                                 {showResources && (
                                     <div className="space-y-3">
+
                                         {currentChapter.resources.length === 0 ? (
                                             <div className="text-center py-12 text-gray-500">
                                                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
                                                 <p>No resources available for this chapter</p>
                                             </div>
                                         ) : (
-                                            currentChapter.resources.map((resource) => (
-                                                <div
-                                                    key={resource.id}
-                                                    className="bg-gray-800 rounded-lg p-4 flex items-center justify-between hover:bg-gray-750 transition-colors"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        {getResourceIcon(resource.type)}
-                                                        <div>
-                                                            <h4 className="text-white font-medium text-sm">{resource.title}</h4>
-                                                            <p className="text-gray-500 text-xs">{formatFileSize(resource.size)} • {resource.type.toUpperCase()}</p>
+                                            currentChapter.resources.map((resource) => {
+                                                // Extract extension
+                                                const ext = resource.name.split(".").pop()?.toLowerCase() || "";
+
+                                                // Select icon for file
+                                                const Icon = (() => {
+                                                    if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return ImageIcon;
+                                                    if (["mp4", "mov", "webm", "mkv"].includes(ext)) return VideoIcon;
+                                                    if (["zip", "rar", "7z"].includes(ext)) return Archive;
+                                                    if (["pdf"].includes(ext)) return FileText;
+                                                    return FileText; // default icon
+                                                })();
+
+                                                return (
+                                                    <div
+                                                        key={resource.id}
+                                                        className="bg-gray-800 rounded-lg p-4 flex items-center justify-between hover:bg-gray-750 transition-colors"
+                                                    >
+                                                        {/* Left side block */}
+                                                        <div className="flex items-center gap-3">
+                                                            <Icon className="w-5 h-5 text-gray-300" />
+
+                                                            <div>
+                                                                {/* Title (file name) */}
+                                                                <h4 className="text-white font-medium text-sm truncate max-w-[200px]">
+                                                                    {resource.name}
+                                                                </h4>
+
+                                                                {/* File size + extension */}
+                                                                <p className="text-gray-500 text-xs">
+                                                                    {(resource.size / 1024 / 1024).toFixed(2)} MB • {ext.toUpperCase()}
+                                                                </p>
+                                                            </div>
                                                         </div>
+
+                                                        {/* Download button */}
+                                                        <a
+                                                            href={resource.file}
+                                                            download
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                            Download
+                                                        </a>
                                                     </div>
-                                                    <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm">
-                                                        <Download className="w-4 h-4" />
-                                                        Download
-                                                    </button>
-                                                </div>
-                                            ))
+                                                );
+                                            })
                                         )}
                                     </div>
                                 )}
 
-                                {showNotes && (
+
+                                {/* {showNotes && (
                                     <div className="bg-gray-800 rounded-lg p-6">
                                         <p className="text-gray-400 mb-4">Take notes while learning...</p>
                                         <textarea
@@ -431,7 +465,7 @@ const CoursePlayerPage = () => {
                                             Save Notes
                                         </button>
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         </div>
                     </main>
@@ -519,7 +553,7 @@ const CoursePlayerPage = () => {
                         </div>
                     </aside>
 
-                    
+
                 </div>
 
                 {/* Mobile Sidebar Overlay */}

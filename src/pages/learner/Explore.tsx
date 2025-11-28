@@ -70,8 +70,8 @@ const Explore = () => {
         setTotalPages(result.pagination.totalPages);
         setTotalCount(result.pagination.totalCount)
         setError("");
-      } catch (error) {
-        toast.error(error as string);
+      } catch{
+
         setError("Failed to load courses");
       } finally {
         setLoading(false);
@@ -85,8 +85,8 @@ const Explore = () => {
       try {
         const response = await dispatch(getCategoryOptions()).unwrap();
         setCategories(response.data.categories);
-      } catch (err) {
-        toast.error(err as string);
+      } catch  {
+        toast.error("Internal server error.");
       }
     };
     fetchCategories();
