@@ -193,21 +193,21 @@ export const createPaymentSession = createAsyncThunk(
         {
             courseId,
             method,
-            coupon,
+            couponId,
         }: {
             courseId: string;
             method: string;
-            coupon: string | null;
+            couponId: string | null;
         },
         { rejectWithValue }
     ) => {
         try {
-            console.log(courseId, method, coupon);
+            console.log(courseId, method, couponId);
 
             const res = await axiosInstance.post("/payment/initiate", {
                 courseId,
                 method,
-                coupon,
+                couponId,
             });
 
             return res.data;

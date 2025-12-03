@@ -92,7 +92,7 @@ export default function Checkout() {
         createPaymentSession({
           courseId: course.id,
           method: paymentMethod,
-          coupon: selectedCoupon?.code || null,
+          couponId: selectedCoupon?.id || null,
         })
       ).unwrap();
 
@@ -334,7 +334,7 @@ export default function Checkout() {
             >
               {isPaying
                 ? "Processing..."
-                : `Pay ₹${course.price.toLocaleString()} & Enroll`}
+                : `Pay ₹${finalPrice.toLocaleString()} & Enroll`}
             </button>
           </div>
         </div>
