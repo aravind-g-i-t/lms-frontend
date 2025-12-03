@@ -119,7 +119,7 @@ export const learnerResetPassword = createAsyncThunk(
 
 export const getCoursesForLearners = createAsyncThunk(
     "learner/courses",
-    async (input: { page?: number, limit: number, search?: string; sort: string; instructorIds?: string[]; categoryIds?: string[]; levels?: string[]; durationRange?: [number, number]; priceRange?: [number, number]; minRating?: number; },
+    async (input: { page?: number, limit: number, search?: string; sort: string; instructorIds?: string[]; categoryIds?: string[]; levels?: string[]; durationRange?: [number, number]; priceRange?: [number, number]; minRating?: number; learnerId:string|null},
         { rejectWithValue }
     ) => {
         try {
@@ -314,3 +314,71 @@ export const markChapterAsCompleted = createAsyncThunk(
         }
     },
 )
+
+export const addToFavourites = createAsyncThunk(
+    "learner/favourites/add",
+    async (data: { courseId: string }, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.post("learner/favourites", data);
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const removeFromFavourites = createAsyncThunk(
+    "learner/favourites/delete",
+    async (data: { courseId: string }, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.delete(`learner/favourites/${data.courseId}`);
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const getFavourites = createAsyncThunk(
+    "learner/favourites",
+    async (input: { page?: number, limit: number, search?: string; },
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.get("/learner/favourites", {
+                params: input,
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

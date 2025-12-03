@@ -7,16 +7,38 @@ import { createPaymentSession, getCourseDetailsForCheckout } from "../../redux/s
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { getStripe } from "../../config/stripe";
-// import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 
 
 interface Course {
   id: string;
   title: string;
   price: number;
-  instructor: {id:string; name: string; profilePic: string };
+  instructor: { id: string; name: string; profilePic: string };
   thumbnail: string;
   description: string;
+}
+
+type DiscountType = "amount" | "percentage"
+
+interface ApplicableCoupon {
+  id: string;
+  description: string;
+  code: string;
+  discountType: DiscountType
+  discountValue: number;
+  maxDiscount: number | null;
+  minCost: number;
+  expiresAt: Date;
+  isActive: boolean
+  usageLimit: number;
+  usageCount: number;
+  createdAt: Date;
+}
+
+interface NotApplicableCoupon {
+  couponId: string;
+  code: string;
+  reason: string;
 }
 
 export default function Checkout() {
@@ -25,9 +47,11 @@ export default function Checkout() {
   const dispatch = useDispatch<AppDispatch>()
 
   const [course, setCourse] = useState<Course | null>(null);
-  const [coupon, setCoupon] = useState("");
+  // const [coupon, setCoupon] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "wallet">("stripe");
-  // const [clientSecret, setClientSecret] = useState<string>("");
+  const [applicableCoupons, setApplicableCoupons] = useState<ApplicableCoupon[]>();
+  const [notApplicableCoupons, setNotApplicableCoupons] = useState<NotApplicableCoupon[]>();
+  const [selectedCoupon, setSelectedCoupon] = useState<ApplicableCoupon | null>(null)
 
   const [isPaying, setIsPaying] = useState(false);
 
@@ -40,9 +64,11 @@ export default function Checkout() {
         if (!courseId) {
           return
         }
-        const response = await dispatch(getCourseDetailsForCheckout({courseId})).unwrap();
+        const response = await dispatch(getCourseDetailsForCheckout({ courseId })).unwrap();
         console.log(response.data);
-        setCourse(response.data.course)
+        setCourse(response.data.course);
+        setApplicableCoupons(response.data.coupons.applicable);
+        setNotApplicableCoupons(response.data.coupons.notApplicable)
 
       } catch (err) {
         toast.error(err as string);
@@ -66,9 +92,10 @@ export default function Checkout() {
         createPaymentSession({
           courseId: course.id,
           method: paymentMethod,
-          coupon: null,
+          coupon: selectedCoupon?.code || null,
         })
       ).unwrap();
+
       console.log(data);
 
 
@@ -83,6 +110,30 @@ export default function Checkout() {
       setIsPaying(false);
     }
   }
+
+  function calculateDiscountedPrice() {
+    if (!selectedCoupon || !course) return course?.price ?? 0;
+
+    const price = course.price;
+
+    if (selectedCoupon.discountType === "percentage") {
+      const raw = (price * selectedCoupon.discountValue) / 100;
+
+      const capped = selectedCoupon.maxDiscount
+        ? Math.min(raw, selectedCoupon.maxDiscount)
+        : raw;
+
+      return Math.max(price - capped, 0);
+    }
+
+    if (selectedCoupon.discountType === "amount") {
+      return Math.max(price - selectedCoupon.discountValue, 0);
+    }
+
+    return price;
+  }
+
+  const finalPrice = calculateDiscountedPrice();
 
 
 
@@ -128,7 +179,7 @@ export default function Checkout() {
 
 
             {/* Coupon */}
-            <form className="flex gap-2" >
+            {/* <form className="flex gap-2" >
               <input
                 type="text"
                 value={coupon}
@@ -144,20 +195,98 @@ export default function Checkout() {
               >
                 Apply
               </button>
-            </form>
+            </form> */}
+
+            {/* Coupon List */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold text-gray-800">Available Coupons</h3>
+
+              {applicableCoupons && applicableCoupons.length > 0 ? (
+                <div className="space-y-2">
+                  {applicableCoupons.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`p-3 border rounded-lg transition ${selectedCoupon?.id === c.id
+                          ? "border-teal-600 bg-teal-50"
+                          : "border-gray-300 cursor-pointer"
+                        }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div
+                          onClick={() => setSelectedCoupon(c)}
+                          className="flex flex-col cursor-pointer flex-1"
+                        >
+                          <span className="font-semibold">{c.code}</span>
+                          <span className="text-teal-700">
+                            {c.discountType === "percentage"
+                              ? `${c.discountValue}% OFF`
+                              : `₹${c.discountValue} OFF`}
+                          </span>
+                        </div>
+
+                        {selectedCoupon?.id === c.id && (
+                          <button
+                            onClick={() => setSelectedCoupon(null)}
+                            className="text-sm text-red-600 px-2 py-1 border border-red-400 rounded-md hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-gray-600 mt-1">{c.description}</p>
+                    </div>
+
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No applicable coupons</p>
+              )}
+
+              {/* Not Applicable Coupons */}
+              {notApplicableCoupons && notApplicableCoupons.length > 0 && (
+                <>
+                  <h3 className="text-lg font-bold mt-4 text-gray-800">Other Coupons</h3>
+                  <div className="space-y-2">
+                    {notApplicableCoupons.map((c) => (
+                      <div
+                        key={c.couponId}
+                        className="p-3 border border-gray-300 rounded-lg opacity-60"
+                      >
+                        <div className="flex justify-between">
+                          <span className="font-semibold">{c.code}</span>
+                        </div>
+                        <p className="text-sm text-red-500">{c.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
 
             {/* Order Summary */}
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Order Summary</h3>
+
               <div className="flex justify-between py-1 text-gray-700">
-                <span>Course Price</span>{" "}
+                <span>Course Price</span>
                 <span>₹{course.price.toLocaleString()}</span>
               </div>
 
+              {selectedCoupon && (
+                <div className="flex justify-between py-1 text-green-600">
+                  <span>Coupon Applied ({selectedCoupon.code})</span>
+                  <span>- ₹{(course.price - finalPrice).toLocaleString()}</span>
+                </div>
+              )}
+
               <div className="flex justify-between font-bold py-1 text-gray-900 border-t mt-2">
-                <span>Total</span> <span>₹{course.price.toLocaleString()}</span>
+                <span>Total</span>
+                <span>₹{finalPrice.toLocaleString()}</span>
               </div>
             </div>
+
 
             {/* Payment Method */}
             <div>

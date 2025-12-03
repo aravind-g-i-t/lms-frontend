@@ -12,6 +12,7 @@ import ManageCategories from "../pages/admin/Category";
 import ManageCourses from "../pages/admin/Courses";
 import ViewCourseForAdmin from "../pages/admin/ViewCourse";
 import Verifications from "../pages/admin/Verification";
+import ManageCoupons from "../pages/admin/Coupon";
 
 const AdminRoutes = () => {
   const {role}=useSelector((state:RootState)=>state.auth)
@@ -28,6 +29,7 @@ const AdminRoutes = () => {
           <Route path="categories" element={<ManageCategories />} />
           <Route path="courses" element={<ManageCourses />} />
           <Route path="verifications" element={<Verifications />} />
+          <Route path="coupons" element={<ManageCoupons />} />
           <Route path="courses/:courseId" element={<ViewCourseForAdmin />} />
 
 

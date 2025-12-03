@@ -1,10 +1,10 @@
-import { Search, Star, SlidersHorizontal } from "lucide-react";
+import { Search, Star, SlidersHorizontal, Heart } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCoursesForLearners } from "../../redux/services/learnerServices";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../redux/store";
+import { addToFavourites, getCoursesForLearners, removeFromFavourites } from "../../redux/services/learnerServices";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../redux/store";
 import { toast } from "react-toastify";
 import { getCategoryOptions } from "../../redux/services/instructorServices";
 import { formatDuration } from "../../utils/formats";
@@ -23,12 +23,14 @@ interface Course {
   description: string;
   thumbnail: string;
   totalRatings: string;
-  isEnrolled:boolean;
-  enrolledAt:Date |null;
+  isEnrolled: boolean;
+  enrolledAt: Date | null;
+  isFavourite: boolean
 }
 
 const Explore = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const { id } = useSelector((state: RootState) => state.learner)
   const [courses, setCourses] = useState<Course[]>([]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("latest");
@@ -44,7 +46,7 @@ const Explore = () => {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount,setTotalCount]= useState(1)
+  const [totalCount, setTotalCount] = useState(1)
 
   const levels: CourseLevel[] = ["beginner", "intermediate", "advanced"];
   const ratings = [5, 4, 3, 2, 1];
@@ -61,16 +63,19 @@ const Explore = () => {
             categoryIds,
             levels: selectedLevels,
             priceRange: [minPrice, maxPrice],
-            durationRange: [minDuration * 60*60, maxDuration * 60*60],
+            durationRange: [minDuration * 60 * 60, maxDuration * 60 * 60],
             minRating,
             sort,
+            learnerId: id
           })
         ).unwrap();
+        console.log(result);
+
         setCourses(result.courses);
         setTotalPages(result.pagination.totalPages);
         setTotalCount(result.pagination.totalCount)
         setError("");
-      } catch{
+      } catch {
 
         setError("Failed to load courses");
       } finally {
@@ -78,19 +83,57 @@ const Explore = () => {
       }
     };
     fetchCourses();
-  }, [search, page, categoryIds, selectedLevels, minPrice, maxPrice, minRating, sort, minDuration, maxDuration, dispatch]);
+  }, [search, page, categoryIds, selectedLevels, minPrice, maxPrice, minRating, sort, minDuration, maxDuration, id, dispatch]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await dispatch(getCategoryOptions()).unwrap();
         setCategories(response.data.categories);
-      } catch  {
+      } catch {
         toast.error("Internal server error.");
       }
     };
     fetchCategories();
   }, [dispatch]);
+
+  const handleAddToFavourites = async (courseId: string) => {
+    try {
+      const result = await dispatch(addToFavourites({
+        courseId
+      })).unwrap();
+      setCourses(prev =>
+        prev.map(course =>
+          course.id === courseId
+            ? { ...course, isFavourite: true }
+            : course
+        )
+      );
+
+      toast.success(result.message)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
+
+  const handleRemoveFromFavourites = async (courseId: string) => {
+    try {
+      const result = await dispatch(removeFromFavourites({
+        courseId
+      })).unwrap();
+      setCourses(prev =>
+        prev.map(course =>
+          course.id === courseId
+            ? { ...course, isFavourite: false }
+            : course
+        )
+      );
+
+      toast.success(result.message)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
 
   const toggleCategorySelection = (categoryId: string) =>
     setCategoryIds(prev =>
@@ -311,9 +354,8 @@ const Explore = () => {
               <div className="grid gap-7 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {courses.length > 0 ? (
                   courses.map((course) => (
-                    <Link
+                    <div
                       key={course.id}
-                      to={`/course/${course.id}`}
                       className="bg-white rounded-2xl border hover:shadow-teal-400/40 hover:shadow-2xl hover:-translate-y-1 hover:border-teal-400 transition-transform flex flex-col group overflow-hidden relative w-full"
                       title={course.title}
                     >
@@ -331,34 +373,68 @@ const Explore = () => {
                           </div>
                         )}
 
+                        {id && (
+                          <div className="absolute top-2 right-2 z-10">
+                            {course.isFavourite ? (
+                              <Heart
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleRemoveFromFavourites(course.id);
+                                }}
+                                className="w-6 h-6 text-red-500 fill-red-500 cursor-pointer"
+                              />
+                            ) : (
+                              <Heart
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleAddToFavourites(course.id);
+                                }}
+                                className="w-6 h-6 text-gray-300 hover:text-red-500 hover:fill-red-500 cursor-pointer transition cursor-pointer"
+                              />
+                            )}
+                          </div>
+                        )}
                       </div>
+
                       <div className="p-6 flex-1 flex flex-col">
                         {/* Badges */}
                         <div className="flex gap-2 mb-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize shadow-sm
-                            ${course.level === "beginner" ? "bg-blue-50 text-blue-600" :
+            ${course.level === "beginner" ? "bg-blue-50 text-blue-600" :
                               course.level === "intermediate" ? "bg-purple-100 text-purple-800" :
-                                "bg-orange-100 text-orange-900"}`}>
+                                "bg-orange-100 text-orange-900"}`}
+                          >
                             {course.level}
                           </span>
-                          <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium shadow-sm">{course.category.name}</span>
+
+                          <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium shadow-sm">
+                            {course.category.name}
+                          </span>
                         </div>
-                        {/* Title and Instructor */}
+
+                        {/* Title */}
                         <h3 className="font-bold text-lg text-gray-900 group-hover:text-teal-700 line-clamp-1 mb-1" title={course.title}>
                           {course.title}
                         </h3>
+
                         <div className="flex items-center text-xs text-gray-500 mb-2 gap-2">
-                          By <span className="font-semibold text-gray-700 truncate max-w-[120px]" title={course.instructor.name}>{course.instructor.name}</span>
+                          By <span className="font-semibold text-gray-700 truncate max-w-[120px]">{course.instructor.name}</span>
                         </div>
+
                         <p className="text-sm text-gray-600 line-clamp-2 flex-1 mb-1">{course.description}</p>
-                        {/* Info Row */}
+
+                        {/* Info */}
                         <div className="flex items-center justify-between mt-4">
                           <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <svg fill="currentColor" className="w-4 h-4 text-teal-400" viewBox="0 0 20 20"><path d="M10 2a8 8 0 108 8 8 8 8 0 00-8-8zm0 14.5A6.5 6.5 0 1116.5 10 6.51 6.51 0 0110 16.5zm.75-6.44L13 9.25a.75.75 0 00-1.5 0v2.25a.75.75 0 00.75.75h2.25a.75.75 0 000-1.5H10.75V10.06z"/></svg>
+                            <svg fill="currentColor" className="w-4 h-4 text-teal-400" viewBox="0 0 20 20">
+                              <path d="M10 2a8 8 0 108 8 8 8 8 0 00-8-8zm0 14.5A6.5 6.5 0 1116.5 10 6.51 6.51 0 0110 16.5zm.75-6.44L13 9.25a.75.75 0 00-1.5 0v2.25a.75.75 0 00.75.75h2.25a.75.75 0 000-1.5H10.75V10.06z" />
+                            </svg>
                             {formatDuration(course.duration)}
                           </span>
+
                           <span className="text-teal-600 font-extrabold text-base">₹{course.price}</span>
                         </div>
+
                         {/* Rating */}
                         <div className="flex items-center gap-2 mt-3 text-sm">
                           <span className="flex items-center gap-1">
@@ -367,15 +443,22 @@ const Explore = () => {
                             <span className="ml-1 text-gray-500">({course.totalRatings ?? 0})</span>
                           </span>
                         </div>
-                        <button className="w-full mt-4 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition shadow">
-                          View Course
-                        </button>
+
+                        {/* View Course Button (ONLY clickable part) */}
+                        <Link to={`/course/${course.id}`}>
+                          <button className="w-full mt-4 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition shadow">
+                            View Course
+                          </button>
+                        </Link>
                       </div>
-                    </Link>
+                    </div>
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-12 text-gray-500">No courses found.</div>
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    No courses found.
+                  </div>
                 )}
+
               </div>
             )}
             {/* Pagination */}

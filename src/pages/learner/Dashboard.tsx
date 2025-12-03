@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { BookOpen, Award, Wallet, History, Settings } from 'lucide-react';
+import { BookOpen, Award, Wallet, History, Settings, Heart } from 'lucide-react';
 import type { RootState } from '../../redux/store';
 import LearnerNav from '../../components/learner/LearnerNav';
 import MyCourses from '../../components/learner/Courses';
 import Certificates from '../../components/learner/Certificates';
 import MyWallet from '../../components/learner/Wallet';
 import PurchaseHistory from '../../components/learner/PurchaseHistory';
+import MyFavourites from '../../components/learner/Favourites';
 
 
-type TabType = 'courses' | 'certificates' | 'wallet' | 'history';
+type TabType = 'courses'|"favourites" | 'certificates' | 'wallet' | 'history';
 
 const LearnerDashboard = () => {
   const { name } = useSelector((state: RootState) => state.learner);
@@ -18,6 +19,7 @@ const LearnerDashboard = () => {
 
   const sidebarItems = [
     { id: 'courses' as TabType, label: 'My Courses', icon: BookOpen },
+    { id: 'favourites' as TabType, label: 'My Favourites', icon: Heart },
     { id: 'certificates' as TabType, label: 'Certificates', icon: Award },
     { id: 'wallet' as TabType, label: 'Wallet', icon: Wallet },
     { id: 'history' as TabType, label: 'Purchase History', icon: History },
@@ -27,6 +29,8 @@ const LearnerDashboard = () => {
     switch (activeTab) {
       case 'courses':
         return <MyCourses />;
+      case 'favourites':
+        return <MyFavourites />;
       case 'certificates':
         return <Certificates />;
       case 'wallet':

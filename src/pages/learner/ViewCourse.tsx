@@ -16,7 +16,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { getCourseDetailsForLearner } from '../../redux/services/learnerServices';
+import { addToFavourites, getCourseDetailsForLearner, removeFromFavourites } from '../../redux/services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
@@ -73,6 +73,7 @@ export interface Course {
   publishedAt: Date | null;
   isEnrolled: boolean;
   enrolledAt: Date | null;
+  isFavourite:boolean
 }
 
 
@@ -115,7 +116,8 @@ const CourseOverviewPage = () => {
     publishedAt: null,
     modules: [],
     isEnrolled: false,
-    enrolledAt: null
+    enrolledAt: null,
+    isFavourite:false
   });
 
   useEffect(() => {
@@ -138,7 +140,35 @@ const CourseOverviewPage = () => {
     };
 
     fetchCourseDetails();
+
   }, [dispatch, courseId, id]);
+
+
+  const handleAddToFavourites = async () => {
+    try {
+      const courseId = course.id;
+      const result =await dispatch(addToFavourites({
+        courseId
+      })).unwrap();
+      setCourse({...course,isFavourite:true});
+      toast.success(result.message)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
+
+  const handleRemoveFromFavourites = async () => {
+    try {
+      const courseId = course.id;
+      const result = await dispatch(removeFromFavourites({
+        courseId
+      })).unwrap();
+      setCourse({...course,isFavourite:false})
+      toast.success(result.message)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
 
   const toggleModule = (index: number) => {
     const newExpanded = new Set(expandedModules);
@@ -162,6 +192,7 @@ const CourseOverviewPage = () => {
         return 'bg-orange-100 text-orange-800';
     }
   };
+
 
 
 
@@ -308,10 +339,20 @@ const CourseOverviewPage = () => {
                       >
                         Enroll Now
                       </button>
-
-                      <button className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors">
-                        Add to Wishlist
+                    {course.isFavourite?(
+                      <button className="w-full border-2 border-gray-400 text-gray-400 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                        onClick={handleRemoveFromFavourites}
+                      >
+                        Remove from Favourites
                       </button>
+                    ):(
+
+                      <button className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
+                      onClick={handleAddToFavourites}
+                      >
+                        Add to Favourites
+                      </button>
+                    )}
                     </>
                   )}
 
