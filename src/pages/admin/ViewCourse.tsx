@@ -21,8 +21,8 @@ import {
   XCircle,
   ArrowLeft,
 } from "lucide-react";
-import { getCourseDetails } from "../../redux/services/instructorServices";
-import { updateCourseVerification } from "../../redux/services/adminServices";
+import { getCourseDetails } from "../../services/instructorServices";
+import { updateCourseVerification } from "../../services/adminServices";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus =

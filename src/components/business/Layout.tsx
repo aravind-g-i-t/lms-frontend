@@ -19,7 +19,7 @@ import {
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
-import { logout } from "../../redux/services/userAuthServices";
+import { logout } from "../../services/userAuthServices";
 import toast from "react-hot-toast";
 import { clearBusiness } from "../../redux/slices/businessSlice";
 

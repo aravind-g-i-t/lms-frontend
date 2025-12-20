@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { logout } from "../services/userAuthServices";
-import { getBusinessProfile } from "../services/businessServices";
+import { logout } from "../../services/userAuthServices";
+import { getBusinessProfile } from "../../services/businessServices";
 
 interface IBusinessState {
     id: string | null;

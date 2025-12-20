@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { googleSignIn, logout, signin, userTokenRefresh } from "../services/userAuthServices";
-import { adminLogout, adminSignin } from "../services/adminServices";
+import { googleSignIn, logout, signin, userTokenRefresh } from "../../services/userAuthServices";
+import { adminLogout, adminSignin } from "../../services/adminServices";
 
 
 interface IAuthState {

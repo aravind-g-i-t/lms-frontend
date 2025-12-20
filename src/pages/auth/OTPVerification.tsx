@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { resendOTP, verifyOTP } from "../../redux/services/userAuthServices";
+import { resendOTP, verifyOTP } from "../../services/userAuthServices";
 import { clearSignup } from "../../redux/slices/signupSlice";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { toast } from "react-toastify";

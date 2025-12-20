@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
-import { getCourseDetails, submitCourseForReview, updateCourseStatus } from '../../redux/services/instructorServices';
+import { getCourseDetails, submitCourseForReview, updateCourseStatus } from '../../services/instructorServices';
 import { toast } from 'react-toastify';
 import { formatDuration } from '../../utils/formats';
 

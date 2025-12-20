@@ -5,7 +5,7 @@ import * as yup from "yup";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { useNavigate } from "react-router-dom";
-import { sendOTP } from "../../redux/services/userAuthServices";
+import { sendOTP } from "../../services/userAuthServices";
 import { Eye, EyeOff } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { toast } from "react-toastify";

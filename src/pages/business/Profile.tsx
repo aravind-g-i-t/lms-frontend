@@ -19,7 +19,7 @@ import {
 import ReactModal from "react-modal"
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch } from "react-redux";
-import { applyForBusinessVerification, getBusinessProfile, resetBusinessPassword, updateBusinessLicense, updateBusinessProfile, updateBusinessProfileImage } from "../../redux/services/businessServices";
+import { applyForBusinessVerification, getBusinessProfile, resetBusinessPassword, updateBusinessLicense, updateBusinessProfile, updateBusinessProfileImage } from "../../services/businessServices";
 import type { AppDispatch } from "../../redux/store";
 import { toast } from "react-toastify";
 import { setBusinessImage, setBusinessName } from "../../redux/slices/businessSlice";

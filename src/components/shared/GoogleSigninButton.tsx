@@ -2,7 +2,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { useNavigate } from "react-router-dom";
-import { googleSignIn } from "../../redux/services/userAuthServices";
+import { googleSignIn } from "../../services/userAuthServices";
 import { setLearner } from "../../redux/slices/learnerSlice";
 import { setInstructor } from "../../redux/slices/instructorSlice";
 import { setBusiness } from "../../redux/slices/businessSlice";

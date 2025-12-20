@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
-import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../redux/services/learnerServices";
+import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../services/learnerServices";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { setLearnerImage, setLearnerName } from "../../redux/slices/learnerSlice";
 import { toast } from "react-toastify";

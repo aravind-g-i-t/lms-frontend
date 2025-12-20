@@ -7,11 +7,12 @@ import {
     ChevronDown, ChevronUp, PlayCircle, Clock,
     ImageIcon,
     VideoIcon,
-    Archive
+    Archive,
+    MessageCircle
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { getFullCourseForLearner, markChapterAsCompleted } from '../../redux/services/learnerServices';
+import { getFullCourseForLearner, markChapterAsCompleted } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
 
@@ -132,6 +133,18 @@ const CoursePlayerPage = () => {
 
         fetchCourse();
     }, [courseId, dispatch, navigate]);
+
+    // const handleMessageInstructor=async()=>{
+    //     if(!course){
+    //         return
+    //     }
+    //     const result=await dispatch(getConversationId({
+    //         courseId:course.id,
+    //         instructorId:course.instructor.id
+    //     })).unwrap();
+    //     navigate(`/learner/messages?conversationId=${result.conversationId}`)
+    // }
+
 
     const toggleModule = (index: number) => {
         const newExpanded = new Set(expandedModules);
@@ -264,6 +277,28 @@ const CoursePlayerPage = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => {
+                                navigate("/learner/messages", {
+                                    state: { courseId: course.id }
+                                });
+
+                            }}
+                            className="text-gray-300 hover:text-teal-400 flex items-center gap-1 px-3 py-1 border border-gray-600 rounded-md text-sm"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            Message Instructor
+                        </button>
+                        {course.progressPercentage===100 && (
+                            <button
+                                onClick={() => navigate(`/learner/courses/${course.id}/quiz`)}
+                                className="w-full p-4 flex items-center gap-3 bg-gray-850 hover:bg-gray-750 transition-colors border-t border-gray-700"
+                            >
+                                <FileText className="w-5 h-5 text-teal-400" />
+                                <span className="text-white font-medium">Final Quiz / Assessment</span>
+                            </button>
+                        )}
+
                         {/* Progress */}
                         <div className="hidden md:flex items-center gap-2">
                             <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">

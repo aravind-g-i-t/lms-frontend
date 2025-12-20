@@ -6,7 +6,7 @@ import {
   getInstructors,
   toggleInstructorStatus,
   updateInstructorVerificationStatus,
-} from "../../redux/services/adminServices";
+} from "../../services/adminServices";
 import { Pagination } from "../../components/shared/Pagination";
 import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { CreditCard, Wallet } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { toast } from "react-toastify";
-import { createPaymentSession, getCourseDetailsForCheckout } from "../../redux/services/learnerServices";
+import { createPaymentSession, getCourseDetailsForCheckout } from "../../services/learnerServices";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { getStripe } from "../../config/stripe";

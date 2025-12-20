@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { adminLogout, adminSignin } from "../services/adminServices";
-import { userTokenRefresh } from "../services/userAuthServices";
+import { adminLogout, adminSignin } from "../../services/adminServices";
+import { userTokenRefresh } from "../../services/userAuthServices";
 
 
 interface AdminState {

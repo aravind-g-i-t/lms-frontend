@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { SearchBar } from '../../components/shared/SearchBar';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
-import { getCoursesForInstructor } from '../../redux/services/instructorServices';
+import { getCoursesForInstructor } from '../../services/instructorServices';
 import { toast } from 'react-toastify';
 import { Pagination } from '../../components/shared/Pagination';
 import { formatDuration } from '../../utils/formats';

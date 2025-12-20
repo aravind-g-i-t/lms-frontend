@@ -8,7 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import type { AppDispatch } from "../../redux/store";
-import { getCoursesForAdmin, updateCourseVerification, } from "../../redux/services/adminServices";
+import { getCoursesForAdmin, updateCourseVerification, } from "../../services/adminServices";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked";

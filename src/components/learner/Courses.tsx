@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
-import { getEnrollments } from '../../redux/services/learnerServices';
+import { getEnrollments } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
 type ViewMode = 'grid' | 'list';
@@ -278,7 +278,7 @@ const MyCourses = () => {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages  && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
             className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"

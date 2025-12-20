@@ -16,7 +16,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { addToFavourites, getCourseDetailsForLearner, removeFromFavourites } from '../../redux/services/learnerServices';
+import { addToFavourites, getCourseDetailsForLearner, removeFromFavourites } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";

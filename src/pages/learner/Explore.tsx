@@ -2,11 +2,11 @@ import { Search, Star, SlidersHorizontal, Heart } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { addToFavourites, getCoursesForLearners, removeFromFavourites } from "../../redux/services/learnerServices";
+import { addToFavourites, getCoursesForLearners, removeFromFavourites } from "../../services/learnerServices";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { toast } from "react-toastify";
-import { getCategoryOptions } from "../../redux/services/instructorServices";
+import { getCategoryOptions } from "../../services/instructorServices";
 import { formatDuration } from "../../utils/formats";
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";

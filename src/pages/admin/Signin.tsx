@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Shield, Mail, Lock } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { adminSignin } from "../../redux/services/adminServices";
+import { adminSignin } from "../../services/adminServices";
 import type { AppDispatch } from "../../redux/store";
 import { clearAdminStatus } from "../../redux/slices/statusSlice";
 import { toast } from "react-toastify";

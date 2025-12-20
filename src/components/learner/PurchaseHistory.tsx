@@ -35,7 +35,7 @@ const PurchaseHistory = () => {
         setLoading(true);
         // const response = await dispatch(getPurchaseHistory()).unwrap();
         // setPurchases(response.data);
-        
+
         // Mock data
         setPurchases([
           {
@@ -163,7 +163,7 @@ const PurchaseHistory = () => {
           {purchases.map((purchase) => {
             const statusConfig = getStatusConfig(purchase.status);
             const StatusIcon = statusConfig.icon;
-            
+
             return (
               <div key={purchase.id} className="p-4">
                 <div className="flex gap-4">

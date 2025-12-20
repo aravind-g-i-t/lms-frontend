@@ -4,7 +4,7 @@ import { CheckCircle, XCircle, ArrowRight, RefreshCw } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { verifyPayment } from "../../redux/services/learnerServices";
+import { verifyPayment } from "../../services/learnerServices";
 import { toast } from "react-toastify";
 
 type PaymentStatus = "success" | "failed" | "loading";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
-import { getLearnerData, getLearners, toggleLearnerStatus } from "../../redux/services/adminServices";
+import { getLearnerData, getLearners, toggleLearnerStatus } from "../../services/adminServices";
 import { Pagination } from "../../components/shared/Pagination";
 import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";

@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { setSignupCredentials } from "../../redux/slices/signupSlice";
 import { useNavigate } from "react-router-dom";
-import { verifyEmail } from "../../redux/services/userAuthServices";
+import { verifyEmail } from "../../services/userAuthServices";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { toast } from "react-toastify";
 import { AlertCircle } from "lucide-react";

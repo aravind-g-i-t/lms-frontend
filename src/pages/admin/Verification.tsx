@@ -11,7 +11,7 @@ import type { AppDispatch } from "../../redux/store";
 import {
   getCoursesForAdmin,
   updateCourseVerification,
-} from "../../redux/services/adminServices";
+} from "../../services/adminServices";
 
 type VerificationStatus =
   | "not_verified"

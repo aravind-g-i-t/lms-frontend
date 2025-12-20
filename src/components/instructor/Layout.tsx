@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
-import { logout } from "../../redux/services/userAuthServices";
+import { logout } from "../../services/userAuthServices";
 import toast from "react-hot-toast";
 import { clearInstructor } from "../../redux/slices/instructorSlice";
 

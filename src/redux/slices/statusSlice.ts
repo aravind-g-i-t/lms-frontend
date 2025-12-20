@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { googleSignIn, logout, resendOTP, sendOTP, signin, verifyOTP } from "../services/userAuthServices";
-import { adminLogout, adminSignin, getBusinesses, getInstructors, getLearners } from "../services/adminServices";
+import { googleSignIn, logout, resendOTP, sendOTP, signin, verifyOTP } from "../../services/userAuthServices";
+import { adminLogout, adminSignin, getBusinesses, getInstructors, getLearners } from "../../services/adminServices";
 
 interface IStatus{
     loading:boolean;

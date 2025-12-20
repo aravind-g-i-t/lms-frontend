@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { resendOTP, sendOTP, verifyEmail } from "../services/userAuthServices";
+import { resendOTP, sendOTP, verifyEmail } from "../../services/userAuthServices";
 
 interface ISignupState{
     email:string;

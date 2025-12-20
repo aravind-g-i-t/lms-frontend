@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
-import { applyForInstructorVerification, getInstructorProfile, resetInstructorPassword, updateInstructorExpertise, updateInstructorIDProof, updateInstructorProfile, updateInstructorProfileImage, updateInstructorResume } from '../../redux/services/instructorServices';
+import { applyForInstructorVerification, getInstructorProfile, resetInstructorPassword, updateInstructorExpertise, updateInstructorIDProof, updateInstructorProfile, updateInstructorProfileImage, updateInstructorResume } from '../../services/instructorServices';
 import { setInstructorImage, setInstructorName } from '../../redux/slices/instructorSlice';
 import { toast } from 'react-toastify';
 import ReactModal from 'react-modal';

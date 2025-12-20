@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { logout } from "../services/userAuthServices";
-import { getInstructorProfile } from "../services/instructorServices";
+import { logout } from "../../services/userAuthServices";
+import { getInstructorProfile } from "../../services/instructorServices";
 
 interface IInstructorState {
     id: string | null;

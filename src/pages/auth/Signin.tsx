@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
-import { signin } from '../../redux/services/userAuthServices';
+import { signin } from '../../services/userAuthServices';
 import { setLearner } from '../../redux/slices/learnerSlice';
 import { setInstructor } from '../../redux/slices/instructorSlice';
 import { setBusiness } from '../../redux/slices/businessSlice';

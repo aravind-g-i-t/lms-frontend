@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { store } from "../redux/store";
-import { logout, userTokenRefresh } from "../redux/services/userAuthServices";
+import { logout, userTokenRefresh } from "../services/userAuthServices";
 import { toast } from "react-toastify";
 
 const apiURL = import.meta.env.VITE_API_URL

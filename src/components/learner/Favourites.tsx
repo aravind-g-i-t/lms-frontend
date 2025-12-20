@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 import type { AppDispatch } from "../../redux/store";
 import { formatDuration } from "../../utils/formats";
-import { getFavourites, removeFromFavourites } from "../../redux/services/learnerServices";
+import { getFavourites, removeFromFavourites } from "../../services/learnerServices";
 
 interface FavouriteCourse {
   id: string;
@@ -61,7 +61,7 @@ const MyFavourites = () => {
         console.log(result);
         
         setCourses(result.courses);
-        setTotalPages(totalPages);
+        setTotalPages(result.pagination.totalPages);
         
       } catch (err) {
         toast.error(err as string);
@@ -229,7 +229,7 @@ const MyFavourites = () => {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
             className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"

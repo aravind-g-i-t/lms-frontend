@@ -1,9 +1,9 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { AxiosError } from "axios";
-import type { GoogleSigninRequest, OTPVerificationRequest, ResendOTPRequest, ResetPasswordRequest, SigninRequest, SignupRequest, VerifyEmailRequest, VerifyResetOTPRequest } from "../../types/api/auth";
-import axiosInstance from "../../config/axiosInstance";
-import { API } from "../../constants/api";
+import type { GoogleSigninRequest, OTPVerificationRequest, ResendOTPRequest, ResetPasswordRequest, SigninRequest, SignupRequest, VerifyEmailRequest, VerifyResetOTPRequest } from "../types/api/auth";
+import axiosInstance from "../config/axiosInstance";
+import { API } from "../constants/api";
 
 
 

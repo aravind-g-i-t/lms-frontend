@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Edit2, X } from "lucide-react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { addCategory, getCategories, toggleCategoryStatus, updateCategory } from "../../redux/services/adminServices";
+import { addCategory, getCategories, toggleCategoryStatus, updateCategory } from "../../services/adminServices";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
 import { SearchBar } from "../../components/shared/SearchBar";

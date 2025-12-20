@@ -1,8 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
-import axiosInstance from "../../config/axiosInstance";
-import type { UpdateBusinessProfileInput } from "../types/serviceInput";
-import { API } from "../../constants/api";
+import axiosInstance from "../config/axiosInstance";
+import type { UpdateBusinessProfileInput } from "../redux/types/serviceInput";
+import { API } from "../constants/api";
 
 
 export const getBusinessProfile = createAsyncThunk(

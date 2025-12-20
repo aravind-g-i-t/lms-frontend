@@ -1,8 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
-import axiosInstance from "../../config/axiosInstance";
-import type { AdminSigninRequest } from "../../types/api/admin";
-import { API } from "../../constants/api";
+import axiosInstance from "../config/axiosInstance";
+import type { AdminSigninRequest } from "../types/api/admin";
+import { API } from "../constants/api";
 
 
 

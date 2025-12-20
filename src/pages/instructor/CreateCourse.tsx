@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Save } from 'lucide-react';
-import { createCourse, getCategoryOptions } from '../../redux/services/instructorServices';
+import { createCourse, getCategoryOptions } from '../../services/instructorServices';
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';

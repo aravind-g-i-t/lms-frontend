@@ -16,3 +16,21 @@ export interface IInstructor{
     resume?:string;
 }
 
+export interface IAttachment {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    fileSize: number;
+}
+
+export interface IMessage{
+    conversationId?:string;
+    senderId:string;
+    senderRole:"learner"|"instructor";
+    content:string;
+    attachments?:Attachment[];
+    courseId?:string;
+    receiverId?:string;
+}
+

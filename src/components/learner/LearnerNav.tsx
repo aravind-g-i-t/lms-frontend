@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Search, ShoppingCart, Menu, X, LogOut } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, LogOut, MessageCircleIcon } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { clearLearner } from "../../redux/slices/learnerSlice";
 import { toast } from "react-hot-toast"
-import { logout } from "../../redux/services/userAuthServices";
+import { logout } from "../../services/userAuthServices";
 
 export default function LearnerNav() {
   const { name, profilePic } = useSelector((state: RootState) => state.learner);
@@ -101,11 +101,11 @@ export default function LearnerNav() {
                 <>
   
                   <Link
-                    to="#"
-                    title="Notifications"
+                    to="/learner/messages"
+                    title="Messages"
                     className="p-2 rounded-lg hover:bg-teal-600 transition-colors hidden sm:block"
                   >
-                    <Bell className="w-5 h-5" />
+                    <MessageCircleIcon className="w-5 h-5" />
                   </Link>
 
                   {/* Profile Button */}
@@ -227,13 +227,14 @@ export default function LearnerNav() {
           {/* Sidebar Footer */}
           {name && (
             <div className="mt-auto p-4 border-t border-gray-700 space-y-3">
-              <button className="w-full flex items-center space-x-3 text-gray-300 hover:text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+
+              {/* <button className="w-full flex items-center space-x-3 text-gray-300 hover:text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors">
                 <ShoppingCart className="w-5 h-5" />
                 <span>Cart</span>
-              </button>
+              </button> */}
               <button className="w-full flex items-center space-x-3 text-gray-300 hover:text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors">
-                <Bell className="w-5 h-5" />
-                <span>Notifications</span>
+                <MessageCircleIcon className="w-5 h-5" />
+                <span>Messages</span>
               </button>
               <button
                 onClick={handleLogout}

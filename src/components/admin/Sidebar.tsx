@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { adminLogout } from "../../redux/services/adminServices";
+import { adminLogout } from "../../services/adminServices";
 import { clearAdmin } from "../../redux/slices/adminSlice";
 
 const navigationItems = [

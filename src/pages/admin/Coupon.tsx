@@ -10,7 +10,7 @@ import { FilterDropdown } from "../../components/shared/FilterDropdown";
 
 import * as yup from "yup";
 import { toast } from "react-toastify";
-import { createCoupon, getCoupons, updateCoupon, updateCouponStatus } from "../../redux/services/adminServices";
+import { createCoupon, getCoupons, updateCoupon, updateCouponStatus } from "../../services/adminServices";
 
 type DiscountType = "percentage" | "amount";
 
