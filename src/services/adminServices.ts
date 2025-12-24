@@ -576,3 +576,28 @@ export const updateCouponStatus = createAsyncThunk(
         }
     },
 )
+
+export const getCourseDetailsForAdmin = createAsyncThunk(
+    "admin/course/details",
+    async (
+        id: string,
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.get("/admin/course", {
+                params: { id },
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

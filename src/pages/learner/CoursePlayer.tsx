@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { getFullCourseForLearner, markChapterAsCompleted } from '../../services/learnerServices';
+import { getCourseVideo, getFullCourseForLearner, markChapterAsCompleted } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 
 
@@ -27,7 +27,7 @@ export interface Chapter {
     id: string;
     title: string;
     description: string;
-    video: string;
+    video: string|null;
     duration: number;
     resources: Resource[];
 }
@@ -156,13 +156,23 @@ const CoursePlayerPage = () => {
         setExpandedModules(newExpanded);
     };
 
-    const selectChapter = (moduleIdx: number, chapterIdx: number) => {
+    const selectChapter = async (moduleIdx: number, chapterIdx: number) => {
         if (!course) return;
-        const chapter = course.modules[moduleIdx].chapters[chapterIdx];
+        const module=course.modules[moduleIdx]
+        const chapter = module.chapters[chapterIdx];
+        const result= await dispatch(getCourseVideo({
+            courseId:course.id,
+            moduleId:module.id,
+            chapterId:chapter.id
+        })).unwrap();
+        console.log(result);
+        
+        chapter.video=result.video;
         setCurrentChapter(chapter);
+
         setCurrentModuleIndex(moduleIdx);
         setCurrentChapterIndex(chapterIdx);
-        setShowSidebar(false); // Auto-hide on mobile
+        setShowSidebar(false); 
     };
 
     const goToNextChapter = () => {
@@ -322,7 +332,7 @@ const CoursePlayerPage = () => {
                     {/* Main Content Area */}
                     <main className="flex-1 flex flex-col overflow-hidden">
                         {/* Video Player */}
-                        <div className="bg-black w-full flex justify-center items-center">
+                        {currentChapter.video &&(<div className="bg-black w-full flex justify-center items-center">
                             <video
                                 key={currentChapter.id}
                                 controls
@@ -332,7 +342,7 @@ const CoursePlayerPage = () => {
                             >
                                 Your browser does not support video playback.
                             </video>
-                        </div>
+                        </div>)}
 
 
                         {/* Chapter Navigation */}

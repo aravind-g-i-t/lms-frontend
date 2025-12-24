@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Search, MoreVertical, Paperclip, ArrowLeft, User, BookOpen } from 'lucide-react';
+import { Send, Search, MoreVertical, Paperclip, ArrowLeft, User, BookOpen, Phone, Video } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { MessageBubble } from '../../components/learner/MessageBubble';
@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getLearnerConversations, getLearnerMessages } from '../../services/learnerServices';
 import { toast } from 'react-toastify';
 import { useSocket } from '../../hooks/useChat';
+import { VideoCallModal } from '../../components/shared/VideoCall';
 
 export interface Conversation {
   id: string | null;
@@ -24,7 +25,7 @@ export interface Conversation {
   lastMessageContent: string | null;
   lastMessageAt: Date | null;
   learnerUnreadCount: number;
-  isOnline:boolean
+  isOnline: boolean
 }
 
 export interface Attachment {
@@ -86,7 +87,7 @@ const LearnerMessagesPage = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
 
-  const { id } = useSelector((state: RootState) => state.learner);
+  const { id,name } = useSelector((state: RootState) => state.learner);
   const socket = useSocket(id, "learner")
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -99,8 +100,16 @@ const LearnerMessagesPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [incomingCall, setIncomingCall] = useState<{
+    conversationId: string;
+    callerId: string;
+    callerRole: "learner" | "instructor";
+  } | null>(null);
+  const [activeCall, setActiveCall] = useState<{
+    roomId: string;
+  } | null>(null);
 
-  const isInitialLoadRef=useRef(false)
+  const isInitialLoadRef = useRef(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -119,32 +128,32 @@ const LearnerMessagesPage = () => {
   }, [messages]);
 
   useEffect(() => {
-  const fetchConverations = async () => {
-    try {
-      const result = await dispatch(getLearnerConversations({ courseId })).unwrap();
-      const convs: Conversation[] = result.conversations;
-      console.log(result);
+    const fetchConverations = async () => {
+      try {
+        const result = await dispatch(getLearnerConversations({ courseId })).unwrap();
+        const convs: Conversation[] = result.conversations;
+        console.log(result);
 
-      setConversations(convs);
+        setConversations(convs);
 
-      if (courseId) {
-        const conv = convs.find(c => c.course.id === courseId);
+        if (courseId) {
+          const conv = convs.find(c => c.course.id === courseId);
 
-        if (conv) {
-          setActiveConversation(conv);
-          setShowMobileChat(true);
-          setMessages(result.messages); // Set messages from initial fetch
-          setHasMoreMessages(true);
-          isInitialLoadRef.current = true; // Mark as initial load
-          navigate(location.pathname, { replace: true, state: null });
+          if (conv) {
+            setActiveConversation(conv);
+            setShowMobileChat(true);
+            setMessages(result.messages); // Set messages from initial fetch
+            setHasMoreMessages(true);
+            isInitialLoadRef.current = true; // Mark as initial load
+            navigate(location.pathname, { replace: true, state: null });
+          }
         }
+      } catch (error) {
+        toast.error(error as string);
       }
-    } catch (error) {
-      toast.error(error as string);
-    }
-  };
-  fetchConverations();
-}, [courseId, dispatch, navigate]);
+    };
+    fetchConverations();
+  }, [courseId, dispatch, navigate]);
 
 
   useEffect(() => {
@@ -225,32 +234,32 @@ const LearnerMessagesPage = () => {
 
 
   useEffect(() => {
-  if (!socket) return;
+    if (!socket) return;
 
-  const handleInstructorStatus = (data: {
-    instructorId: string;
-    isOnline: boolean;
-  }) => {
-    setConversations(prev =>
-      prev.map(conv =>
-        conv.instructor.id === data.instructorId
-          ? {
+    const handleInstructorStatus = (data: {
+      instructorId: string;
+      isOnline: boolean;
+    }) => {
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.instructor.id === data.instructorId
+            ? {
               ...conv,
               isOnline: data.isOnline
             }
-          : conv
-      )
-    );
-  };
+            : conv
+        )
+      );
+    };
 
 
 
-  socket.on("instructorStatusChanged", handleInstructorStatus);
+    socket.on("instructorStatusChanged", handleInstructorStatus);
 
-  return () => {
-    socket.off("instructorStatusChanged", handleInstructorStatus);
-  };
-}, [socket]);
+    return () => {
+      socket.off("instructorStatusChanged", handleInstructorStatus);
+    };
+  }, [socket]);
 
 
 
@@ -291,7 +300,7 @@ const LearnerMessagesPage = () => {
     return () => {
       socket.off("messagesRead", handler);
     };
-  }, [socket, activeConversation?.id,messages.length]);
+  }, [socket, activeConversation?.id, messages.length]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -328,6 +337,70 @@ const LearnerMessagesPage = () => {
     container.addEventListener("scroll", onScroll);
     return () => container.removeEventListener("scroll", onScroll);
   }, [hasMoreMessages, activeConversation?.id, dispatch, messages.length]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handler = (data: {
+      conversationId: string;
+      callerId: string;
+      callerRole: "learner" | "instructor";
+    }) => {
+      setIncomingCall(data);
+    };
+
+    socket.on("incomingVideoCall", handler);
+
+    return () => {
+      socket.off("incomingVideoCall", handler);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("videoCallAccepted", ({ conversationId }) => {
+      setActiveCall({ roomId: conversationId })
+    });
+
+    socket.on("videoCallRejected", () => {
+      toast.info("Call rejected");
+    });
+
+    return () => {
+      socket.off("videoCallAccepted");
+      socket.off("videoCallRejected");
+    };
+  }, [socket]);
+
+
+  const acceptCall = () => {
+    if (!socket || !incomingCall) return;
+
+    socket.emit("acceptVideoCall", {
+      conversationId: incomingCall.conversationId,
+      callerId: incomingCall.callerId,
+    });
+
+    setActiveCall({ roomId: incomingCall.conversationId });
+    setIncomingCall(null);
+  };
+
+
+  const rejectCall = () => {
+    if (!incomingCall || !socket) return;
+
+    socket.emit("rejectVideoCall", {
+      callerId: incomingCall.callerId,
+    });
+
+    setIncomingCall(null);
+  };
+
+
+
+
 
   const sendMessage = () => {
     if (!socket || !messageInput.trim()) return;
@@ -379,27 +452,39 @@ const LearnerMessagesPage = () => {
     }
   };
 
+  const handleVideoCall = () => {
+    if (!socket || !activeConversation?.id) return;
+
+    socket.emit("startVideoCall", {
+      receiverId: activeConversation.instructor.id,
+      conversationId: activeConversation.id,
+    });
+
+    setActiveCall({ roomId: activeConversation.id });
+
+  };
+
   const handleSelectConversation = async (conv: Conversation) => {
-  // If this is being called right after initial load for the same conversation, skip
-  if (isInitialLoadRef.current && activeConversation?.id === conv.id) {
+    // If this is being called right after initial load for the same conversation, skip
+    if (isInitialLoadRef.current && activeConversation?.id === conv.id) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+
     isInitialLoadRef.current = false;
-    return;
-  }
-  
-  isInitialLoadRef.current = false;
-  setActiveConversation(conv);
-  setShowMobileChat(true);
-  setMessages([]);
-  setHasMoreMessages(true);
-  
-  if (conv.id) {
-    const result = await dispatch(getLearnerMessages({
-      conversationId: conv.id
-    })).unwrap();
-    setMessages(result.messages);
-    setHasMoreMessages(result.hasMore);
-  }
-};
+    setActiveConversation(conv);
+    setShowMobileChat(true);
+    setMessages([]);
+    setHasMoreMessages(true);
+
+    if (conv.id) {
+      const result = await dispatch(getLearnerMessages({
+        conversationId: conv.id
+      })).unwrap();
+      setMessages(result.messages);
+      setHasMoreMessages(result.hasMore);
+    }
+  };
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = searchQuery === '' ||
@@ -584,6 +669,20 @@ const LearnerMessagesPage = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      title="Audio Call"
+                    >
+                      <Phone className="w-5 h-5 text-teal-600" />
+                    </button>
+
+                    <button
+                      onClick={handleVideoCall}
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      title="Video Call"
+                    >
+                      <Video className="w-5 h-5 text-teal-600" />
+                    </button>
                     <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Profile">
                       <User size={20} className="text-gray-600" />
                     </button>
@@ -657,6 +756,42 @@ const LearnerMessagesPage = () => {
             </div>
           )}
         </div>
+        {incomingCall && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-80">
+              <h2 className="text-lg font-semibold mb-2">Incoming Video Call</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                From {incomingCall.callerRole}
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={acceptCall}
+                  className="flex-1 bg-teal-600 text-white py-2 rounded-lg"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={rejectCall}
+                  className="flex-1 bg-gray-200 py-2 rounded-lg"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeCall && (
+          <VideoCallModal
+            open={true}
+            roomId={activeCall.roomId}
+            userId={id as string}
+            userName={name as string}
+            role="learner"
+            onClose={() => setActiveCall(null)}
+          />
+        )}
+
       </div>
     </>
   );

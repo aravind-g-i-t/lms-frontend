@@ -1,78 +1,74 @@
 import { useEffect, useRef } from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
-import { X } from "lucide-react";
 
 interface VideoCallModalProps {
-  isOpen: boolean;
+  open: boolean;
   roomId: string;
   userId: string;
   userName: string;
   role: "learner" | "instructor";
-  callType: "audio" | "video";
   onClose: () => void;
 }
 
+const APP_ID = parseInt(import.meta.env.VITE_ZEGO_APP_ID);
+const SERVER_SECRET = import.meta.env.VITE_ZEGO_SERVER_SECRET;
+
 export const VideoCallModal = ({
-  isOpen,
+  open,
   roomId,
   userId,
   userName,
   role,
-  callType,
   onClose,
 }: VideoCallModalProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const zegoRef = useRef<any>(null);
+  const zpRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!isOpen || !containerRef.current) return;
+    if (!open || !containerRef.current) return;
 
-    const init = async () => {
-      const res = await fetch(`/api/video/token?roomId=${roomId}`, {
-        credentials: "include",
-      });
-      const { token } = await res.json();
+    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+      APP_ID,
+      SERVER_SECRET,
+      roomId,
+      userId,
+      userName
+    );
 
-      const kitToken =
-        ZegoUIKitPrebuilt.generateKitTokenForProduction(
-          Number(import.meta.env.VITE_ZEGO_APP_ID),
-          token,
-          roomId,
-          userId,
-          userName
-        );
+    zpRef.current = ZegoUIKitPrebuilt.create(kitToken);
 
-      const zp = ZegoUIKitPrebuilt.create(kitToken);
-      zegoRef.current = zp;
+    zpRef.current.joinRoom({
+      container: containerRef.current,
+      scenario: { mode: ZegoUIKitPrebuilt.VideoConference },
+      maxUsers: 2,
+      turnOnCameraWhenJoining: role === "instructor",
+      turnOnMicrophoneWhenJoining: role === "instructor",
+      showScreenSharingButton: role === "instructor",
+      onLeaveRoom: () => {
+        onClose();
+      },
+    });
 
-      zp.joinRoom({
-        container: containerRef.current,
-        scenario: { mode: ZegoUIKitPrebuilt.VideoConference },
-        maxUsers: 2,
-        turnOnCameraWhenJoining:
-          callType === "video" && role === "instructor",
-        turnOnMicrophoneWhenJoining: role === "instructor",
-        showTextChat: false,
-        showUserList: false,
-        onLeaveRoom: onClose,
-      });
+    return () => {
+      zpRef.current?.destroy();
+      zpRef.current = null;
     };
+  }, [open, roomId, userId, userName, role, onClose]);
 
-    init();
-    return () => zegoRef.current?.destroy();
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-50 bg-red-600 p-3 rounded-full text-white"
-      >
-        <X />
-      </button>
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+      <div className="relative w-full h-full md:w-[90%] md:h-[90%] bg-black rounded-xl overflow-hidden">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-50 bg-white text-black px-3 py-1 rounded"
+        >
+          End Call
+        </button>
+
+        <div ref={containerRef} className="w-full h-full" />
+      </div>
     </div>
   );
 };

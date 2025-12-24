@@ -21,8 +21,7 @@ import {
   XCircle,
   ArrowLeft,
 } from "lucide-react";
-import { getCourseDetails } from "../../services/instructorServices";
-import { updateCourseVerification } from "../../services/adminServices";
+import { getCourseDetailsForAdmin, updateCourseVerification } from "../../services/adminServices";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus =
@@ -129,7 +128,7 @@ const ViewCourseForAdmin = () => {
     const fetchCourseDetails = async () => {
       try {
         if (!courseId) return;
-        const response = await dispatch(getCourseDetails(courseId)).unwrap();
+        const response = await dispatch(getCourseDetailsForAdmin(courseId)).unwrap();
         setCourse(response.data);
       } catch (err) {
         toast.error(err as string);

@@ -533,3 +533,25 @@ export const getLearnerMessages = createAsyncThunk(
     }
 );
 
+export const getCourseVideo = createAsyncThunk(
+    "learner/video",
+    async (input: {courseId:string,moduleId:string,chapterId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.get("/learner/video", {params:input});
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+

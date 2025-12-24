@@ -6,6 +6,10 @@ import type { AppDispatch, RootState } from '../../redux/store';
 import { useSocket } from '../../hooks/useChat';
 import { toast } from 'react-toastify';
 import { getInstructorConversations, getInstructorMessages } from '../../services/instructorServices';
+import { Video, Phone } from "lucide-react";
+import { VideoCallModal } from '../../components/shared/VideoCall';
+
+
 
 export interface Conversation {
   id: string | null;
@@ -21,7 +25,7 @@ export interface Conversation {
   lastMessageContent: string | null;
   lastMessageAt: Date | null;
   instructorUnreadCount: number;
-  isOnline: boolean
+  isOnline: boolean;
 }
 
 export interface Attachment {
@@ -55,8 +59,11 @@ const InstructorMessagesPage = () => {
   const courseId = state?.courseId;
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { id } = useSelector((state: RootState) => state.instructor);
+  const { name,id } = useSelector((state: RootState) => state.instructor);
   const socket = useSocket(id, "instructor");
+
+
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -71,6 +78,17 @@ const InstructorMessagesPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [incomingCall, setIncomingCall] = useState<{
+    conversationId: string;
+    callerId: string;
+    callerRole: "learner" | "instructor";
+  } | null>(null);
+
+  const [activeCall, setActiveCall] = useState<{
+    roomId: string;
+  } | null>(null);
+
+
 
 
   const scrollToBottom = () => {
@@ -207,33 +225,33 @@ const InstructorMessagesPage = () => {
 
 
   useEffect(() => {
-  if (!socket) return;
+    if (!socket) return;
     console.log("learnerStatus changed");
-    
 
-  const handleLearnerStatus = (data: {
-    learnerId: string;
-    isOnline: boolean;
-  }) => {
-    console.log("learnerStatus changed");
-    setConversations(prev =>
-      prev.map(conv =>
-        conv.learner.id === data.learnerId
-          ? {
+
+    const handleLearnerStatus = (data: {
+      learnerId: string;
+      isOnline: boolean;
+    }) => {
+      console.log("learnerStatus changed");
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.learner.id === data.learnerId
+            ? {
               ...conv,
               isOnline: data.isOnline
             }
-          : conv
-      )
-    );
-  };
+            : conv
+        )
+      );
+    };
 
-  socket.on("learnerStatusChanged", handleLearnerStatus);
+    socket.on("learnerStatusChanged", handleLearnerStatus);
 
-  return () => {
-    socket.off("learnerStatusChanged", handleLearnerStatus);
-  };
-}, [socket]);
+    return () => {
+      socket.off("learnerStatusChanged", handleLearnerStatus);
+    };
+  }, [socket]);
 
 
   useEffect(() => {
@@ -311,6 +329,67 @@ const InstructorMessagesPage = () => {
     return () => container.removeEventListener("scroll", onScroll);
   }, [hasMoreMessages, activeConversation?.id, dispatch, messages.length]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handler = (data: {
+      conversationId: string;
+      callerId: string;
+      callerRole: "learner" | "instructor";
+    }) => {
+      setIncomingCall(data);
+    };
+
+    socket.on("incomingVideoCall", handler);
+
+    return () => {
+      socket.off("incomingVideoCall", handler);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("videoCallAccepted", ({ conversationId }) => {
+      setActiveCall({ roomId: conversationId })
+    });
+
+    socket.on("videoCallRejected", () => {
+      toast.info("Call rejected");
+    });
+
+    return () => {
+      socket.off("videoCallAccepted");
+      socket.off("videoCallRejected");
+    };
+  }, [socket]);
+
+
+  const acceptCall = () => {
+    if (!incomingCall || !socket) return;
+
+    socket.emit("acceptVideoCall", {
+      conversationId: incomingCall.conversationId,
+      callerId: incomingCall.callerId,
+    });
+
+    setActiveCall({ roomId: incomingCall.conversationId });
+    setIncomingCall(null);
+  };
+
+  const rejectCall = () => {
+    if (!incomingCall || !socket) return;
+
+    socket.emit("rejectVideoCall", {
+      callerId: incomingCall.callerId,
+    });
+
+    setIncomingCall(null);
+  };
+
+
+
 
   const handleSendMessage = () => {
     if (!socket || !messageInput.trim()) return;
@@ -379,6 +458,17 @@ const InstructorMessagesPage = () => {
       setHasMoreMessages(result.hasMore)
 
     }
+  };
+
+  const handleVideoCall = () => {
+    if (!socket || !activeConversation?.id) return;
+
+    socket.emit("startVideoCall", {
+      receiverId: activeConversation.learner.id,
+      conversationId: activeConversation.id,
+    });
+
+    setActiveCall({ roomId: activeConversation.id })
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -711,6 +801,20 @@ const InstructorMessagesPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    title="Audio Call"
+                  >
+                    <Phone className="w-5 h-5 text-teal-600" />
+                  </button>
+
+                  <button
+                    onClick={handleVideoCall}
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    title="Video Call"
+                  >
+                    <Video className="w-5 h-5 text-teal-600" />
+                  </button>
                   <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Profile">
                     <User className="w-5 h-5 text-gray-600" />
                   </button>
@@ -778,6 +882,44 @@ const InstructorMessagesPage = () => {
           </div>
         )}
       </div>
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-80">
+            <h2 className="text-lg font-semibold mb-2">Incoming Video Call</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              From {incomingCall.callerRole}
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={acceptCall}
+                className="flex-1 bg-teal-600 text-white py-2 rounded-lg"
+              >
+                Accept
+              </button>
+              <button
+                onClick={rejectCall}
+                className="flex-1 bg-gray-200 py-2 rounded-lg"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeCall && (
+        <VideoCallModal
+          open={true}
+          roomId={activeCall.roomId}
+          userId={id as string}
+          userName={name as string}
+          role="instructor"
+          onClose={() => setActiveCall(null)}
+        />
+      )}
+
+
     </div>
   );
 };
