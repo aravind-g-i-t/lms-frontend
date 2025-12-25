@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, LogOut, MessageCircleIcon } from "lucide-react";
+import { Search, Menu, X, LogOut, MessageCircleIcon } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import type { AppDispatch, RootState } from "../../redux/store";

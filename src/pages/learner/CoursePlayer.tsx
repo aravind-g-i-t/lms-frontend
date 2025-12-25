@@ -8,7 +8,8 @@ import {
     ImageIcon,
     VideoIcon,
     Archive,
-    MessageCircle
+    MessageCircle,
+    Award
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
@@ -27,7 +28,7 @@ export interface Chapter {
     id: string;
     title: string;
     description: string;
-    video: string|null;
+    video: string | null;
     duration: number;
     resources: Resource[];
 }
@@ -52,6 +53,7 @@ export interface Category {
 }
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
+type QuizStatus = "not_attended" | "passed" | "failed";
 
 export interface Course {
     id: string;
@@ -76,6 +78,7 @@ export interface Course {
     completedChapters: string[];
     totalChapters: number;
     currentChapterId: string | null;
+    quizStatus: QuizStatus
 }
 
 const CoursePlayerPage = () => {
@@ -158,21 +161,21 @@ const CoursePlayerPage = () => {
 
     const selectChapter = async (moduleIdx: number, chapterIdx: number) => {
         if (!course) return;
-        const module=course.modules[moduleIdx]
+        const module = course.modules[moduleIdx]
         const chapter = module.chapters[chapterIdx];
-        const result= await dispatch(getCourseVideo({
-            courseId:course.id,
-            moduleId:module.id,
-            chapterId:chapter.id
+        const result = await dispatch(getCourseVideo({
+            courseId: course.id,
+            moduleId: module.id,
+            chapterId: chapter.id
         })).unwrap();
         console.log(result);
-        
-        chapter.video=result.video;
+
+        chapter.video = result.video;
         setCurrentChapter(chapter);
 
         setCurrentModuleIndex(moduleIdx);
         setCurrentChapterIndex(chapterIdx);
-        setShowSidebar(false); 
+        setShowSidebar(false);
     };
 
     const goToNextChapter = () => {
@@ -299,7 +302,7 @@ const CoursePlayerPage = () => {
                             <MessageCircle className="w-4 h-4" />
                             Message Instructor
                         </button>
-                        {course.progressPercentage===100 && (
+                        {(course.progressPercentage === 100 && course.quizStatus === "not_attended") && (
                             <button
                                 onClick={() => navigate(`/learner/courses/${course.id}/quiz`)}
                                 className="w-full p-4 flex items-center gap-3 bg-gray-850 hover:bg-gray-750 transition-colors border-t border-gray-700"
@@ -320,10 +323,10 @@ const CoursePlayerPage = () => {
                             <span className="text-gray-300 text-sm">{course.progressPercentage}%</span>
                         </div>
 
-                        {/* <button className="text-gray-300 hover:text-white text-sm flex items-center gap-1">
+                        {course.quizStatus === "passed" && (<button className="text-gray-300 hover:text-white text-sm flex items-center gap-1">
                             <Award className="w-4 h-4" />
-                            <span className="hidden sm:inline">Certificate</span>
-                        </button> */}
+                            <span className="hidden sm:inline">Certified</span>
+                        </button>)}
                     </div>
                 </header>
 
@@ -332,7 +335,7 @@ const CoursePlayerPage = () => {
                     {/* Main Content Area */}
                     <main className="flex-1 flex flex-col overflow-hidden">
                         {/* Video Player */}
-                        {currentChapter.video &&(<div className="bg-black w-full flex justify-center items-center">
+                        {currentChapter.video && (<div className="bg-black w-full flex justify-center items-center">
                             <video
                                 key={currentChapter.id}
                                 controls

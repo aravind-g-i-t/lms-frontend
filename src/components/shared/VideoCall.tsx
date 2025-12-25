@@ -22,6 +22,7 @@ export const VideoCallModal = ({
   onClose,
 }: VideoCallModalProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const zpRef = useRef<any>(null);
 
   useEffect(() => {
