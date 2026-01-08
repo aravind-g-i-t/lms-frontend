@@ -8,9 +8,9 @@ import { useSelector } from "react-redux"
 import type { RootState } from "../redux/store"
 
 const BusinessRoutes = () => {
-  const { id } = useSelector((state: RootState) => state.business)
+  const { role } = useSelector((state: RootState) => state.auth)
 
-  if (!id) {
+  if (role!=="business") {
     return <Navigate to="/signin" replace />
   }
   return (

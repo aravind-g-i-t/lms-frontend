@@ -4,6 +4,8 @@ import axios from "axios";
 const baseURL = import.meta.env.VITE_API_URL;
 
 
+
+
 export const uploadImageToS3 = async (file: File): Promise<string> => {
   if (!file) throw new Error("No file provided for upload.");
 
@@ -107,5 +109,43 @@ export const uploadResourceToS3 = async (file: File): Promise<string> => {
 
   return key;
 };
+
+
+
+export const uploadAttachmentToS3 = async (
+  file: File
+): Promise<string> => {
+  if (!file) {
+    throw new Error("No file provided for upload.");
+  }
+
+  // optional: size guard
+  const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+  if (file.size > MAX_SIZE) {
+    throw new Error("File too large");
+  }
+
+  // 1️⃣ get presigned URL
+  const { data } = await axios.get(`${baseURL}/s3/presigned-url`, {
+    params: {
+      fileName: file.name,
+      fileType: file.type || "application/octet-stream",
+      folder: "attachments"
+    },
+    withCredentials: true
+  });
+
+  const { url, key } = data;
+
+  // 2️⃣ upload directly to S3
+  await axios.put(url, file, {
+    headers: {
+      "Content-Type": file.type || "application/octet-stream"
+    }
+  });
+
+  return key;
+};
+
 
 

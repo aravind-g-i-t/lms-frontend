@@ -22,9 +22,9 @@ import { useDispatch } from "react-redux";
 import { applyForBusinessVerification, getBusinessProfile, resetBusinessPassword, updateBusinessLicense, updateBusinessProfile, updateBusinessProfileImage } from "../../services/businessServices";
 import type { AppDispatch } from "../../redux/store";
 import { toast } from "react-toastify";
-import { setBusinessImage, setBusinessName } from "../../redux/slices/businessSlice";
 import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from "../../config/s3Config";
 import * as yup from "yup";
+import { setUserName, setUserProfilePic } from "../../redux/slices/authSlice";
 
 
 const profileValidationSchema = yup.object().shape({
@@ -188,7 +188,7 @@ const BusinessProfile = () => {
       const result = await dispatch(updateBusinessProfile(inputData)).unwrap();
       setIsEditing(false);
       setValidationErrors({});
-      dispatch(setBusinessName({ name }));
+      dispatch(setUserName({ name }));
       toast.success(result.message)
     } catch (err) {
       toast.error(err as string)
@@ -215,7 +215,7 @@ const BusinessProfile = () => {
       const result = await dispatch(updateBusinessProfileImage({ imageURL: objectKey })).unwrap();
 
 
-      dispatch(setBusinessImage({ profilePic: imageURL }));
+      dispatch(setUserProfilePic({ profilePic: imageURL }));
       setProfilePic(imageURL);
 
 

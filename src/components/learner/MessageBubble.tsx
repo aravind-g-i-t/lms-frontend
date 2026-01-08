@@ -8,7 +8,12 @@ export const MessageBubble: React.FC<{
   showAvatar: boolean;
   senderName?: string;
   senderAvatar?: string;
-}> = ({ message, isOwn, showAvatar, senderName, senderAvatar }) => {
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (messageId: string) => void;
+
+
+}> = ({ message, isOwn, showAvatar, senderName, senderAvatar, isSelectionMode, isSelected, onToggleSelect }) => {
 
 
   const formatMessageTime = (date: Date | string | null) => {
@@ -34,26 +39,43 @@ export const MessageBubble: React.FC<{
   };
 
   return (
-    <div className={`flex gap-3 mb-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-      {!isOwn &&(
-      <div className={`flex-shrink-0`}>
-        {senderAvatar ? (
-          <img
-            src={senderAvatar}
-            alt={senderName || 'User'}
-            className="w-8 h-8 rounded-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName || 'User')}&background=14B8A6&color=fff`;
-            }}
-          />
-        ) : (
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${isOwn ? 'bg-gradient-to-br from-teal-500 to-teal-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'
-            }`}>
-            {getInitials(senderName || 'User')}
-          </div>
-        )}
-      </div>
+    <div
+      onClick={() => {
+        if (isSelectionMode) {
+          onToggleSelect(message.id)
+        }
+      }}
+      className={`flex gap-3 mb-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}
+  ${isSelected ? 'bg-teal-50 ring-1 ring-teal-300 rounded-lg p-2' : ''}
+`}
+    >
+
+      {isSelectionMode && (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          className={`mt-2 ${isOwn ? 'ml-2' : 'mr-2'}`}
+        />
+      )}
+      {!isOwn && (
+        <div className={`flex-shrink-0`}>
+          {senderAvatar ? (
+            <img
+              src={senderAvatar}
+              alt={senderName || 'User'}
+              className="w-8 h-8 rounded-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName || 'User')}&background=14B8A6&color=fff`;
+              }}
+            />
+          ) : (
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${isOwn ? 'bg-gradient-to-br from-teal-500 to-teal-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'
+              }`}>
+              {getInitials(senderName || 'User')}
+            </div>
+          )}
+        </div>
       )}
 
       <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>

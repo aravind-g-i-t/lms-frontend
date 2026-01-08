@@ -1,4 +1,3 @@
-// src/pages/learner/QuizPage.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -6,10 +5,8 @@ import { ChevronLeft, ChevronRight, Clock, CheckCircle2 } from "lucide-react";
 import { toast } from "react-toastify";
 import type { AppDispatch } from "../../redux/store";
 import { getQuizForLearner, submitQuizAttempt } from "../../services/learnerServices";
-// import {
-//   getQuizForLearner,
-//   submitQuizAttempt,
-// } from "../../services/learnerServices";
+import { QuizSkeleton } from "../../components/learner/QuizSkeleton";
+
 
 interface QuizQuestion {
     id: string;
@@ -47,7 +44,6 @@ export interface QuizAttempt {
     score: number | null; 
     maxScore: number; 
     percentage: number | null;
-    passed: boolean | null;
     timeTakenSeconds: number | null;
     correctAnswers: number | null; 
     totalQuestions: number;
@@ -76,6 +72,8 @@ const QuizPage: React.FC = () => {
 
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [result, setResult] = useState<QuizAttempt | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
 
 //   const [startTimeMs, setStartTimeMs] = useState<number>(0);
 
@@ -130,7 +128,7 @@ const QuizPage: React.FC = () => {
 
     // const timeTakenSeconds = Math.floor((Date.now() - startTimeMs) / 1000);
 
-    // Build QuizAnswer[] payload (frontend sends questionId + selectedOption)
+    
     const answersPayload: Array<{ questionId: string; selectedOption: number | null }> =
       Object.entries(answers).map(([questionId, selectedOption]) => ({
         questionId,
@@ -144,23 +142,24 @@ const QuizPage: React.FC = () => {
     };
 
     try {
+      if (submitting) return;
+  setSubmitting(true);
       const res = await dispatch(submitQuizAttempt(payload)).unwrap();
-      // Expecting backend to return a QuizAttempt shaped result
+      
+      console.log("result:",res);
+      
       const attempt: QuizAttempt = res.quizAttempt;
       setResult(attempt);
+     
       setSubmitted(true);
     } catch (err) {
       toast.error(err as string);
+    }finally{
+      setSubmitting(false)
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        Loading quiz...
-      </div>
-    );
-  }
+  if (loading) return <QuizSkeleton/>
 
   if (!quiz) {
     return (
@@ -175,14 +174,14 @@ const QuizPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4">
         <div className="bg-gray-800 max-w-lg w-full p-8 rounded-xl shadow-lg text-center border border-gray-700">
-          {result.passed ? (
+          {result.status==="passed" ? (
             <CheckCircle2 className="w-14 h-14 text-teal-500 mx-auto mb-3" />
           ) : (
             <CheckCircle2 className="w-14 h-14 text-red-500 mx-auto mb-3 rotate-180" />
           )}
 
           <h1 className="text-2xl font-semibold text-white mb-2">
-            {result.passed ? "Congratulations! 🎉" : "Quiz Completed"}
+            {result.status==="passed" ? "Congratulations!" : "Quiz Completed"}
           </h1>
 
           <p className="text-gray-400 mb-3">
@@ -297,6 +296,7 @@ const QuizPage: React.FC = () => {
         ) : (
           <button
             onClick={submit}
+            disabled={submitting}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold"
           >
             Submit Quiz <CheckCircle2 className="w-4 h-4" />

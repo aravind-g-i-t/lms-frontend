@@ -10,16 +10,14 @@ import LearnerMessagesPage from "../pages/learner/Messages"
 import QuizPage from "../pages/learner/QuizPage"
 
 const LearnerRoutes = () => {
-  const { id } = useSelector((state: RootState) => state.learner);
+  const { role } = useSelector((state: RootState) => state.auth);
 
-  
-
-
-  if (!id) {
+  if (role!=="learner") {
     return <Navigate to="/signin" replace />
   }
   return (
     <Routes>
+      <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<LearnerDashboard/>}/>
       <Route path="profile" element={<LearnerProfile/>}/>
       <Route path="messages" element={<LearnerMessagesPage/>}/>

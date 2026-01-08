@@ -7,6 +7,7 @@ interface VideoCallModalProps {
   userId: string;
   userName: string;
   role: "learner" | "instructor";
+  type:"audio"|"video"
   onClose: () => void;
 }
 
@@ -19,6 +20,7 @@ export const VideoCallModal = ({
   userId,
   userName,
   role,
+  type,
   onClose,
 }: VideoCallModalProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,11 +42,22 @@ export const VideoCallModal = ({
 
     zpRef.current.joinRoom({
       container: containerRef.current,
-      scenario: { mode: ZegoUIKitPrebuilt.VideoConference },
+      scenario: { mode: type === "audio"
+        ? ZegoUIKitPrebuilt.OneONoneCall
+        : ZegoUIKitPrebuilt.VideoConference },
+      showPreJoinView: false,
       maxUsers: 2,
-      turnOnCameraWhenJoining: role === "instructor",
-      turnOnMicrophoneWhenJoining: role === "instructor",
-      showScreenSharingButton: role === "instructor",
+      turnOnCameraWhenJoining: type==="video",
+      turnOnMicrophoneWhenJoining: type==="audio",
+      showScreenSharingButton:type==="video"&& role === "instructor",
+      showMyCameraToggleButton: type==="video",
+      showLeaveRoomConfirmDialog: false,
+      showLeaveRoomButton: false,
+      showLayoutButton: false,
+      showTextChat: false,
+      showUserList: false,
+
+
       onLeaveRoom: () => {
         onClose();
       },
@@ -54,7 +67,7 @@ export const VideoCallModal = ({
       zpRef.current?.destroy();
       zpRef.current = null;
     };
-  }, [open, roomId, userId, userName, role, onClose]);
+  }, [type,open, roomId, userId, userName, role, onClose]);
 
   if (!open) return null;
 

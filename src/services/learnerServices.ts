@@ -555,3 +555,70 @@ export const getCourseVideo = createAsyncThunk(
     }
 );
 
+export const pingLearner = createAsyncThunk(
+    "learner/ping",
+    async (_,
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.get("/learner/ping");
+
+            console.log(res);
+            
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const updateCurrentChapter = createAsyncThunk(
+    "learner/progress/chapter/current",
+    async (data: { courseId: string; chapterId:string }, { rejectWithValue }) => {
+        try {
+            const result = await axiosInstance.patch("learner/progress/chapter/current", data);
+            console.log(result);
+
+            if (!result.data.success) {
+                return rejectWithValue(result.data.message)
+            }
+            return result.data
+        } catch (error: unknown) {
+
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const deleteLearnerMessages = createAsyncThunk(
+    "learner/messages/delete",
+    async (input: { messageIds:string[], scope:"ME"|"EVERYONE" },
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.post("/learner/messages/delete",  input );
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

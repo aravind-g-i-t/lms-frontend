@@ -35,7 +35,7 @@ axiosInstance.interceptors.response.use(
 
         if (
             error.response?.status === 401 &&
-            errData?.message === "Invalid or expired token" &&
+            (errData?.message==="No token provided"||errData?.message === "Invalid or expired token" )&&
             !originalRequest._retry
         ) {
             originalRequest._retry = true;

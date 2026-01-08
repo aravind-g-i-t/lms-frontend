@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Award, Download, Eye, Calendar, ExternalLink } from 'lucide-react';
+import { Award, Download, Calendar } from 'lucide-react';
 import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
 import { getLearnerCertificates } from '../../services/learnerServices';
@@ -122,29 +122,31 @@ const Certificates = () => {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <a
+                {/* <a
                   href={cert.certificateUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 flex items-center justify-center gap-2 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 text-sm"
                 >
                   <Eye className="w-4 h-4" /> View
-                </a>
+                </a> */}
 
                 <a
                   href={cert.certificateUrl}
                   download
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex-1 flex items-center justify-center gap-2 border border-teal-600 text-teal-600 py-2 rounded-lg hover:bg-teal-50 text-sm"
                 >
                   <Download className="w-4 h-4" /> Download
                 </a>
 
-                <button
+                {/* <button
                   className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
                   title="Share"
                 >
                   <ExternalLink className="w-4 h-4 text-gray-500" />
-                </button>
+                </button> */}
               </div>
             </div>
           </div>

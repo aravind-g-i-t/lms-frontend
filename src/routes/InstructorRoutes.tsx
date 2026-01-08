@@ -15,9 +15,9 @@ import { useSelector } from "react-redux"
 import type { RootState } from "../redux/store"
 
 const InstructorRoutes = () => {
-  const { id } = useSelector((state: RootState) => state.instructor)
+  const { role } = useSelector((state: RootState) => state.auth)
 
-  if (!id) {
+  if (role!=="instructor") {
     return <Navigate to="/signin" replace />
   }
   return (

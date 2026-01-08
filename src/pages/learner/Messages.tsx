@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Search, MoreVertical, Paperclip, ArrowLeft, User, BookOpen, Phone, Video } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Send, Search, Paperclip, ArrowLeft, BookOpen, Phone, Video, SquareCheckBigIcon } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { MessageBubble } from '../../components/learner/MessageBubble';
 import { ConversationListItem } from '../../components/learner/ConversationList';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getLearnerConversations, getLearnerMessages } from '../../services/learnerServices';
+import { deleteLearnerMessages, getLearnerConversations, getLearnerMessages } from '../../services/learnerServices';
 import { toast } from 'react-toastify';
-import { useSocket } from '../../hooks/useChat';
-import { VideoCallModal } from '../../components/shared/VideoCall';
+import { useSocket } from '../../hooks/useSocket';
+import { uploadAttachmentToS3 } from '../../config/s3Config';
+import { DeleteMessageModal } from '../../components/shared/DeleteMessageModal';
 
 export interface Conversation {
   id: string | null;
@@ -28,7 +29,15 @@ export interface Conversation {
   isOnline: boolean
 }
 
-export interface Attachment {
+interface Attachment {
+  id: string | null;
+  fileName: string;
+  fileUrl: string | null;
+  fileType: string;
+  fileSize: number;
+}
+
+interface StoredAttachment {
   id: string;
   fileName: string;
   fileUrl: string;
@@ -36,13 +45,22 @@ export interface Attachment {
   fileSize: number;
 }
 
+type AttachmentDraft = {
+  file: File;
+  fileUrl: string;
+  fileType: string;
+  fileName: string;
+  fileSize: number
+};
+
 export interface Message {
   id: string;
   senderId: string;
   content: string;
-  attachments: Attachment[];
+  attachments: StoredAttachment[];
   createdAt: Date;
   isRead: boolean;
+  isDeletedForEveryone: boolean
   readAt: Date | null;
 }
 
@@ -87,8 +105,8 @@ const LearnerMessagesPage = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
 
-  const { id,name } = useSelector((state: RootState) => state.learner);
-  const socket = useSocket(id, "learner")
+  const { id } = useSelector((state: RootState) => state.auth);
+  const socket = useSocket()
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
@@ -100,14 +118,22 @@ const LearnerMessagesPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [incomingCall, setIncomingCall] = useState<{
-    conversationId: string;
-    callerId: string;
-    callerRole: "learner" | "instructor";
-  } | null>(null);
-  const [activeCall, setActiveCall] = useState<{
-    roomId: string;
-  } | null>(null);
+  // const [incomingCall, setIncomingCall] = useState<{
+  //   conversationId: string;
+  //   callerId: string;
+  //   callerRole: "learner" | "instructor";
+  // } | null>(null);
+  // const [activeCall, setActiveCall] = useState<{
+  //   roomId: string;
+  // } | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [attachmentDrafts, setAttachmentDrafts] = useState<AttachmentDraft[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const DELETE_WINDOW_MS = 10 * 60 * 1000;
 
   const isInitialLoadRef = useRef(false)
 
@@ -128,6 +154,10 @@ const LearnerMessagesPage = () => {
   }, [messages]);
 
   useEffect(() => {
+
+    if (isInitialLoadRef.current) {
+      return;
+    }
     const fetchConverations = async () => {
       try {
         const result = await dispatch(getLearnerConversations({ courseId })).unwrap();
@@ -182,7 +212,7 @@ const LearnerMessagesPage = () => {
     socket?.emit("markMessagesRead", {
       conversationId: activeConversation.id
     })
-  }, [socket, activeConversation?.id, messages.length]);
+  }, [socket, activeConversation?.id]);
 
 
   useEffect(() => {
@@ -195,6 +225,10 @@ const LearnerMessagesPage = () => {
         if (prev.some(m => m.id === data.message.id)) return prev;
         return [...prev, data.message];
       });
+
+      socket.emit("markMessagesRead", {
+        conversationId: activeConversation.id
+      })
     };
 
     socket.on("receiveMessage", handler);
@@ -338,80 +372,134 @@ const LearnerMessagesPage = () => {
     return () => container.removeEventListener("scroll", onScroll);
   }, [hasMoreMessages, activeConversation?.id, dispatch, messages.length]);
 
+  // useEffect(() => {
+  //   if (!socket) return;
+
+  //   const handler = (data: {
+  //     conversationId: string;
+  //     callerId: string;
+  //     callerRole: "learner" | "instructor";
+  //   }) => {
+  //     setIncomingCall(data);
+  //   };
+
+  //   socket.on("incomingVideoCall", handler);
+
+  //   return () => {
+  //     socket.off("incomingVideoCall", handler);
+  //   };
+  // }, [socket]);
+
+
+  // useEffect(() => {
+  //   if (!socket) return;
+
+  //   socket.on("videoCallAccepted", ({ conversationId }) => {
+  //     setActiveCall({ roomId: conversationId })
+  //   });
+
+  //   socket.on("videoCallRejected", () => {
+  //     toast.info("Call rejected");
+  //   });
+
+  //   return () => {
+  //     socket.off("videoCallAccepted");
+  //     socket.off("videoCallRejected");
+  //   };
+  // }, [socket]);
+
+
+
+
   useEffect(() => {
     if (!socket) return;
 
     const handler = (data: {
-      conversationId: string;
-      callerId: string;
-      callerRole: "learner" | "instructor";
+      userId: string;
+      isTyping: boolean;
     }) => {
-      setIncomingCall(data);
+      // ignore your own typing
+      if (data.userId === id) return;
+
+      setIsTyping(data.isTyping);
     };
 
-    socket.on("incomingVideoCall", handler);
+    socket.on("userTyping", handler);
 
     return () => {
-      socket.off("incomingVideoCall", handler);
+      socket.off("userTyping", handler);
     };
-  }, [socket]);
+  }, [socket, id]);
 
 
-  useEffect(() => {
-    if (!socket) return;
+  // const acceptCall = () => {
+  //   if (!socket || !incomingCall) return;
 
-    socket.on("videoCallAccepted", ({ conversationId }) => {
-      setActiveCall({ roomId: conversationId })
-    });
+  //   socket.emit("acceptVideoCall", {
+  //     conversationId: incomingCall.conversationId,
+  //     callerId: incomingCall.callerId,
+  //   });
 
-    socket.on("videoCallRejected", () => {
-      toast.info("Call rejected");
-    });
-
-    return () => {
-      socket.off("videoCallAccepted");
-      socket.off("videoCallRejected");
-    };
-  }, [socket]);
+  //   setActiveCall({ roomId: incomingCall.conversationId });
+  //   setIncomingCall(null);
+  // };
 
 
-  const acceptCall = () => {
-    if (!socket || !incomingCall) return;
+  // const rejectCall = () => {
+  //   if (!incomingCall || !socket) return;
 
-    socket.emit("acceptVideoCall", {
-      conversationId: incomingCall.conversationId,
-      callerId: incomingCall.callerId,
-    });
+  //   socket.emit("rejectVideoCall", {
+  //     callerId: incomingCall.callerId,
+  //   });
 
-    setActiveCall({ roomId: incomingCall.conversationId });
-    setIncomingCall(null);
+  //   setIncomingCall(null);
+  // };
+
+
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const drafts: AttachmentDraft[] = Array.from(files).map(file => ({
+      file,
+      fileUrl: URL.createObjectURL(file),
+      fileType: file.type,
+      fileName: file.name,
+      fileSize: file.size
+    }));
+
+    setAttachmentDrafts(prev => [...prev, ...drafts]);
   };
 
 
-  const rejectCall = () => {
-    if (!incomingCall || !socket) return;
-
-    socket.emit("rejectVideoCall", {
-      callerId: incomingCall.callerId,
+  const sendMessage = async () => {
+    if (!socket || !messageInput.trim() && attachmentDrafts.length === 0) return;
+    socket.emit("typing", {
+      conversationId: activeConversation?.id,
+      isTyping: false
     });
 
-    setIncomingCall(null);
-  };
+    const attachments: Attachment[] = await Promise.all(
+      attachmentDrafts.map(async (draft) => {
+        const key = await uploadAttachmentToS3(draft.file);
 
-
-
-
-
-  const sendMessage = () => {
-    if (!socket || !messageInput.trim()) return;
-    console.log("sendmsg", activeConversation);
+        return {
+          id: null,
+          fileName: draft.fileName,
+          fileSize: draft.fileSize,
+          fileType: draft.fileType,
+          fileUrl: key
+        };
+      })
+    );
 
     socket.emit('sendMessage', {
       receiverId: activeConversation?.instructor.id,
       conversationId: activeConversation?.id,
       message: {
         content: messageInput.trim(),
-        attachments: [],
+        attachments,
       },
       courseId: activeConversation?.course.id
     },
@@ -422,6 +510,7 @@ const LearnerMessagesPage = () => {
           console.log("Message delivered");
           setMessages(prev => [...prev, response.message]);
           setMessageInput('');
+          setAttachmentDrafts([]);
           if (activeConversation && !activeConversation.id) {
             setActiveConversation({ ...activeConversation, id: response.conversationId });
             console.log("resp.convId", response.conversationId);
@@ -444,6 +533,29 @@ const LearnerMessagesPage = () => {
 
 
 
+  const handleTyping = (value: string) => {
+    setMessageInput(value);
+
+    if (!socket || !activeConversation?.id) return;
+
+    socket.emit("typing", {
+      conversationId: activeConversation.id,
+      isTyping: true
+    });
+
+    // clear old timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("typing", {
+        conversationId: activeConversation.id,
+        isTyping: false
+      });
+    }, 1500);
+  };
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -455,12 +567,23 @@ const LearnerMessagesPage = () => {
   const handleVideoCall = () => {
     if (!socket || !activeConversation?.id) return;
 
-    socket.emit("startVideoCall", {
+    socket.emit("startCall", {
       receiverId: activeConversation.instructor.id,
       conversationId: activeConversation.id,
+      type:"video"
     });
 
-    setActiveCall({ roomId: activeConversation.id });
+  };
+
+  const handleAudioCall = () => {
+    if (!socket || !activeConversation?.id) return;
+
+    socket.emit("startCall", {
+      receiverId: activeConversation.instructor.id,
+      conversationId: activeConversation.id,
+      type:"audio"
+    });
+
 
   };
 
@@ -486,7 +609,78 @@ const LearnerMessagesPage = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv => {
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessageIds(prev =>
+      prev.includes(messageId)
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    );
+  };
+
+  const handleDeleteForMe = async () => {
+    await dispatch(deleteLearnerMessages({
+      messageIds: selectedMessageIds,
+      scope: "ME"
+    })).unwrap()
+    console.log("Delete for me:", selectedMessageIds);
+
+    setMessages(prev =>
+      prev.filter(m => !selectedMessageIds.includes(m.id))
+    );
+
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+    setShowDeleteModal(false);
+  };
+
+  const handleDeleteForEveryone = async () => {
+    await dispatch(deleteLearnerMessages({
+      messageIds: selectedMessageIds,
+      scope: "EVERYONE"
+    })).unwrap()
+    console.log("Delete for everyone:", selectedMessageIds);
+
+    setMessages(prev =>
+      prev.map(m =>
+        selectedMessageIds.includes(m.id)
+          ? { ...m, content: "", attachments: [], isDeletedForEveryone: true }
+          : m
+      )
+    );
+
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+    setShowDeleteModal(false);
+  };
+
+
+  const formatMessageTime = (date: Date | string | null) => {
+    if (!date) return '';
+
+    const d = date instanceof Date ? date : new Date(date);
+
+    return d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const canDeleteForEveryone =
+    selectedMessageIds.length > 0 &&
+    selectedMessageIds.every(messageId => {
+      const msg = messages.find(m => m.id === messageId);
+      if (!msg) return false;
+
+      const isOwnMessage = msg.senderId === id;
+      const isWithinTimeWindow =
+        Date.now() - new Date(msg.createdAt).getTime() <= DELETE_WINDOW_MS;
+
+      return isOwnMessage && isWithinTimeWindow;
+    });
+
+  const filteredConversations = useMemo(()=>{
+    return conversations.filter(conv => {
     const matchesSearch = searchQuery === '' ||
       conv.course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.instructor.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -494,9 +688,11 @@ const LearnerMessagesPage = () => {
     const matchesFilter = filterTab === 'all' || (filterTab === 'unread' && conv.learnerUnreadCount > 0);
 
     return matchesSearch && matchesFilter;
-  });
+  })
+  },[conversations,filterTab,searchQuery]);
 
-  const groupedConversations = filteredConversations.reduce((acc, conv) => {
+  const groupedConversations = useMemo(()=>{
+    return filteredConversations.reduce((acc, conv) => {
     if (!acc[conv.course.id]) {
       acc[conv.course.id] = {
         courseName: conv.course.name,
@@ -506,7 +702,8 @@ const LearnerMessagesPage = () => {
     }
     acc[conv.course.id].conversations.push(conv);
     return acc;
-  }, {} as Record<string, { courseName: string; courseColor: string; conversations: Conversation[] }>);
+  }, {} as Record<string, { courseName: string; courseColor: string; conversations: Conversation[] }>)
+  },[filteredConversations]);
 
   const totalUnread = conversations.reduce((sum, conv) => sum + conv.learnerUnreadCount, 0);
 
@@ -536,6 +733,40 @@ const LearnerMessagesPage = () => {
           const prevMessage = idx > 0 ? group.messages[idx - 1] : null;
           const showAvatar = !prevMessage || prevMessage.senderId !== message.senderId;
 
+          if (message.isDeletedForEveryone) {
+
+            return (
+              <div
+                key={message.id}
+                className={`flex gap-3 mb-4 ${isOwn ? "flex-row-reverse" : "flex-row"
+                  }`}
+              >
+                <div
+                  className={`flex flex-col max-w-[70%] ${isOwn ? "items-end" : "items-start"
+                    }`}
+                >
+                  <div
+                    className={`rounded-2xl px-4 py-2 italic text-sm ${isOwn
+                      ? "bg-teal-100 text-teal-700 rounded-tr-sm"
+                      : "bg-gray-100 text-gray-500 rounded-tl-sm"
+                      }`}
+                  >
+                    {isOwn
+                      ? "You deleted this message"
+                      : "This message was deleted"}
+                  </div>
+
+                  <div
+                    className={`text-xs text-gray-400 mt-1 ${isOwn ? "text-right" : "text-left"
+                      }`}
+                  >
+                    {formatMessageTime(message.createdAt)}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <MessageBubble
               key={message.id}
@@ -544,6 +775,9 @@ const LearnerMessagesPage = () => {
               showAvatar={showAvatar}
               senderName={activeConversation?.instructor.name}
               senderAvatar={isOwn ? undefined : activeConversation?.instructor.profilePic}
+              isSelectionMode={isSelectionMode}
+              isSelected={selectedMessageIds.includes(message.id)}
+              onToggleSelect={toggleMessageSelection}
             />
           );
         })}
@@ -642,7 +876,10 @@ const LearnerMessagesPage = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => setShowMobileChat(false)}
+                      onClick={() => {
+                        setShowMobileChat(false);
+                        setActiveConversation(null)
+                      }}
                       className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
                     >
                       <ArrowLeft size={20} />
@@ -670,6 +907,7 @@ const LearnerMessagesPage = () => {
 
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={handleAudioCall}
                       className="p-2 hover:bg-gray-100 rounded-lg"
                       title="Audio Call"
                     >
@@ -683,16 +921,36 @@ const LearnerMessagesPage = () => {
                     >
                       <Video className="w-5 h-5 text-teal-600" />
                     </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Profile">
+                    {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Profile">
                       <User size={20} className="text-gray-600" />
-                    </button>
-                    <button
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Go to Course">
-                      <BookOpen size={20} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="More">
-                      <MoreVertical size={20} className="text-gray-600" />
-                    </button>
+                    </button> */}
+                    {/* {selectedMessageIds.length > 0 && (
+                      <button
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Go to Course">
+                        <Trash2 size={20} className="text-red-600" />
+                      </button>
+                    )} */}
+                    {isSelectionMode ? (
+                      <button
+                        onClick={() => {
+                          setIsSelectionMode(false);
+                          setSelectedMessageIds([]);
+                        }}
+                        className="text-sm text-red-600"
+                      >
+                        Cancel
+                      </button>
+                    ) : (
+
+                      <button
+                        onClick={() => setIsSelectionMode(true)}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                      >
+                        <SquareCheckBigIcon size={16} className="w-5 h-5 text-teal-600" />
+                      </button>
+                    )}
+
+
                   </div>
                 </div>
 
@@ -714,36 +972,131 @@ const LearnerMessagesPage = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {attachmentDrafts.length > 0 && (
+                <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+                  <div className="flex gap-2 overflow-x-auto">
+                    {attachmentDrafts.map((draft, index) => (
+                      <div
+                        key={index}
+                        className="relative w-24 h-24 rounded-lg bg-white border border-gray-300 flex items-center justify-center overflow-hidden"
+                      >
+                        {/* Image preview */}
+                        {draft.fileType.startsWith("image/") ? (
+                          <img
+                            src={draft.fileUrl}
+                            alt={draft.fileName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          /* Non-image preview */
+                          <div className="flex flex-col items-center justify-center text-xs text-gray-600 px-2 text-center">
+                            <Paperclip className="w-5 h-5 mb-1 text-gray-500" />
+                            <span className="truncate w-full">{draft.fileName}</span>
+                          </div>
+                        )}
+
+                        {/* Remove button */}
+                        <button
+                          onClick={() =>
+                            setAttachmentDrafts(prev =>
+                              prev.filter((_, i) => i !== index)
+                            )
+                          }
+                          className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {isTyping && (
+                <div className="px-4 pb-2">
+                  <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full text-xs text-gray-600">
+                    <span>
+                      {activeConversation?.instructor?.name || "User"} is typing
+                    </span>
+                    <span className="flex gap-1">
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                    </span>
+                  </div>
+                </div>
+              )}
+
+
               <div className="p-4 border-t border-gray-200 bg-white">
-                <div className="flex items-end gap-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
-                    <Paperclip size={20} className="text-gray-600" />
-                  </button>
-                  {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                {selectedMessageIds.length > 0 ? (
+                  <div className="flex items-center justify-between">
+                    {/* Left: Cancel */}
+                    <button
+                      onClick={() => {
+                        setSelectedMessageIds([]);
+                      }}
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    >
+                      ✕
+                      <span className="text-sm">Clear</span>
+                    </button>
+
+                    {/* Center: count */}
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedMessageIds.length} selected
+                    </span>
+
+                    {/* Right: Delete */}
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="p-2 rounded-full hover:bg-red-50 text-red-600"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-end gap-2">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <Paperclip className="w-5 h-5 text-gray-600" />
+                    </button>
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      hidden
+                      onChange={handleFileSelect}
+                    />
+                    {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
                     <Smile size={20} className="text-gray-600" />
                   </button> */}
-                  <div></div>
 
-                  <div className="flex-1 relative">
-                    <textarea
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Type your message..."
-                      rows={1}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-                      style={{ minHeight: '40px', maxHeight: '120px' }}
-                    />
+                    <div className="flex-1 relative">
+                      <textarea
+                        value={messageInput}
+                        onChange={(e) => handleTyping(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type your message..."
+                        rows={1}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                        style={{ minHeight: '40px', maxHeight: '120px' }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={sendMessage}
+                      disabled={!messageInput.trim()}
+                      className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                    >
+                      <Send size={20} />
+                    </button>
                   </div>
+                )}
 
-                  <button
-                    onClick={sendMessage}
-                    disabled={!messageInput.trim()}
-                    className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                  >
-                    <Send size={20} />
-                  </button>
-                </div>
               </div>
             </>
           ) : (
@@ -756,7 +1109,7 @@ const LearnerMessagesPage = () => {
             </div>
           )}
         </div>
-        {incomingCall && (
+        {/* {incomingCall && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-80">
               <h2 className="text-lg font-semibold mb-2">Incoming Video Call</h2>
@@ -780,8 +1133,8 @@ const LearnerMessagesPage = () => {
               </div>
             </div>
           </div>
-        )}
-        {activeCall && (
+        )} */}
+        {/* {activeCall && (
           <VideoCallModal
             open={true}
             roomId={activeCall.roomId}
@@ -790,7 +1143,15 @@ const LearnerMessagesPage = () => {
             role="learner"
             onClose={() => setActiveCall(null)}
           />
-        )}
+        )} */}
+
+        <DeleteMessageModal
+          open={showDeleteModal}
+          canDeleteForEveryone={canDeleteForEveryone}
+          onClose={() => setShowDeleteModal(false)}
+          onDeleteForMe={handleDeleteForMe}
+          onDeleteForEveryone={handleDeleteForEveryone}
+        />
 
       </div>
     </>

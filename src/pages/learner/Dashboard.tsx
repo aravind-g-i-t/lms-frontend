@@ -1,20 +1,30 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { BookOpen, Award, Wallet, History, Settings, Heart } from 'lucide-react';
 import type { RootState } from '../../redux/store';
 import LearnerNav from '../../components/learner/LearnerNav';
-import MyCourses from '../../components/learner/Courses';
-import Certificates from '../../components/learner/Certificates';
-import MyWallet from '../../components/learner/Wallet';
-import PurchaseHistory from '../../components/learner/PurchaseHistory';
-import MyFavourites from '../../components/learner/Favourites';
+import { lazy, Suspense } from 'react';
+import DashboardContentSkeleton from '../../components/learner/DashboardSkeleton';
 
+const MyCourses = lazy(() => import('../../components/learner/Courses'));
+const Certificates = lazy(() => import('../../components/learner/Certificates'));
+const MyWallet = lazy(() => import('../../components/learner/Wallet'));
+const PurchaseHistory = lazy(() => import('../../components/learner/PurchaseHistory'));
+const MyFavourites = lazy(() => import('../../components/learner/Favourites'));
+
+const TAB_COMPONENTS: Record<TabType, JSX.Element> = {
+  courses: <MyCourses />,
+  favourites: <MyFavourites />,
+  certificates: <Certificates />,
+  wallet: <MyWallet />,
+  history: <PurchaseHistory />,
+};
 
 type TabType = 'courses'|"favourites" | 'certificates' | 'wallet' | 'history';
 
 const LearnerDashboard = () => {
-  const { name } = useSelector((state: RootState) => state.learner);
+  const { name } = useSelector((state: RootState) => state.auth);
   const [activeTab, setActiveTab] = useState<TabType>('courses');
 
   const sidebarItems = [
@@ -25,22 +35,22 @@ const LearnerDashboard = () => {
     { id: 'history' as TabType, label: 'Purchase History', icon: History },
   ];
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'courses':
-        return <MyCourses />;
-      case 'favourites':
-        return <MyFavourites />;
-      case 'certificates':
-        return <Certificates />;
-      case 'wallet':
-        return <MyWallet />;
-      case 'history':
-        return <PurchaseHistory />;
-      default:
-        return <MyCourses />;
-    }
-  };
+  // const renderContent = () => {
+  //   switch (activeTab) {
+  //     case 'courses':
+  //       return <MyCourses />;
+  //     case 'favourites':
+  //       return <MyFavourites />;
+  //     case 'certificates':
+  //       return <Certificates />;
+  //     case 'wallet':
+  //       return <MyWallet />;
+  //     case 'history':
+  //       return <PurchaseHistory />;
+  //     default:
+  //       return <MyCourses />;
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -88,7 +98,10 @@ const LearnerDashboard = () => {
           </aside>
 
           <main className="flex-1">
-            {renderContent()}
+            <Suspense fallback={<DashboardContentSkeleton />}>
+
+            {TAB_COMPONENTS[activeTab]}
+            </Suspense>
           </main>
         </div>
       </div>

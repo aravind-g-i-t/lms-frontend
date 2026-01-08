@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
@@ -22,6 +22,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { getCourseDetailsForAdmin, updateCourseVerification } from "../../services/adminServices";
+import FallbackUI from "../../components/shared/FallbackUI";
+import CourseSkeleton from "../../components/admin/CourseSkeleton";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus =
@@ -83,6 +85,20 @@ interface Course {
   publishedAt: Date | null;
 }
 
+const STATUS_LABEL: Record<CourseStatus, string> = {
+  "archived": "Archived",
+  "draft": "Draft",
+  "published": "Published"
+};
+
+const VER_STATUS_LABEL: Record<VerificationStatus, string> = {
+  "not_verified": "Not Verified",
+  "under_review": "Under Review",
+  "rejected": "Rejected",
+  "verified": "Verified",
+  "blocked": "Blocked"
+}
+
 const ViewCourseForAdmin = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const dispatch = useDispatch<AppDispatch>();
@@ -90,48 +106,26 @@ const ViewCourseForAdmin = () => {
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set());
   const [showPreview, setShowPreview] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-    const [modalType, setModalType] = useState<"approve" | "reject" | "block" | "unblock" | null>(null);
-  const [remarks, setRemarks] = useState(""); 
+  const [modalType, setModalType] = useState<"approve" | "reject" | "block" | "unblock" | null>(null);
+  const [remarks, setRemarks] = useState("");
+  const [loading,setLoading]=useState(false)
 
 
-  const [course, setCourse] = useState<Course>({
-    id: "",
-    title: "",
-    description: "",
-    prerequisites: [],
-    category: { id: "", name: "" },
-    instructor: { id: "", name: "", profilePic: null },
-    enrollmentCount: 0,
-    modules: [],
-    level: "beginner",
-    duration: 0,
-    tags: [],
-    whatYouWillLearn: [],
-    totalRatings: 0,
-    status: "draft",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    thumbnail: null,
-    previewVideo: null,
-    price: 0,
-    rating: null,
-    publishedAt: null,
-    verification: {
-      status: "not_verified",
-      reviewedAt: null,
-      submittedAt: null,
-      remarks: null,
-    },
-  });
+
+  const [course, setCourse] = useState<Course|null>(null);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
+      
       try {
+        setLoading(true)
         if (!courseId) return;
         const response = await dispatch(getCourseDetailsForAdmin(courseId)).unwrap();
         setCourse(response.data);
       } catch (err) {
         toast.error(err as string);
+      }finally{
+        setLoading(false)
       }
     };
     fetchCourseDetails();
@@ -140,7 +134,7 @@ const ViewCourseForAdmin = () => {
 
   const handleCourseApporval = async () => {
     try {
-      if (!modalType) return;
+      if (!modalType || !course) return;
 
       const statusMap = {
         approve: "verified",
@@ -164,7 +158,7 @@ const ViewCourseForAdmin = () => {
       setModalOpen(false);
       setRemarks("");
       setModalType(null);
-      toast.success(`Course ${modalType.replace("_", " ")+"ed"} successfully.`);
+      toast.success(`Course ${modalType.replace("_", " ") + "ed"} successfully.`);
     } catch (error) {
       toast.error(error as string);
     }
@@ -173,26 +167,16 @@ const ViewCourseForAdmin = () => {
 
 
 
-  const statusLabel: Record<CourseStatus, string> = {
-    "archived": "Archived",
-    "draft": "Draft",
-    "published": "Published"
-  };
 
-  const verStatusLabel: Record<VerificationStatus, string> = {
-    "not_verified": "Not Verified",
-    "under_review": "Under Review",
-    "rejected": "Rejected",
-    "verified": "Verified",
-    "blocked": "Blocked"
-  }
 
-  const toggleModule = (index: number) => {
+  const toggleModule = useCallback((index: number) => {
     const newExpanded = new Set(expandedModules);
     if (newExpanded.has(index)) newExpanded.delete(index);
     else newExpanded.add(index);
     setExpandedModules(newExpanded);
-  };
+  },[expandedModules]);
+
+  
 
   const getLevelColor = (level: CourseLevel) => {
     switch (level) {
@@ -229,8 +213,10 @@ const ViewCourseForAdmin = () => {
       })
       : "N/A";
 
-  // const getTotalChapters = () =>
-  //   course.modules.reduce((total, m) => total + m.chapters.length, 0);
+
+  if(loading) return <CourseSkeleton/>
+
+  if(!course) return <FallbackUI/>
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -265,7 +251,7 @@ const ViewCourseForAdmin = () => {
                     course.verification.status
                   )}`}
                 >
-                  {verStatusLabel[course.verification.status]}
+                  {VER_STATUS_LABEL[course.verification.status]}
                 </span>
               </div>
 
@@ -298,6 +284,7 @@ const ViewCourseForAdmin = () => {
               <div className="w-full sm:w-[350px] md:w-[400px] lg:w-[420px] bg-white rounded-lg shadow overflow-hidden mt-6 lg:mt-0">
                 <div className="relative aspect-video">
                   <video
+                    preload="none"
                     controls={showPreview}
                     poster={course.thumbnail || undefined}
                     className="w-full h-full object-cover"
@@ -330,7 +317,7 @@ const ViewCourseForAdmin = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold mb-4">Verification Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-              <p><strong>Status:</strong> {verStatusLabel[course.verification.status]}</p>
+              <p><strong>Status:</strong> {VER_STATUS_LABEL[course.verification.status]}</p>
               <p><strong>Submitted:</strong> {formatDate(course.verification.submittedAt)}</p>
               <p><strong>Reviewed:</strong> {formatDate(course.verification.reviewedAt)}</p>
               {course.verification.remarks && (
@@ -454,16 +441,16 @@ const ViewCourseForAdmin = () => {
 
               {course.verification.status === "verified" && (
                 <button
-                onClick={() => { setModalType("block"); setModalOpen(true); }}
-                 className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 rounded-lg py-2 hover:bg-gray-200">
+                  onClick={() => { setModalType("block"); setModalOpen(true); }}
+                  className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 rounded-lg py-2 hover:bg-gray-200">
                   <Ban className="w-4 h-4" /> Block Course
                 </button>
               )}
 
               {course.verification.status === "blocked" && (
-                <button 
-                onClick={() => { setModalType("unblock"); setModalOpen(true); }}
-                className="w-full flex items-center justify-center gap-2 bg-yellow-50 text-yellow-700 rounded-lg py-2 hover:bg-yellow-100">
+                <button
+                  onClick={() => { setModalType("unblock"); setModalOpen(true); }}
+                  className="w-full flex items-center justify-center gap-2 bg-yellow-50 text-yellow-700 rounded-lg py-2 hover:bg-yellow-100">
                   <ShieldCheck className="w-4 h-4" /> Unblock Course
                 </button>
               )}
@@ -488,7 +475,7 @@ const ViewCourseForAdmin = () => {
             <h3 className="font-semibold mb-4">Course Metadata</h3>
             <p><strong>Category:</strong> {course.category.name}</p>
             <p><strong>Instructor:</strong> {course.instructor.name}</p>
-            <p><strong>Status:</strong> {statusLabel[course.status]}</p>
+            <p><strong>Status:</strong> {STATUS_LABEL[course.status]}</p>
             <p><strong>Created:</strong> {formatDate(course.createdAt)}</p>
             <p><strong>Updated:</strong> {formatDate(course.updatedAt)}</p>
           </div>
@@ -507,10 +494,10 @@ const ViewCourseForAdmin = () => {
               {modalType === "approve"
                 ? "Are you sure you want to approve this course?"
                 : modalType === "reject"
-                ? "Please provide a reason for rejection."
-                : modalType === "block"
-                ? "Please provide a reason for blocking this course."
-                : "Are you sure you want to unblock this course?"}
+                  ? "Please provide a reason for rejection."
+                  : modalType === "block"
+                    ? "Please provide a reason for blocking this course."
+                    : "Are you sure you want to unblock this course?"}
             </p>
 
             {(modalType === "reject" || modalType === "block") && (
@@ -545,10 +532,10 @@ const ViewCourseForAdmin = () => {
                 {modalType === "approve"
                   ? "Yes, Approve"
                   : modalType === "reject"
-                  ? "Reject"
-                  : modalType === "block"
-                  ? "Block"
-                  : "Unblock"}
+                    ? "Reject"
+                    : modalType === "block"
+                      ? "Block"
+                      : "Unblock"}
               </button>
             </div>
           </div>

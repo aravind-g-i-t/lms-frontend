@@ -3,9 +3,9 @@ import { useSelector } from "react-redux"
 import type { RootState } from "../redux/store"
 
 const ProtectedAdmin = () => {
-  const { id } = useSelector((state: RootState) => state.admin)
+  const { role } = useSelector((state: RootState) => state.auth)
 
-  if (!id) {
+  if (role!=="admin") {
     return <Navigate to="/admin/signin" replace />
   }
 

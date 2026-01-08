@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import {
@@ -13,8 +13,9 @@ import {
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { getCourseVideo, getFullCourseForLearner, markChapterAsCompleted } from '../../services/learnerServices';
+import { getFullCourseForLearner, markChapterAsCompleted, pingLearner, updateCurrentChapter } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
+import CoursePlayerSkeleton from '../../components/learner/CoursePlayerSkeleton';
 
 
 export interface Resource {
@@ -28,7 +29,7 @@ export interface Chapter {
     id: string;
     title: string;
     description: string;
-    video: string | null;
+    // video: string | null;
     duration: number;
     resources: Resource[];
 }
@@ -91,10 +92,12 @@ const CoursePlayerPage = () => {
     const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
+    // const [currentModuleId,setCurrentModuleId]=useState<string|null>(null)
     const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
     const [showSidebar, setShowSidebar] = useState(true);
     const [showNotes, setShowNotes] = useState(false);
     const [showResources, setShowResources] = useState(false);
+
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -114,6 +117,7 @@ const CoursePlayerPage = () => {
                             if (chapter.id === courseData.currentChapterId) {
                                 setCurrentChapter(chapter);
                                 setCurrentModuleIndex(mIdx);
+
                                 setCurrentChapterIndex(cIdx);
                                 setExpandedModules(new Set([mIdx]));
                                 found = true;
@@ -137,19 +141,19 @@ const CoursePlayerPage = () => {
         fetchCourse();
     }, [courseId, dispatch, navigate]);
 
-    // const handleMessageInstructor=async()=>{
-    //     if(!course){
-    //         return
-    //     }
-    //     const result=await dispatch(getConversationId({
-    //         courseId:course.id,
-    //         instructorId:course.instructor.id
-    //     })).unwrap();
-    //     navigate(`/learner/messages?conversationId=${result.conversationId}`)
-    // }
 
 
-    const toggleModule = (index: number) => {
+    const handleVideoError = async () => {
+        try {
+            await dispatch(pingLearner()).unwrap()
+
+        } catch {
+            toast.error("Session expired. Please login again.");
+        }
+    };
+
+
+    const toggleModule = useCallback((index: number) => {
         const newExpanded = new Set(expandedModules);
         if (newExpanded.has(index)) {
             newExpanded.delete(index);
@@ -157,20 +161,16 @@ const CoursePlayerPage = () => {
             newExpanded.add(index);
         }
         setExpandedModules(newExpanded);
-    };
+    }, [expandedModules]);
 
     const selectChapter = async (moduleIdx: number, chapterIdx: number) => {
         if (!course) return;
         const module = course.modules[moduleIdx]
         const chapter = module.chapters[chapterIdx];
-        const result = await dispatch(getCourseVideo({
+        await dispatch(updateCurrentChapter({
             courseId: course.id,
-            moduleId: module.id,
             chapterId: chapter.id
         })).unwrap();
-        console.log(result);
-
-        chapter.video = result.video;
         setCurrentChapter(chapter);
 
         setCurrentModuleIndex(moduleIdx);
@@ -221,9 +221,20 @@ const CoursePlayerPage = () => {
         }
     };
 
-    const isChapterCompleted = (chapterId: string) => {
-        return course?.completedChapters.includes(chapterId) || false;
-    };
+    const completedSet = useMemo(
+        () => new Set(course?.completedChapters ?? []),
+        [course?.completedChapters]
+    );
+
+    const isChapterCompleted = useCallback(
+        (id: string) => completedSet.has(id),
+        [completedSet]
+    );
+
+
+    // const isChapterCompleted = (chapterId: string) => {
+    //     return course?.completedChapters.includes(chapterId) || false;
+    // };
 
     const hasNextChapter = () => {
         if (!course) return false;
@@ -235,26 +246,9 @@ const CoursePlayerPage = () => {
         return currentChapterIndex > 0 || currentModuleIndex > 0;
     };
 
-    // const getResourceIcon = (type: ResourceType) => {
-    //     switch (type) {
-    //         case 'pdf': return <FileText className="w-4 h-4 text-red-500" />;
-    //         case 'docs': return <FileText className="w-4 h-4 text-blue-500" />;
-    //         case 'zip': return <Download className="w-4 h-4 text-yellow-500" />;
-    //         default: return <FileText className="w-4 h-4 text-gray-500" />;
-    //     }
-    // };
+   
 
-    // const formatFileSize = (bytes: number) => {
-    //     return `${Math.round(bytes / 1024)} KB`;
-    // };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                <div className="text-white text-lg">Loading course...</div>
-            </div>
-        );
-    }
+    if (loading) return <CoursePlayerSkeleton/>
 
     if (!course || !currentChapter) {
         return (
@@ -335,13 +329,16 @@ const CoursePlayerPage = () => {
                     {/* Main Content Area */}
                     <main className="flex-1 flex flex-col overflow-hidden">
                         {/* Video Player */}
-                        {currentChapter.video && (<div className="bg-black w-full flex justify-center items-center">
+                        {currentChapter && (<div className="bg-black w-full flex justify-center items-center">
                             <video
                                 key={currentChapter.id}
                                 controls
-                                autoPlay
+
+
                                 className="max-h-[80vh] w-auto max-w-full object-contain"
-                                src={currentChapter.video}
+                                src={`http://localhost:3000/api/v1/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
+                                onError={handleVideoError}
+                                onStalled={handleVideoError}
                             >
                                 Your browser does not support video playback.
                             </video>

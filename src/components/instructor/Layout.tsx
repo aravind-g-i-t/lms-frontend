@@ -7,9 +7,7 @@ import {
   Video,
   MessageSquare,
   Wallet,
-  Search,
   Bell,
-  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -18,11 +16,11 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { logout } from "../../services/userAuthServices";
 import toast from "react-hot-toast";
-import { clearInstructor } from "../../redux/slices/instructorSlice";
 
 const InstructorLayout: React.FC = () => {
 
-  const { name, profilePic } = useSelector((state: RootState) => state.instructor)
+  const { name, profilePic } = useSelector((state: RootState) => state.auth);
+  const { unreadCount } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate()
   const location = useLocation();
@@ -56,11 +54,9 @@ const InstructorLayout: React.FC = () => {
 
       if (response.success) {
         toast.success("Logged out successfully");
-        dispatch(clearInstructor());
         navigate("/signin");
       } else {
         toast.error(response?.message || "Failed to log out from server");
-        dispatch(clearInstructor());
         navigate("/signin");
       }
     } catch (error: unknown) {
@@ -70,9 +66,7 @@ const InstructorLayout: React.FC = () => {
       if (error instanceof Error) {
         message = error.message;
       }
-
       toast.error(message);
-      dispatch(clearInstructor());
       navigate("/signin");
     }
   };
@@ -129,9 +123,20 @@ const InstructorLayout: React.FC = () => {
                       : "text-gray-300 hover:bg-gray-700 hover:text-white"
                     }`}
                 >
-                  <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                  <div className="relative w-6 h-6 flex items-center justify-center shrink-0">
                     <item.icon className="w-5 h-5" />
+
+                    {item.name === "Messages" && unreadCount > 0 && (
+                      <span
+                        className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
+                 bg-red-500 text-white text-[10px] font-bold
+                 rounded-full flex items-center justify-center"
+                      >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                   </div>
+
                   {!collapsed && (
                     <span className="ml-3 truncate">{item.name}</span>
                   )}
@@ -169,13 +174,13 @@ const InstructorLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
+            {/* <Link
               to="/instructor/search"
               title="Search"
               className="p-2 rounded-lg hover:bg-teal-600"
             >
               <Search className="w-5 h-5" />
-            </Link>
+            </Link> */}
             <Link
               to="/instructor/notifications"
               title="Notifications"
@@ -183,13 +188,13 @@ const InstructorLayout: React.FC = () => {
             >
               <Bell className="w-5 h-5" />
             </Link>
-            <Link
+            {/* <Link
               to="/instructor/settings"
               title="Settings"
               className="p-2 rounded-lg hover:bg-teal-600"
             >
               <Settings className="w-5 h-5" />
-            </Link>
+            </Link> */}
             <button
               onClick={() => navigate("/instructor/profile")}
               title="Profile"

@@ -3,19 +3,29 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ToastContainer } from 'react-toastify';
+import { SocketProvider } from './providers/SocketProvider';
+import { VideoCallProvider } from './providers/VideoCallProvider';
+import GlobalVideoCallModal from './components/global/GlobalVideoCallModal';
+import IncomingCallModal from './components/global/IncomingCallModal';
 
 function App() {
   const clientId=import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   return (
     <>
-    <GoogleOAuthProvider clientId={clientId}>
+    <SocketProvider>
+      <VideoCallProvider>
+        <GoogleOAuthProvider clientId={clientId}>
+          <Router>
+            <AppRoutes/>
+          </Router>
+        </GoogleOAuthProvider>
+        <ToastContainer/>
+        <GlobalVideoCallModal />
+        <IncomingCallModal />
 
-    <Router>
-      <AppRoutes/>
-    </Router>
-    </GoogleOAuthProvider>
-    <ToastContainer/>
+    </VideoCallProvider>
+    </SocketProvider>
     </>
   )
 }

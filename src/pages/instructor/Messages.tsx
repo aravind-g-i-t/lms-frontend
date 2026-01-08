@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, Send, Paperclip, ChevronLeft, ChevronRight, BookOpen, Users, MoreVertical, User, ArrowLeft, CheckCheck, Check } from 'lucide-react';
+import { Search, Send, Paperclip, ChevronLeft, ChevronRight, BookOpen, Users, ArrowLeft, CheckCheck, Check, SquareCheckBigIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../redux/store';
-import { useSocket } from '../../hooks/useChat';
 import { toast } from 'react-toastify';
-import { getInstructorConversations, getInstructorMessages } from '../../services/instructorServices';
+import { deleteInstructorMessages, getInstructorConversations, getInstructorMessages } from '../../services/instructorServices';
 import { Video, Phone } from "lucide-react";
-import { VideoCallModal } from '../../components/shared/VideoCall';
+import { useSocket } from '../../hooks/useSocket';
+import { uploadAttachmentToS3 } from '../../config/s3Config';
+import { AttachmentPreview } from '../../components/learner/AttachmentPreview';
+import { DeleteMessageModal } from '../../components/shared/DeleteMessageModal';
 
 
 
@@ -28,7 +30,15 @@ export interface Conversation {
   isOnline: boolean;
 }
 
-export interface Attachment {
+interface Attachment {
+  id: string | null;
+  fileName: string;
+  fileUrl: string | null;
+  fileType: string;
+  fileSize: number;
+}
+
+interface StoredAttachment {
   id: string;
   fileName: string;
   fileUrl: string;
@@ -36,14 +46,24 @@ export interface Attachment {
   fileSize: number;
 }
 
+type AttachmentDraft = {
+  file: File;
+  fileUrl: string;
+  fileType: string;
+  fileName: string;
+  fileSize: number
+};
+
+
 export interface Message {
   id: string;
   senderId: string;
   content: string;
-  attachments: Attachment[];
+  attachments: StoredAttachment[];
   createdAt: Date;
   isRead: boolean;
   readAt: Date | null;
+  isDeletedForEveryone: boolean;
 }
 
 interface Course {
@@ -59,8 +79,9 @@ const InstructorMessagesPage = () => {
   const courseId = state?.courseId;
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { name,id } = useSelector((state: RootState) => state.instructor);
-  const socket = useSocket(id, "instructor");
+  const { id } = useSelector((state: RootState) => state.auth);
+  const { unreadCount } = useSelector((state: RootState) => state.chat);
+  const socket = useSocket();
 
 
 
@@ -78,15 +99,27 @@ const InstructorMessagesPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [incomingCall, setIncomingCall] = useState<{
-    conversationId: string;
-    callerId: string;
-    callerRole: "learner" | "instructor";
-  } | null>(null);
+  // const [incomingCall, setIncomingCall] = useState<{
+  //   conversationId: string;
+  //   callerId: string;
+  //   callerRole: "learner" | "instructor";
+  // } | null>(null);
 
-  const [activeCall, setActiveCall] = useState<{
-    roomId: string;
-  } | null>(null);
+  // const [activeCall, setActiveCall] = useState<{
+  //   roomId: string;
+  // } | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [attachmentDrafts, setAttachmentDrafts] = useState<AttachmentDraft[]>([]);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const DELETE_WINDOW_MS = 10 * 60 * 1000;
+
+
+
+
 
 
 
@@ -113,6 +146,22 @@ const InstructorMessagesPage = () => {
   }, [messages]);
 
   const conversationsPerPage = 5;
+
+  const canDeleteForEveryone =
+    selectedMessageIds.length > 0 &&
+    selectedMessageIds.every(messageId => {
+      const msg = messages.find(m => m.id === messageId);
+      if (!msg) return false;
+
+      const isOwnMessage = msg.senderId === id;
+      const isWithinTimeWindow =
+        Date.now() - new Date(msg.createdAt).getTime() <= DELETE_WINDOW_MS;
+
+      return isOwnMessage && isWithinTimeWindow;
+    });
+
+
+
 
   useEffect(() => {
     const fetchConverations = async () => {
@@ -172,7 +221,9 @@ const InstructorMessagesPage = () => {
     socket?.emit("markMessagesRead", {
       conversationId: activeConversation.id
     })
-  }, [socket, activeConversation?.id, messages.length]);
+  }, [socket, activeConversation?.id]);
+
+
 
   useEffect(() => {
     if (!socket) return;
@@ -184,16 +235,18 @@ const InstructorMessagesPage = () => {
         if (prev.some(m => m.id === data.message.id)) return prev;
         return [...prev, data.message];
       });
+      socket.emit("markMessagesRead", {
+        conversationId: activeConversation.id
+      })
     };
 
     socket.on("receiveMessage", handler);
-
-
 
     return () => {
       socket.off("receiveMessage", handler);
     };
   }, [socket, activeConversation?.id]);
+
 
 
   useEffect(() => {
@@ -224,6 +277,7 @@ const InstructorMessagesPage = () => {
   }, [socket]);
 
 
+
   useEffect(() => {
     if (!socket) return;
     console.log("learnerStatus changed");
@@ -252,6 +306,8 @@ const InstructorMessagesPage = () => {
       socket.off("learnerStatusChanged", handleLearnerStatus);
     };
   }, [socket]);
+
+
 
 
   useEffect(() => {
@@ -293,6 +349,8 @@ const InstructorMessagesPage = () => {
   }, [socket, activeConversation?.id, id]);
 
 
+
+
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -315,6 +373,9 @@ const InstructorMessagesPage = () => {
           })
         ).unwrap();
 
+
+
+
         setMessages(prev => [...result.messages, ...prev]);
         setHasMoreMessages(result.hasMore);
 
@@ -329,78 +390,123 @@ const InstructorMessagesPage = () => {
     return () => container.removeEventListener("scroll", onScroll);
   }, [hasMoreMessages, activeConversation?.id, dispatch, messages.length]);
 
+
+
+
+  // useEffect(() => {
+  //   if (!socket) return;
+
+  //   const handler = (data: {
+  //     conversationId: string;
+  //     callerId: string;
+  //     callerRole: "learner" | "instructor";
+  //   }) => {
+  //     setIncomingCall(data);
+  //   };
+
+  //   socket.on("incomingVideoCall", handler);
+
+  //   return () => {
+  //     socket.off("incomingVideoCall", handler);
+  //   };
+  // }, [socket]);
+
+
+
+
+  // useEffect(() => {
+  //   if (!socket) return;
+
+  //   socket.on("videoCallAccepted", ({ conversationId }) => {
+  //     setActiveCall({ roomId: conversationId })
+  //   });
+
+  //   socket.on("videoCallRejected", () => {
+  //     toast.info("Call rejected");
+  //   });
+
+  //   return () => {
+  //     socket.off("videoCallAccepted");
+  //     socket.off("videoCallRejected");
+  //   };
+  // }, [socket]);
+
+
   useEffect(() => {
     if (!socket) return;
 
     const handler = (data: {
-      conversationId: string;
-      callerId: string;
-      callerRole: "learner" | "instructor";
+      userId: string;
+      isTyping: boolean;
     }) => {
-      setIncomingCall(data);
+      // ignore your own typing
+      if (data.userId === id) return;
+
+      setIsTyping(data.isTyping);
     };
 
-    socket.on("incomingVideoCall", handler);
+    socket.on("userTyping", handler);
 
     return () => {
-      socket.off("incomingVideoCall", handler);
+      socket.off("userTyping", handler);
     };
-  }, [socket]);
+  }, [socket, id]);
 
 
-  useEffect(() => {
-    if (!socket) return;
+  // const acceptCall = () => {
+  //   if (!incomingCall || !socket) return;
 
-    socket.on("videoCallAccepted", ({ conversationId }) => {
-      setActiveCall({ roomId: conversationId })
+  //   socket.emit("acceptVideoCall", {
+  //     conversationId: incomingCall.conversationId,
+  //     callerId: incomingCall.callerId,
+  //   });
+
+  //   setActiveCall({ roomId: incomingCall.conversationId });
+  //   setIncomingCall(null);
+  // };
+
+  // const rejectCall = () => {
+  //   if (!incomingCall || !socket) return;
+
+  //   socket.emit("rejectVideoCall", {
+  //     callerId: incomingCall.callerId,
+  //   });
+
+  //   setIncomingCall(null);
+  // };
+
+
+
+
+  const handleSendMessage = async () => {
+    if (!socket || !messageInput.trim() && attachmentDrafts.length === 0) return;
+    socket.emit("typing", {
+      conversationId: activeConversation?.id,
+      isTyping: false
     });
 
-    socket.on("videoCallRejected", () => {
-      toast.info("Call rejected");
-    });
+    const attachments: Attachment[] = await Promise.all(
+      attachmentDrafts.map(async (draft) => {
+        const key = await uploadAttachmentToS3(draft.file);
 
-    return () => {
-      socket.off("videoCallAccepted");
-      socket.off("videoCallRejected");
-    };
-  }, [socket]);
-
-
-  const acceptCall = () => {
-    if (!incomingCall || !socket) return;
-
-    socket.emit("acceptVideoCall", {
-      conversationId: incomingCall.conversationId,
-      callerId: incomingCall.callerId,
-    });
-
-    setActiveCall({ roomId: incomingCall.conversationId });
-    setIncomingCall(null);
-  };
-
-  const rejectCall = () => {
-    if (!incomingCall || !socket) return;
-
-    socket.emit("rejectVideoCall", {
-      callerId: incomingCall.callerId,
-    });
-
-    setIncomingCall(null);
-  };
+        return {
+          id: null,
+          fileName: draft.fileName,
+          fileSize: draft.fileSize,
+          fileType: draft.fileType,
+          fileUrl: key
+        };
+      })
+    );
 
 
-
-
-  const handleSendMessage = () => {
-    if (!socket || !messageInput.trim()) return;
-    console.log("sendmsg", activeConversation);
 
     socket.emit('sendMessage', {
       receiverId: activeConversation?.learner.id,
       conversationId: activeConversation?.id,
       message: {
         content: messageInput.trim(),
-        attachments: [],
+        attachments,
       },
       courseId: activeConversation?.course.id
     },
@@ -411,6 +517,7 @@ const InstructorMessagesPage = () => {
           console.log("Message delivered");
           setMessages(prev => [...prev, response.message]);
           setMessageInput('');
+          setAttachmentDrafts([]);
           if (activeConversation && !activeConversation.id) {
             setActiveConversation({ ...activeConversation, id: response.conversationId });
             console.log("resp.convId", response.conversationId);
@@ -431,6 +538,66 @@ const InstructorMessagesPage = () => {
     );
     console.log("activeConv", activeConversation);
   };
+
+  const handleTyping = (value: string) => {
+    setMessageInput(value);
+
+    if (!socket || !activeConversation?.id) return;
+
+    socket.emit("typing", {
+      conversationId: activeConversation.id,
+      isTyping: true
+    });
+
+    // clear old timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("typing", {
+        conversationId: activeConversation.id,
+        isTyping: false
+      });
+    }, 1500);
+  };
+
+  const handleDeleteForMe = async () => {
+    await dispatch(deleteInstructorMessages({
+      messageIds: selectedMessageIds,
+      scope: "ME"
+    })).unwrap()
+    console.log("Delete for me:", selectedMessageIds);
+
+    setMessages(prev =>
+      prev.filter(m => !selectedMessageIds.includes(m.id))
+    );
+
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+    setShowDeleteModal(false);
+  };
+
+  const handleDeleteForEveryone = async () => {
+    await dispatch(deleteInstructorMessages({
+      messageIds: selectedMessageIds,
+      scope: "EVERYONE"
+    })).unwrap()
+    console.log("Delete for everyone:", selectedMessageIds);
+
+    setMessages(prev =>
+      prev.map(m =>
+        selectedMessageIds.includes(m.id)
+          ? { ...m, content: "", attachments: [], isDeletedForEveryone: true }
+          : m
+      )
+    );
+
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+    setShowDeleteModal(false);
+  };
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -454,6 +621,7 @@ const InstructorMessagesPage = () => {
       const result = await dispatch(getInstructorMessages({
         conversationId: conv.id
       })).unwrap();
+      console.log("messages:", result);
       setMessages(result.messages);
       setHasMoreMessages(result.hasMore)
 
@@ -463,13 +631,60 @@ const InstructorMessagesPage = () => {
   const handleVideoCall = () => {
     if (!socket || !activeConversation?.id) return;
 
-    socket.emit("startVideoCall", {
+    socket.emit("startCall", {
       receiverId: activeConversation.learner.id,
       conversationId: activeConversation.id,
+      type: "video"
+    });
+  };
+
+  const handleAudioCall = () => {
+    if (!socket || !activeConversation?.id) return;
+
+    socket.emit("startCall", {
+      receiverId: activeConversation.learner.id,
+      conversationId: activeConversation.id,
+      type: "audio"
     });
 
-    setActiveCall({ roomId: activeConversation.id })
+
   };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const drafts: AttachmentDraft[] = Array.from(files).map(file => ({
+      file,
+      fileUrl: URL.createObjectURL(file),
+      fileType: file.type,
+      fileName: file.name,
+      fileSize: file.size
+    }));
+
+    setAttachmentDrafts(prev => [...prev, ...drafts]);
+  };
+
+
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessageIds(prev =>
+      prev.includes(messageId)
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    );
+  };
+
+  // const handleDeleteSelectedMessages = () => {
+  //   console.log("Delete:", selectedMessageIds);
+
+  //   // later:
+  //   // socket.emit("deleteMessages", { messageIds: selectedMessageIds })
+
+  //   setSelectedMessageIds([]);
+  //   setIsSelectionMode(false);
+  // };
+
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -516,7 +731,21 @@ const InstructorMessagesPage = () => {
     });
   };
 
-  const totalUnread = 5
+  const formatTimeAgo = (date: Date | string | null) => {
+    if (!date) return '';
+
+    const d = date instanceof Date ? date : new Date(date);
+    const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 172800) return 'Yesterday';
+
+    return d.toLocaleDateString();
+  };
+
+  
 
   const renderMessageGroups = () => {
     const groups: { date: string; messages: Message[] }[] = [];
@@ -544,11 +773,61 @@ const InstructorMessagesPage = () => {
           </span>
         </div>
         {group.messages.map((msg) => {
+          const isSelected = selectedMessageIds.includes(msg.id)
+          const isOwn = msg.senderId === id;
+
+
+          if (msg.isDeletedForEveryone) {
+
+            return (
+              <div
+                key={msg.id}
+                className={`flex gap-3 mb-4 ${isOwn ? "flex-row-reverse" : "flex-row"
+                  }`}
+              >
+                <div
+                  className={`flex flex-col max-w-[70%] ${isOwn ? "items-end" : "items-start"
+                    }`}
+                >
+                  <div
+                    className={`rounded-2xl px-4 py-2 italic text-sm ${isOwn
+                      ? "bg-teal-100 text-teal-700 rounded-tr-sm"
+                      : "bg-gray-100 text-gray-500 rounded-tl-sm"
+                      }`}
+                  >
+                    {isOwn
+                      ? "You deleted this message"
+                      : "This message was deleted"}
+                  </div>
+
+                  <div
+                    className={`text-xs text-gray-400 mt-1 ${isOwn ? "text-right" : "text-left"
+                      }`}
+                  >
+                    {formatMessageTime(msg.createdAt)}
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
 
           return (
-            <div className={`flex gap-3 mb-4 ${msg.senderId === id ? 'flex-row-reverse' : 'flex-row'}`}>
-              {msg.senderId !== id && (
+            <div
+              onClick={() => {
+                if (isSelectionMode) {
+                  toggleMessageSelection(msg.id)
+                }
+              }}
+              className={`flex gap-3 mb-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'} ${isSelected ? 'bg-teal-50 ring-1 ring-teal-300 rounded-lg p-2' : ''}`}>
+              {isSelectionMode && (
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  className={`mt-2 ${isOwn ? 'ml-2' : 'mr-2'}`}
+                />
+              )}
+              {!isOwn && (
                 <div className={`flex-shrink-0 `}>
                   {activeConversation.learner.profilePic ? (
                     <img
@@ -561,7 +840,7 @@ const InstructorMessagesPage = () => {
                       }}
                     />
                   ) : (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${msg.senderId === id ? 'bg-gradient-to-br from-teal-500 to-teal-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${isOwn ? 'bg-gradient-to-br from-teal-500 to-teal-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'
                       }`}>
                       {getInitials(activeConversation.learner.name || 'User')}
                     </div>
@@ -569,31 +848,32 @@ const InstructorMessagesPage = () => {
                 </div>
               )}
 
-              <div className={`flex flex-col max-w-[70%] ${msg.senderId === id ? 'items-end' : 'items-start'}`}>
-                {activeConversation.learner.profilePic && msg.senderId !== id && (
+              <div
+                className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+                {activeConversation.learner.profilePic && !isOwn && (
                   <span className="text-xs text-gray-600 mb-1 ml-1">{activeConversation.learner.name}</span>
                 )}
 
-                <div className={`rounded-2xl px-4 py-2 ${msg.senderId === id
+                <div className={`rounded-2xl px-4 py-2 ${isOwn
                   ? 'bg-teal-600 text-white rounded-tr-sm'
                   : 'bg-gray-100 text-gray-900 rounded-tl-sm'
                   }`}>
                   <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
 
-                  {/* {message.attachments.length > 0 && (
-                          <div className="space-y-2">
-                            {message.attachments.map(attachment => (
-                              <AttachmentPreview key={attachment.id} attachment={attachment} />
-                            ))}
-                          </div>
-                        )} */}
+                  {msg.attachments.length > 0 && (
+                    <div className="space-y-2">
+                      {msg.attachments.map((attachment) => (
+                        <AttachmentPreview key={attachment.id} attachment={attachment} />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className={`flex items-center gap-1 mt-1 px-1 ${msg.senderId === id ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`flex items-center gap-1 mt-1 px-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                   <span className="text-xs text-gray-400">
                     {formatMessageTime(msg.createdAt)}
                   </span>
-                  {msg.senderId === id && (
+                  {isOwn && (
                     <span className={msg.isRead ? 'text-teal-500' : 'text-gray-400'}>
                       {msg.isRead ? <CheckCheck size={14} /> : <Check size={14} />}
                     </span>
@@ -615,9 +895,9 @@ const InstructorMessagesPage = () => {
         <div className="bg-teal-600 p-4 md:p-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl md:text-2xl font-bold text-white">Messages</h1>
-            {totalUnread > 0 && (
+            {unreadCount > 0 && (
               <span className="bg-white text-teal-600 text-xs font-bold px-2 py-1 rounded-full">
-                {totalUnread}
+                {unreadCount}
               </span>
             )}
           </div>
@@ -704,10 +984,7 @@ const InstructorMessagesPage = () => {
                         {conv.learner.name}
                       </h3>
                       <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{conv.lastMessageAt &&
-                        new Date(conv.lastMessageAt).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                        })}</span>
+                        formatTimeAgo(conv.lastMessageAt)}</span>
                     </div>
                     <div className="flex items-center text-xs text-teal-700 mb-1">
                       {conv.isOnline && (<span
@@ -778,7 +1055,10 @@ const InstructorMessagesPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setShowMobileChat(false)}
+                    onClick={() => {
+                      setShowMobileChat(false);
+                      setActiveConversation(null)
+                    }}
                     className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
                   >
                     <ArrowLeft size={20} />
@@ -802,6 +1082,7 @@ const InstructorMessagesPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={handleAudioCall}
                     className="p-2 hover:bg-gray-100 rounded-lg"
                     title="Audio Call"
                   >
@@ -815,12 +1096,28 @@ const InstructorMessagesPage = () => {
                   >
                     <Video className="w-5 h-5 text-teal-600" />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Profile">
+                  {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Profile">
                     <User className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors hidden sm:block" title="More">
-                    <MoreVertical className="w-5 h-5 text-gray-600" />
-                  </button>
+                  </button> */}
+                  {isSelectionMode ? (
+                    <button
+                      onClick={() => {
+                        setIsSelectionMode(false);
+                        setSelectedMessageIds([]);
+                      }}
+                      className="text-sm text-red-600"
+                    >
+                      Cancel
+                    </button>
+                  ) : (
+
+                    <button
+                      onClick={() => setIsSelectionMode(true)}
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                    >
+                      <SquareCheckBigIcon size={16} className="w-5 h-5 text-teal-600" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -841,33 +1138,128 @@ const InstructorMessagesPage = () => {
               {renderMessageGroups()}
               <div ref={messagesEndRef} />
             </div>
+            {attachmentDrafts.length > 0 && (
+              <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+                <div className="flex gap-2 overflow-x-auto">
+                  {attachmentDrafts.map((draft, index) => (
+                    <div
+                      key={index}
+                      className="relative w-24 h-24 rounded-lg bg-white border border-gray-300 flex items-center justify-center overflow-hidden"
+                    >
+                      {/* Image preview */}
+                      {draft.fileType.startsWith("image/") ? (
+                        <img
+                          src={draft.fileUrl}
+                          alt={draft.fileName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        /* Non-image preview */
+                        <div className="flex flex-col items-center justify-center text-xs text-gray-600 px-2 text-center">
+                          <Paperclip className="w-5 h-5 mb-1 text-gray-500" />
+                          <span className="truncate w-full">{draft.fileName}</span>
+                        </div>
+                      )}
+
+                      {/* Remove button */}
+                      <button
+                        onClick={() =>
+                          setAttachmentDrafts(prev =>
+                            prev.filter((_, i) => i !== index)
+                          )
+                        }
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isTyping && (
+              <div className="px-4 pb-2">
+                <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full text-xs text-gray-600">
+                  <span>
+                    {activeConversation?.learner?.name || "User"} is typing
+                  </span>
+                  <span className="flex gap-1">
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                  </span>
+                </div>
+              </div>
+            )}
+
 
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200 bg-white">
-              <div className="flex items-end gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 hidden sm:block">
-                  <Paperclip className="w-5 h-5 text-gray-600" />
-                </button>
-                {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 hidden sm:block">
+              {selectedMessageIds.length > 0 ? (
+                <div className="flex items-center justify-between">
+                  {/* Left: Cancel */}
+                  <button
+                    onClick={() => {
+                      setSelectedMessageIds([]);
+                    }}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                  >
+                    ✕
+                    <span className="text-sm">Clear</span>
+                  </button>
+
+                  {/* Center: count */}
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedMessageIds.length} selected
+                  </span>
+
+                  {/* Right: Delete */}
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="p-2 rounded-full hover:bg-red-50 text-red-600"
+                  >
+                    🗑
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-end gap-2">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <Paperclip className="w-5 h-5 text-gray-600" />
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    hidden
+                    onChange={handleFileSelect}
+                  />
+
+                  {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 hidden sm:block">
                   <Smile className="w-5 h-5 text-gray-600" />
                 </button> */}
-                <textarea
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type your message..."
-                  rows={1}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
-                  style={{ minHeight: '40px', maxHeight: '120px' }}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!messageInput.trim()}
-                  className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
+                  <textarea
+                    value={messageInput}
+                    onChange={(e) => handleTyping(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type your message..."
+                    rows={1}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                    style={{ minHeight: '40px', maxHeight: '120px' }}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!messageInput.trim()}
+                    className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -882,7 +1274,7 @@ const InstructorMessagesPage = () => {
           </div>
         )}
       </div>
-      {incomingCall && (
+      {/* {incomingCall && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-80">
             <h2 className="text-lg font-semibold mb-2">Incoming Video Call</h2>
@@ -906,9 +1298,9 @@ const InstructorMessagesPage = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
-      {activeCall && (
+      {/* {activeCall && (
         <VideoCallModal
           open={true}
           roomId={activeCall.roomId}
@@ -917,7 +1309,16 @@ const InstructorMessagesPage = () => {
           role="instructor"
           onClose={() => setActiveCall(null)}
         />
-      )}
+      )} */}
+
+      <DeleteMessageModal
+        open={showDeleteModal}
+        canDeleteForEveryone={canDeleteForEveryone}
+        onClose={() => setShowDeleteModal(false)}
+        onDeleteForMe={handleDeleteForMe}
+        onDeleteForEveryone={handleDeleteForEveryone}
+      />
+
 
 
     </div>

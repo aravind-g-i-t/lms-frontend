@@ -18,6 +18,7 @@ import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { addToFavourites, getCourseDetailsForLearner, removeFromFavourites } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
+import CourseOverviewSkeleton from '../../components/learner/CourseOverviewSkeleton';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
 
@@ -78,7 +79,7 @@ export interface Course {
 
 
 const CourseOverviewPage = () => {
-  const { id } = useSelector((state: RootState) => state.learner);
+  const { id } = useSelector((state: RootState) => state.auth);
   const { courseId } = useParams<{ courseId: string }>();
   console.log(courseId);
   const dispatch = useDispatch<AppDispatch>()
@@ -89,41 +90,16 @@ const CourseOverviewPage = () => {
 
 
 
-  const [course, setCourse] = useState<Course>({
-    id: '',
-    title: '',
-    description: "",
-    prerequisites: [],
-    category: {
-      id: "",
-      name: ""
-    },
-    enrollmentCount: 0,
-    instructor: {
-      id: "",
-      name: "",
-      profilePic: null
-    },
-    level: 'beginner',
-    duration: 0,
-    tags: [],
-    whatYouWillLearn: [],
-    totalRatings: 0,
-    thumbnail: null,
-    previewVideo: null,
-    price: 0,
-    rating: null,
-    publishedAt: null,
-    modules: [],
-    isEnrolled: false,
-    enrolledAt: null,
-    isFavourite:false
-  });
+  const [course, setCourse] = useState<Course|null>(null);
+  const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
 
     const fetchCourseDetails = async () => {
+
       try {
+        setLoading(true)
         if (!courseId) {
           return
         }
@@ -136,6 +112,8 @@ const CourseOverviewPage = () => {
 
       } catch (err) {
         toast.error(err as string);
+      }finally{
+        setLoading(false)
       }
     };
 
@@ -145,6 +123,8 @@ const CourseOverviewPage = () => {
 
 
   const handleAddToFavourites = async () => {
+    if (!course) return null;
+
     try {
       const courseId = course.id;
       const result =await dispatch(addToFavourites({
@@ -158,6 +138,8 @@ const CourseOverviewPage = () => {
   }
 
   const handleRemoveFromFavourites = async () => {
+    if (!course) return null;
+
     try {
       const courseId = course.id;
       const result = await dispatch(removeFromFavourites({
@@ -194,10 +176,6 @@ const CourseOverviewPage = () => {
   };
 
 
-
-
-
-
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
@@ -208,11 +186,17 @@ const CourseOverviewPage = () => {
   };
 
   const getTotalChapters = () => {
+    if (!course) return null;
+
     return course.modules.reduce((total, module) => total + module.chapters.length, 0);
   };
 
+  if(loading) return <CourseOverviewSkeleton/>
+  if (!course) return null;
+
 
   return (
+
 
     <div className="min-h-screen bg-gray-50">
       <LearnerNav />

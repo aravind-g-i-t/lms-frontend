@@ -18,7 +18,6 @@ import {
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { adminLogout } from "../../services/adminServices";
-import { clearAdmin } from "../../redux/slices/adminSlice";
 
 const navigationItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
@@ -41,7 +40,6 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     try {
       await dispatch(adminLogout()).unwrap();
-      dispatch(clearAdmin());
       navigate("/admin/signin");
     } catch (error: unknown) {
       let message = "Network error. Logging out locally.";
@@ -50,7 +48,6 @@ export function AdminSidebar() {
         message = error.message;
       }
       console.log(message);
-      dispatch(clearAdmin());
       navigate("/admin/signin");
     }
   };

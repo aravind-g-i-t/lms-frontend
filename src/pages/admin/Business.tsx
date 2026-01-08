@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
 import {
@@ -12,11 +12,11 @@ import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
-import { clearAdminStatus } from "../../redux/slices/statusSlice";
 import { toast } from "react-toastify";
 import { X } from "lucide-react";
 import FallbackUI from "../../components/shared/FallbackUI";
 import ReactModal from "react-modal";
+import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 
 type BusinessView = {
   name: string;
@@ -103,12 +103,10 @@ export default function ManageBusinesses() {
     };
 
     fetchBusinesses();
-    return () => {
-      dispatch(clearAdminStatus());
-    };
+
   }, [dispatch, page, search, status, verificationStatus]);
 
-  const handleToggleStatus = async (payload: { id: string }) => {
+  const handleToggleStatus = useCallback( async (payload: { id: string }) => {
     try {
       await dispatch(toggleBusinessStatus(payload)).unwrap();
 
@@ -121,9 +119,9 @@ export default function ManageBusinesses() {
     } catch (error) {
       toast.error(error as string)
     }
-  };
+  },[businesses,dispatch])
 
-  const handleViewBusiness = async (id: string) => {
+  const handleViewBusiness = useCallback(async (id: string) => {
     try {
       const response = await dispatch(getBusinessData({ id })).unwrap();
     setBusinessView(response.business);
@@ -131,7 +129,9 @@ export default function ManageBusinesses() {
     } catch (error) {
       toast.error(error as string)
     }
-  };
+  },[dispatch])
+
+
 
   const updateVerificationStatus = async () => {
     if (!selectedId) return;
@@ -168,7 +168,7 @@ export default function ManageBusinesses() {
 
   const closeModal = () => setBusinessView(null);
 
-  const columns: Column<Business>[] = [
+  const columns=useMemo<Column<Business>[]>(() => [
     {
       header: "Business",
       render: (row) => (
@@ -233,9 +233,9 @@ export default function ManageBusinesses() {
         </div>
       ),
     },
-  ];
+  ],[handleToggleStatus,handleViewBusiness]);
 
-  if (loading) return <p>Loading businesses...</p>;
+  if (loading) return <UserListSkeleton />;
   if (fetchFailure) return <FallbackUI />;
 
   return (

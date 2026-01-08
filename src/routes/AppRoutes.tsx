@@ -20,6 +20,12 @@ const AppRoutes = () => {
   const { email}=useSelector((state:RootState)=> state.signup)
   return (
     <Routes>
+      <Route
+        path="/"
+        element={
+          role ? <Navigate to={`/${role}`} replace /> : <Navigate to="/home" replace />
+        }
+      />
       <Route path="/home" element={<Home/>}/>
 
       <Route path="/explore" element={<Explore/>}/>
@@ -35,8 +41,7 @@ const AppRoutes = () => {
       <Route path="/learner/*" element={<LearnerRoutes />} />
       <Route path="/instructor/*" element={<InstructorRoutes />} />
       <Route path="/business/*" element={<BusinessRoutes />} />
-
-      <Route path="*" element={<Navigate to="/home" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

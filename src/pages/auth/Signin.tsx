@@ -3,9 +3,6 @@ import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
 import { signin } from '../../services/userAuthServices';
-import { setLearner } from '../../redux/slices/learnerSlice';
-import { setInstructor } from '../../redux/slices/instructorSlice';
-import { setBusiness } from '../../redux/slices/businessSlice';
 import { Eye, EyeOff } from "lucide-react";
 import GoogleSigninButton from '../../components/shared/GoogleSigninButton';
 import LearnerNav from '../../components/learner/LearnerNav';
@@ -72,12 +69,7 @@ export default function Signin() {
   const onSubmit = async (data: SigninForm) => {
     const signinInput = { role: selectedRole, ...data };
     try {
-      const result = await dispatch(signin(signinInput)).unwrap();
-      const user = result.user;
-      if (selectedRole === 'learner') dispatch(setLearner(user));
-      else if (selectedRole === 'instructor') dispatch(setInstructor(user));
-      else dispatch(setBusiness(user));
-
+      await dispatch(signin(signinInput)).unwrap();
 
       navigate(`/${selectedRole}/dashboard`);
     } catch (err) {

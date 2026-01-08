@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Edit2, X } from "lucide-react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
@@ -152,16 +152,16 @@ export default function ManageCategories() {
     }
   };
 
-  const toggleStatus = async (id: string) => {
+  const toggleStatus = useCallback(async (id: string) => {
     await dispatch(toggleCategoryStatus({ id })).unwrap();
     setCategories(
       categories.map((cat) =>
         cat.id === id ? { ...cat, isActive: !cat.isActive } : cat
       )
     );
-  };
+  },[categories,dispatch]);
 
-  const columns: Column<Category>[] = [
+  const columns=useMemo<Column<Category>[]>(() => [
     { header: "Name", accessor: "name" },
     { header: "Description", accessor: "description" },
     {
@@ -202,7 +202,7 @@ export default function ManageCategories() {
         </div>
       ),
     },
-  ];
+  ],[toggleStatus]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

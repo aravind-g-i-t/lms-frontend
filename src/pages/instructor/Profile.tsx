@@ -16,11 +16,11 @@ import {
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
 import { applyForInstructorVerification, getInstructorProfile, resetInstructorPassword, updateInstructorExpertise, updateInstructorIDProof, updateInstructorProfile, updateInstructorProfileImage, updateInstructorResume } from '../../services/instructorServices';
-import { setInstructorImage, setInstructorName } from '../../redux/slices/instructorSlice';
 import { toast } from 'react-toastify';
 import ReactModal from 'react-modal';
 import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from '../../config/s3Config';
 import * as yup from 'yup';
+import { setUserName, setUserProfilePic } from '../../redux/slices/authSlice';
 
 const profileValidationSchema = yup.object().shape({
   username: yup
@@ -199,7 +199,7 @@ const InstructorProfile = () => {
       const result = await dispatch(updateInstructorProfile(inputData)).unwrap();
       setIsEditing(false);
       setValidationErrors({});
-      dispatch(setInstructorName({ name: username }))
+      dispatch(setUserName({ name: username }))
       toast.success(result.message);
     } catch (error) {
       toast.error(error as string)
@@ -220,7 +220,7 @@ const InstructorProfile = () => {
 
       const result = await dispatch(updateInstructorProfileImage({ imageURL: objectKey })).unwrap();
 
-      dispatch(setInstructorImage({ profilePic: downloadUrl }));
+      dispatch(setUserProfilePic({ profilePic: downloadUrl }));
       setProfilePic(downloadUrl);
 
       toast.success(result.message);

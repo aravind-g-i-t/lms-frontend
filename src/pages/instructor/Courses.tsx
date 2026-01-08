@@ -18,8 +18,8 @@ import { getCoursesForInstructor } from '../../services/instructorServices';
 import { toast } from 'react-toastify';
 import { Pagination } from '../../components/shared/Pagination';
 import { formatDuration } from '../../utils/formats';
+import InstructorCoursesSkeleton from '../../components/instructor/InstructorCoursesSkeleton';
 
-// ✅ Use union type instead of enum
 export type CourseStatus = "draft" | "published" | "archived";
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 export type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked"
@@ -49,10 +49,15 @@ const InstructorCourses = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [courses, setCourses] = useState<Course[]>([])
   const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+
+
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
+        setLoading(true)
         const response = await dispatch(
           getCoursesForInstructor({
             page,
@@ -68,6 +73,8 @@ const InstructorCourses = () => {
         setCount(response.data.pagination.totalCount)
       } catch (err) {
         toast.error(err as string)
+      }finally{
+        setLoading(false)
       }
     };
 
@@ -139,7 +146,9 @@ const InstructorCourses = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // const statusCounts = getStatusCounts();
+  if (loading) {
+  return <InstructorCoursesSkeleton />;
+}
 
   return (
     <>
@@ -196,6 +205,8 @@ const InstructorCourses = () => {
               <div className="relative h-40 bg-gray-200">
                 <img
                   src={course.thumbnail || '/images/learning.png'}
+                  loading='lazy'
+                  decoding='async'
                   alt={course.title}
                   className="w-full h-full object-cover"
                 />

@@ -3,9 +3,6 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { useNavigate } from "react-router-dom";
 import { googleSignIn } from "../../services/userAuthServices";
-import { setLearner } from "../../redux/slices/learnerSlice";
-import { setInstructor } from "../../redux/slices/instructorSlice";
-import { setBusiness } from "../../redux/slices/businessSlice";
 
 const GoogleSigninButton: React.FC<{ role: string }> = ({ role }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -16,21 +13,12 @@ const GoogleSigninButton: React.FC<{ role: string }> = ({ role }) => {
     onSuccess: async (tokenResponse) => {
       console.log("Full token response:", tokenResponse);
 
-      const result = await dispatch(
+      await dispatch(
         googleSignIn({
           token: tokenResponse.access_token as string, 
           role: role.toLowerCase() as 'learner'|'instructor'|'business',
         })
-      ).unwrap();
-
-      const user = result.user;
-      if (role === "learner") {
-        dispatch(setLearner(user));
-      } else if (role === "instructor") {
-        dispatch(setInstructor(user));
-      } else {
-        dispatch(setBusiness(user));
-      }
+      ).unwrap();    
       navigate(`/${role.toLowerCase()}/dashboard`);
     },
     onError: () => console.log("Login Failed"),

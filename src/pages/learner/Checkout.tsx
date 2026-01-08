@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { CreditCard, Wallet } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
@@ -111,29 +111,28 @@ export default function Checkout() {
     }
   }
 
-  function calculateDiscountedPrice() {
-    if (!selectedCoupon || !course) return course?.price ?? 0;
 
-    const price = course.price;
 
-    if (selectedCoupon.discountType === "percentage") {
-      const raw = (price * selectedCoupon.discountValue) / 100;
+  const finalPrice = useMemo(() => {
+  if (!selectedCoupon || !course) return course?.price ?? 0;
 
-      const capped = selectedCoupon.maxDiscount
-        ? Math.min(raw, selectedCoupon.maxDiscount)
-        : raw;
+  const price = course.price;
 
-      return Math.max(price - capped, 0);
-    }
-
-    if (selectedCoupon.discountType === "amount") {
-      return Math.max(price - selectedCoupon.discountValue, 0);
-    }
-
-    return price;
+  if (selectedCoupon.discountType === "percentage") {
+    const raw = (price * selectedCoupon.discountValue) / 100;
+    const capped = selectedCoupon.maxDiscount
+      ? Math.min(raw, selectedCoupon.maxDiscount)
+      : raw;
+    return Math.max(price - capped, 0);
   }
 
-  const finalPrice = calculateDiscountedPrice();
+  if (selectedCoupon.discountType === "amount") {
+    return Math.max(price - selectedCoupon.discountValue, 0);
+  }
+
+  return price;
+}, [ selectedCoupon,course]);
+
 
 
 
@@ -173,29 +172,8 @@ export default function Checkout() {
             <p>{course.description}</p>
           </div>
 
-          {/* Right: Details */}
           <div className="flex-1 space-y-7">
-            {/* Learner Info */}
-
-
-            {/* Coupon */}
-            {/* <form className="flex gap-2" >
-              <input
-                type="text"
-                value={coupon}
-                onChange={e => setCoupon(e.target.value)}
-                placeholder="Coupon code"
-                className="flex-1 px-3 py-2 border rounded-lg"
-              // disabled={couponApplied}
-              />
-              <button
-                type="submit"
-                className={`px-4 py-2 rounded-lg font-semibold transition`}
-
-              >
-                Apply
-              </button>
-            </form> */}
+            
 
             {/* Coupon List */}
             <div className="space-y-3">

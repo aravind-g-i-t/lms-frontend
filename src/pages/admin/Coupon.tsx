@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Edit2, X } from "lucide-react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
@@ -215,7 +215,7 @@ export default function ManageCoupons() {
     }
   };
 
-  const toggleStatus = async (id: string) => {
+  const toggleStatus = useCallback(async (id: string) => {
     await dispatch(updateCouponStatus( id )).unwrap();
 
     setCoupons(
@@ -223,9 +223,9 @@ export default function ManageCoupons() {
         c.id === id ? { ...c, isActive: !c.isActive } : c
       )
     );
-  };
+  },[coupons,dispatch]);
 
-  const columns: Column<Coupon>[] = [
+  const columns=useMemo<Column<Coupon>[]>(() =>  [
     { header: "Code", accessor: "code" },
 
     {
@@ -279,7 +279,7 @@ export default function ManageCoupons() {
         </div>
       ),
     },
-  ];
+  ],[toggleStatus]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

@@ -12,11 +12,11 @@ import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
-import { clearAdminStatus } from "../../redux/slices/statusSlice";
 import { toast } from "react-toastify";
 import FallbackUI from "../../components/shared/FallbackUI";
 import ReactModal from "react-modal";
 import { X } from "lucide-react";
+import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 
 type Instructor = {
   id: string;
@@ -96,9 +96,7 @@ export default function ManageInstructors() {
 
     fetchInstructors();
 
-    return () => {
-      dispatch(clearAdminStatus());
-    };
+
   }, [dispatch, page, search, status, verificationStatus]);
 
   const handleToggleStatus = async (payload: { id: string }) => {
@@ -233,7 +231,13 @@ export default function ManageInstructors() {
     },
   ];
 
-  if (loading) return <p>Loading instructors...</p>;
+  
+
+
+
+
+  if (loading) return <UserListSkeleton />;
+
   if (fetchFailure) return <FallbackUI />
 
   return (

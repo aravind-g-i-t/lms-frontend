@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
 import { SearchBar } from "../../components/shared/SearchBar";
@@ -123,7 +123,7 @@ export default function Verifications() {
     }
   };
 
-  const columns: Column<Course>[] = [
+  const columns=useMemo<Column<Course>[]>(() =>  [
     {
       header: "Course",
       render: (row) => (
@@ -206,7 +206,7 @@ export default function Verifications() {
         </div>
       ),
     },
-  ];
+  ],[navigate]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

@@ -9,11 +9,7 @@ import { toast } from "react-toastify";
 
 type PaymentStatus = "success" | "failed" | "loading";
 
-// interface PaymentDetails {
-//   courseTitle: string;
-//   amount: number;
-//   transactionId: string;
-// }
+
 
 export default function PaymentResult() {
   const [searchParams] = useSearchParams();

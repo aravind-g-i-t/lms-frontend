@@ -15,7 +15,7 @@ import {
   Archive,
   ArrowLeft,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
@@ -212,11 +212,16 @@ const ViewCoursePage = () => {
     });
   };
 
-  const getTotalChapters = () => {
-    return course.modules.reduce((total, module) => total + module.chapters.length, 0);
-  };
+  const totalChapters = useMemo(
+  () => course.modules.reduce((t, m) => t + m.chapters.length, 0),
+  [course.modules]
+);
 
-  const statusConfig = getStatusConfig(course.status);
+const statusConfig = useMemo(
+  () => getStatusConfig(course.status),
+  [course.status]
+);
+
   const StatusIcon = statusConfig.icon;
 
 
@@ -403,14 +408,7 @@ const ViewCoursePage = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">What You'll Learn</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  'Build modern React applications from scratch',
-                  'Master React Hooks and functional components',
-                  'Implement state management with Redux',
-                  'Create responsive and accessible UIs',
-                  'Write clean and maintainable code',
-                  'Deploy production-ready applications'
-                ].map((item, index) => (
+                {course.whatYouWillLearn?.map((item, index) => (
                   <div key={index} className="flex items-start">
                     <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-700">{item}</span>
@@ -439,7 +437,7 @@ const ViewCoursePage = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
                 <div className="text-sm text-gray-600">
-                  {course.modules.length} modules • {getTotalChapters()} chapters • {formatDuration(course.duration)} total
+                  {course.modules.length} modules • {totalChapters} chapters • {formatDuration(course.duration)} total
                 </div>
               </div>
 
@@ -612,7 +610,7 @@ const ViewCoursePage = () => {
                       Chapters
                     </span>
                     <span className="font-semibold text-gray-900">
-                      {getTotalChapters()}
+                      {totalChapters}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

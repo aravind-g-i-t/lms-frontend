@@ -21,14 +21,13 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { logout } from "../../services/userAuthServices";
 import toast from "react-hot-toast";
-import { clearBusiness } from "../../redux/slices/businessSlice";
 
 
 const BusinessLayout: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>()
-  const { name, profilePic } = useSelector((state: RootState) => state.business)
+  const { name, profilePic } = useSelector((state: RootState) => state.auth)
 
 
   const sidebarItems = [
@@ -56,7 +55,6 @@ const BusinessLayout: React.FC = () => {
     try {
       await dispatch(logout()).unwrap();
       toast.success("Logged out successfully");
-      dispatch(clearBusiness());
       navigate("/signin");
 
 
@@ -71,7 +69,6 @@ const BusinessLayout: React.FC = () => {
 
 
       toast.error(message);
-      dispatch(clearBusiness());
       navigate("/signin");
     }
   };

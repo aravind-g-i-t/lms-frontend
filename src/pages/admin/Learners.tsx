@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
 import { getLearnerData, getLearners, toggleLearnerStatus } from "../../services/adminServices";
@@ -7,10 +7,10 @@ import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
-import { clearAdminStatus } from "../../redux/slices/statusSlice";
 import FallbackUI from "../../components/shared/FallbackUI";
 import { toast } from "react-toastify";
 import { X } from "lucide-react";
+import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 
 type Learner = {
   id: string;
@@ -60,12 +60,10 @@ export default function ManageLearners() {
 
     fetchLearners();
 
-    return () => {
-      dispatch(clearAdminStatus());
-    };
+
   }, [dispatch, page, search, status]);
 
-  const handleToggleStatus = async (payload: { id: string }) => {
+  const handleToggleStatus = useCallback(async (payload: { id: string }) => {
     try {
       await dispatch(toggleLearnerStatus(payload)).unwrap();
       const updatedLearners = learners.map((learner) =>
@@ -75,18 +73,18 @@ export default function ManageLearners() {
     } catch (error) {
       toast.error(error as string)
     }
-  };
+  },[dispatch,learners]);
 
-  const handleViewLearner = async (id: string) => {
+  const handleViewLearner = useCallback(async (id: string) => {
     try {
       const response = await dispatch(getLearnerData({ id })).unwrap();
       setLearnerView(response.learner);
     } catch (error) {
       toast.error(error as string)
     }
-  };
+  },[dispatch]);
 
-  const columns: Column<Learner>[] = [
+  const columns=useMemo< Column<Learner>[]>(() => [
     {
       header: "Learner",
       render: (row) => (
@@ -132,9 +130,9 @@ export default function ManageLearners() {
         </div>
       ),
     },
-  ];
+  ],[handleToggleStatus,handleViewLearner]);
 
-  if (loading) return <p>Loading learners...</p>;
+  if (loading) return <UserListSkeleton />;
   if (fetchFailure) return <FallbackUI />
 
   return (

@@ -12,10 +12,10 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../services/learnerServices";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { setLearnerImage, setLearnerName } from "../../redux/slices/learnerSlice";
 import { toast } from "react-toastify";
 import { getPresignedDownloadUrl, uploadImageToS3 } from "../../config/s3Config";
 import * as yup from "yup";
+import { setUserName, setUserProfilePic } from "../../redux/slices/authSlice";
 
 
 // Yup Validation Schemas
@@ -47,9 +47,7 @@ const passwordUpdateSchema = yup.object().shape({
 
 
 const LearnerProfile: React.FC = () => {
-  const { id } = useSelector(
-    (state: RootState) => state.learner
-  );
+  const { id } = useSelector((state: RootState) => state.auth);
 
 
   const dispatch = useDispatch<AppDispatch>();
@@ -215,7 +213,7 @@ const LearnerProfile: React.FC = () => {
 
 
       setProfilePic(presignedUrl);
-      dispatch(setLearnerImage({ profilePic: presignedUrl }));
+      dispatch(setUserProfilePic({ profilePic: presignedUrl }));
       toast.success(result.message);
     } catch (err) {
       toast.error(err as string);
@@ -244,7 +242,7 @@ const LearnerProfile: React.FC = () => {
       })).unwrap();
 
 
-      dispatch(setLearnerName({ name: newName }));
+      dispatch(setUserName({ name: newName }));
       toast.success(result.message);
       setNameError("");
     } catch (err) {
@@ -416,8 +414,8 @@ const LearnerProfile: React.FC = () => {
                                 handlePasswordChange("currentPassword", e.target.value)
                               }
                               className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${passwordErrors.currentPassword
-                                  ? "border-red-500"
-                                  : "border-gray-300"
+                                ? "border-red-500"
+                                : "border-gray-300"
                                 }`}
                               placeholder="Enter your current password"
                             />
@@ -455,8 +453,8 @@ const LearnerProfile: React.FC = () => {
                                 handlePasswordChange("newPassword", e.target.value)
                               }
                               className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${passwordErrors.newPassword
-                                  ? "border-red-500"
-                                  : "border-gray-300"
+                                ? "border-red-500"
+                                : "border-gray-300"
                                 }`}
                               placeholder="Enter new password (min. 8 characters)"
                             />
@@ -494,8 +492,8 @@ const LearnerProfile: React.FC = () => {
                                 handlePasswordChange("confirmPassword", e.target.value)
                               }
                               className={`w-full px-4 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${passwordErrors.confirmPassword
-                                  ? "border-red-500"
-                                  : "border-gray-300"
+                                ? "border-red-500"
+                                : "border-gray-300"
                                 }`}
                               placeholder="Confirm your new password"
                             />

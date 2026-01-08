@@ -854,3 +854,26 @@ export const getInstructorMessages = createAsyncThunk(
         }
     }
 );
+
+
+export const deleteInstructorMessages = createAsyncThunk(
+    "instructor/messages/delete",
+    async (input: { messageIds:string[], scope:"ME"|"EVERYONE" },
+        { rejectWithValue }
+    ) => {
+        try {
+
+            const res = await axiosInstance.post("/instructor/messages/delete",  input );
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

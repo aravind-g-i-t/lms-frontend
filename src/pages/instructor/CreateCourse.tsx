@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Save } from 'lucide-react';
 import { createCourse, getCategoryOptions } from '../../services/instructorServices';
 import { toast } from 'react-toastify';
@@ -67,20 +67,20 @@ const CreateCourse = () => {
   });
 
   // Handlers for array fields (as before)
-  const addField = (field: keyof CourseData) =>
-    setCourseData(prev => ({ ...prev, [field]: [...(prev[field] as string[]), ''] }));
+  const addField = useCallback((field: keyof CourseData) =>
+    setCourseData(prev => ({ ...prev, [field]: [...(prev[field] as string[]), ''] })),[]);
 
-  const removeField = (field: keyof CourseData, index: number) =>
+  const removeField = useCallback((field: keyof CourseData, index: number) =>
     setCourseData(prev => ({
       ...prev,
       [field]: (prev[field] as string[]).filter((_, i) => i !== index)
-    }));
+    })),[]);
 
-  const updateField = (field: keyof CourseData, index: number, val: string) =>
+  const updateField = useCallback((field: keyof CourseData, index: number, val: string) =>
     setCourseData(prev => ({
       ...prev,
       [field]: (prev[field] as string[]).map((item, i) => (i === index ? val : item))
-    }));
+    })),[]);
 
   const handleLevelChange = (val: string) => {
     if (val === 'beginner' || val === 'intermediate' || val === 'advanced') {
@@ -88,12 +88,10 @@ const CreateCourse = () => {
     }
   };
 
-  // Validation and submit
   const handleSubmit = async () => {
   try {
     setLoading(true);
 
-    // Clone and sanitize before validation
     const sanitized = {
       ...courseData,
       tags: (courseData.tags ?? []).filter(
@@ -107,13 +105,12 @@ const CreateCourse = () => {
       ),
     };
 
-    // Validate after cleanup
     const cleaned = (await courseSchema.validate(sanitized, { abortEarly: false })) as CourseData;
 
 
     const response = await dispatch(createCourse(cleaned)).unwrap();
-    navigate(`/instructor/courses/${response.data.courseId}/edit`);
     toast.success("Course created successfully");
+    navigate(`/instructor/courses/${response.data.courseId}/edit`);
 
   } catch (error: unknown) {
     if (error instanceof yup.ValidationError) {
