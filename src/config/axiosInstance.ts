@@ -41,7 +41,7 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
             try {
                 const res = await store.dispatch(userTokenRefresh()).unwrap();
-                const newAccessToken = res.accessToken;
+                const newAccessToken = res.data.accessToken;
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
                 return axiosInstance(originalRequest);

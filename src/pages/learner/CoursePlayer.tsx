@@ -105,6 +105,8 @@ const CoursePlayerPage = () => {
                 if (!courseId) return;
                 setLoading(true);
                 const response = await dispatch(getFullCourseForLearner({ courseId })).unwrap();
+                console.log(response);
+                
                 const courseData: Course = response.data
                 setCourse(courseData);
 
@@ -246,9 +248,9 @@ const CoursePlayerPage = () => {
         return currentChapterIndex > 0 || currentModuleIndex > 0;
     };
 
-   
 
-    if (loading) return <CoursePlayerSkeleton/>
+
+    if (loading) return <CoursePlayerSkeleton />
 
     if (!course || !currentChapter) {
         return (
@@ -305,6 +307,17 @@ const CoursePlayerPage = () => {
                                 <span className="text-white font-medium">Final Quiz / Assessment</span>
                             </button>
                         )}
+
+                        <button
+                            onClick={() =>
+                                navigate(`/learner/courses/${course.id}/live-sessions`)
+                            }
+                            className="text-gray-300 hover:text-teal-400 flex items-center gap-1 px-3 py-1 border border-gray-600 rounded-md text-sm"
+                        >
+                            <VideoIcon className="w-4 h-4" />
+                            Live Sessions
+                        </button>
+
 
                         {/* Progress */}
                         <div className="hidden md:flex items-center gap-2">

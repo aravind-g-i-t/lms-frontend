@@ -60,8 +60,8 @@ const MyFavourites = () => {
         ).unwrap();
         console.log(result);
         
-        setCourses(result.courses);
-        setTotalPages(result.pagination.totalPages);
+        setCourses(result.data.courses);
+        setTotalPages(result.data.pagination.totalPages);
         
       } catch (err) {
         toast.error(err as string);
@@ -229,7 +229,7 @@ const MyFavourites = () => {
       )}
 
       {/* Pagination */}
-      {totalPages && (
+      {!!totalPages && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
             className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"

@@ -77,8 +77,8 @@ export default function Verifications() {
           })
         ).unwrap();
 
-        setCourses(response.courses ?? []);
-        setTotalPages(response.pagination.totalPages ?? 1);
+        setCourses(response.data.courses ?? []);
+        setTotalPages(response.data.pagination.totalPages ?? 1);
       } catch (err) {
         toast.error(err as string);
       } finally {
@@ -106,7 +106,7 @@ export default function Verifications() {
 
       const updated = courses.map((course) =>
         course.id === selectedId
-          ? { ...course, verification: result.verification }
+          ? { ...course, verification: result.data.verification }
           : course
       );
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../hooks/useSocket";
-import { VideoCallContext } from "../context/VideoCallContext";
+import { DirectCallContext } from "../context/DirectCallContext";
 
 type CallType = "audio" | "video";
 
@@ -18,7 +18,7 @@ type IncomingCall = {
   type:CallType
 };
 
-export const VideoCallProvider = ({ children }: { children: React.ReactNode }) => {
+export const DirectCallProvider = ({ children }: { children: React.ReactNode }) => {
   const socket = useSocket();
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
@@ -77,10 +77,10 @@ export const VideoCallProvider = ({ children }: { children: React.ReactNode }) =
   };
 
   return (
-    <VideoCallContext.Provider
+    <DirectCallContext.Provider
       value={{ activeCall, incomingCall, startCall, acceptCall, rejectCall, endCall }}
     >
       {children}
-    </VideoCallContext.Provider>
+    </DirectCallContext.Provider>
   );
 };

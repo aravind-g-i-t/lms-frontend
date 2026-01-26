@@ -215,10 +215,10 @@ const EditCoursePage = () => {
         courseId: courseData.id,
       })).unwrap();
 
-      setQuizData(result.quiz);
+      setQuizData(result.data.quiz);
       setCourseData(prev => prev ? {
         ...prev,
-        quizId: result.quiz.id,
+        quizId: result.data.quiz.id,
       } as Course : prev);
       
       // setShowQuizForm(true);
@@ -259,7 +259,7 @@ const EditCoursePage = () => {
 
       setQuizData(prev => prev ? {
         ...prev,
-        questions: [...prev.questions, result.question],
+        questions: [...prev.questions, result.data.question],
         totalQuestions: prev.totalQuestions + 1,
         totalPoints: prev.totalPoints + newQuestion.points
       } : prev);
@@ -387,7 +387,7 @@ const EditCoursePage = () => {
                   ...module, duration: module.duration + newChapter.duration,
                   chapters: [
                     ...module.chapters,
-                    result.chapter,
+                    result.data.chapter,
                   ],
                 }
                 : module
@@ -886,7 +886,7 @@ const EditCoursePage = () => {
             ...prev,
             modules: [
               ...prev.modules,
-              result.module,
+              result.data.module,
             ],
           } as Course)
           : prev
@@ -983,7 +983,7 @@ const EditCoursePage = () => {
                       ...chapter,
                       resources: [
                         ...chapter.resources,
-                        result.resource
+                        result.data.resource
                       ],
                     }
                     : chapter

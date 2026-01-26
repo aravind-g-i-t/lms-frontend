@@ -4,9 +4,11 @@ import AppRoutes from './routes/AppRoutes';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ToastContainer } from 'react-toastify';
 import { SocketProvider } from './providers/SocketProvider';
-import { VideoCallProvider } from './providers/VideoCallProvider';
-import GlobalVideoCallModal from './components/global/GlobalVideoCallModal';
 import IncomingCallModal from './components/global/IncomingCallModal';
+import DirectCall from './components/global/DirectCall';
+import { DirectCallProvider } from './providers/DirectCallProvider';
+import LiveSessionCall from './components/global/LIveSessionCall';
+import { LiveSessionProvider } from './providers/LiveSessionProvider';
 
 function App() {
   const clientId=import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -14,17 +16,19 @@ function App() {
   return (
     <>
     <SocketProvider>
-      <VideoCallProvider>
+      <DirectCallProvider>
+        <LiveSessionProvider>
         <GoogleOAuthProvider clientId={clientId}>
           <Router>
             <AppRoutes/>
           </Router>
         </GoogleOAuthProvider>
         <ToastContainer/>
-        <GlobalVideoCallModal />
+        <DirectCall />
+        <LiveSessionCall />
         <IncomingCallModal />
-
-    </VideoCallProvider>
+      </LiveSessionProvider>
+    </DirectCallProvider>
     </SocketProvider>
     </>
   )

@@ -88,7 +88,7 @@ export default function Checkout() {
       console.log(paymentMethod);
 
 
-      const data = await dispatch(
+      const result = await dispatch(
         createPaymentSession({
           courseId: course.id,
           method: paymentMethod,
@@ -96,14 +96,14 @@ export default function Checkout() {
         })
       ).unwrap();
 
-      console.log(data);
+      console.log(result);
 
 
       const stripe = await getStripe();
 
       if (!stripe) throw new Error("Stripe not loaded");
 
-      await stripe.redirectToCheckout({ sessionId: data.sessionId });
+      await stripe.redirectToCheckout({ sessionId: result.data.sessionId });
     } catch (error) {
       toast.error(error as string);
     } finally {

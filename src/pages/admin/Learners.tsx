@@ -47,8 +47,8 @@ export default function ManageLearners() {
       try {
         setLoading(true)
         const response = await dispatch(getLearners({ page, search, status, limit: 5 })).unwrap();
-        setLearners(response.learners ?? []);
-        setTotalPages(response.totalPages ?? 1);
+        setLearners(response.data.learners ?? []);
+        setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
         setFetchFailure(true)
         console.error("Failed to fetch learners:", err);
@@ -78,7 +78,7 @@ export default function ManageLearners() {
   const handleViewLearner = useCallback(async (id: string) => {
     try {
       const response = await dispatch(getLearnerData({ id })).unwrap();
-      setLearnerView(response.learner);
+      setLearnerView(response.data.learner);
     } catch (error) {
       toast.error(error as string)
     }

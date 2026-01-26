@@ -161,7 +161,7 @@ const LearnerMessagesPage = () => {
     const fetchConverations = async () => {
       try {
         const result = await dispatch(getLearnerConversations({ courseId })).unwrap();
-        const convs: Conversation[] = result.conversations;
+        const convs: Conversation[] = result.data.conversations;
         console.log(result);
 
         setConversations(convs);
@@ -172,7 +172,7 @@ const LearnerMessagesPage = () => {
           if (conv) {
             setActiveConversation(conv);
             setShowMobileChat(true);
-            setMessages(result.messages); // Set messages from initial fetch
+            setMessages(result.data.messages); // Set messages from initial fetch
             setHasMoreMessages(true);
             isInitialLoadRef.current = true; // Mark as initial load
             navigate(location.pathname, { replace: true, state: null });
@@ -274,6 +274,8 @@ const LearnerMessagesPage = () => {
       instructorId: string;
       isOnline: boolean;
     }) => {
+      console.log("instructorStatus changed", data);
+
       setConversations(prev =>
         prev.map(conv =>
           conv.instructor.id === data.instructorId
@@ -285,6 +287,7 @@ const LearnerMessagesPage = () => {
         )
       );
     };
+
 
 
 
@@ -358,8 +361,8 @@ const LearnerMessagesPage = () => {
           })
         ).unwrap();
 
-        setMessages(prev => [...result.messages, ...prev]);
-        setHasMoreMessages(result.hasMore);
+        setMessages(prev => [...result.data.messages, ...prev]);
+        setHasMoreMessages(result.data.hasMore);
 
         requestAnimationFrame(() => {
           container.scrollTop =
@@ -372,41 +375,7 @@ const LearnerMessagesPage = () => {
     return () => container.removeEventListener("scroll", onScroll);
   }, [hasMoreMessages, activeConversation?.id, dispatch, messages.length]);
 
-  // useEffect(() => {
-  //   if (!socket) return;
 
-  //   const handler = (data: {
-  //     conversationId: string;
-  //     callerId: string;
-  //     callerRole: "learner" | "instructor";
-  //   }) => {
-  //     setIncomingCall(data);
-  //   };
-
-  //   socket.on("incomingVideoCall", handler);
-
-  //   return () => {
-  //     socket.off("incomingVideoCall", handler);
-  //   };
-  // }, [socket]);
-
-
-  // useEffect(() => {
-  //   if (!socket) return;
-
-  //   socket.on("videoCallAccepted", ({ conversationId }) => {
-  //     setActiveCall({ roomId: conversationId })
-  //   });
-
-  //   socket.on("videoCallRejected", () => {
-  //     toast.info("Call rejected");
-  //   });
-
-  //   return () => {
-  //     socket.off("videoCallAccepted");
-  //     socket.off("videoCallRejected");
-  //   };
-  // }, [socket]);
 
 
 
@@ -432,28 +401,31 @@ const LearnerMessagesPage = () => {
   }, [socket, id]);
 
 
-  // const acceptCall = () => {
-  //   if (!socket || !incomingCall) return;
+  useEffect(() => {
+    if (!socket) return;
 
-  //   socket.emit("acceptVideoCall", {
-  //     conversationId: incomingCall.conversationId,
-  //     callerId: incomingCall.callerId,
-  //   });
+    const handleMessageDeleted = ({ messageIds }: { messageIds: string[] }) => {
+      setMessages(prev =>
+        prev.map(m =>
+          messageIds.includes(m.id)
+            ? {
+              ...m,
+              content: "",
+              attachments: [],
+              isDeletedForEveryone: true,
+            }
+            : m
+        )
+      );
+    };
 
-  //   setActiveCall({ roomId: incomingCall.conversationId });
-  //   setIncomingCall(null);
-  // };
+    socket.on("messageDeleted", handleMessageDeleted);
 
+    return () => {
+      socket.off("messageDeleted", handleMessageDeleted);
+    };
+  }, [socket]);
 
-  // const rejectCall = () => {
-  //   if (!incomingCall || !socket) return;
-
-  //   socket.emit("rejectVideoCall", {
-  //     callerId: incomingCall.callerId,
-  //   });
-
-  //   setIncomingCall(null);
-  // };
 
 
 
@@ -570,7 +542,7 @@ const LearnerMessagesPage = () => {
     socket.emit("startCall", {
       receiverId: activeConversation.instructor.id,
       conversationId: activeConversation.id,
-      type:"video"
+      type: "video"
     });
 
   };
@@ -581,7 +553,7 @@ const LearnerMessagesPage = () => {
     socket.emit("startCall", {
       receiverId: activeConversation.instructor.id,
       conversationId: activeConversation.id,
-      type:"audio"
+      type: "audio"
     });
 
 
@@ -604,8 +576,8 @@ const LearnerMessagesPage = () => {
       const result = await dispatch(getLearnerMessages({
         conversationId: conv.id
       })).unwrap();
-      setMessages(result.messages);
-      setHasMoreMessages(result.hasMore);
+      setMessages(result.data.messages);
+      setHasMoreMessages(result.data.hasMore);
     }
   };
 
@@ -648,6 +620,11 @@ const LearnerMessagesPage = () => {
       )
     );
 
+    socket?.emit("deleteMessage", {
+      conversationId: activeConversation?.id,
+      messageIds: selectedMessageIds
+    })
+
     setSelectedMessageIds([]);
     setIsSelectionMode(false);
     setShowDeleteModal(false);
@@ -679,31 +656,31 @@ const LearnerMessagesPage = () => {
       return isOwnMessage && isWithinTimeWindow;
     });
 
-  const filteredConversations = useMemo(()=>{
+  const filteredConversations = useMemo(() => {
     return conversations.filter(conv => {
-    const matchesSearch = searchQuery === '' ||
-      conv.course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conv.instructor.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = searchQuery === '' ||
+        conv.course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.instructor.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesFilter = filterTab === 'all' || (filterTab === 'unread' && conv.learnerUnreadCount > 0);
+      const matchesFilter = filterTab === 'all' || (filterTab === 'unread' && conv.learnerUnreadCount > 0);
 
-    return matchesSearch && matchesFilter;
-  })
-  },[conversations,filterTab,searchQuery]);
+      return matchesSearch && matchesFilter;
+    })
+  }, [conversations, filterTab, searchQuery]);
 
-  const groupedConversations = useMemo(()=>{
+  const groupedConversations = useMemo(() => {
     return filteredConversations.reduce((acc, conv) => {
-    if (!acc[conv.course.id]) {
-      acc[conv.course.id] = {
-        courseName: conv.course.name,
-        courseColor: getCourseColor(conv.course.id),
-        conversations: []
-      };
-    }
-    acc[conv.course.id].conversations.push(conv);
-    return acc;
-  }, {} as Record<string, { courseName: string; courseColor: string; conversations: Conversation[] }>)
-  },[filteredConversations]);
+      if (!acc[conv.course.id]) {
+        acc[conv.course.id] = {
+          courseName: conv.course.name,
+          courseColor: getCourseColor(conv.course.id),
+          conversations: []
+        };
+      }
+      acc[conv.course.id].conversations.push(conv);
+      return acc;
+    }, {} as Record<string, { courseName: string; courseColor: string; conversations: Conversation[] }>)
+  }, [filteredConversations]);
 
   const totalUnread = conversations.reduce((sum, conv) => sum + conv.learnerUnreadCount, 0);
 

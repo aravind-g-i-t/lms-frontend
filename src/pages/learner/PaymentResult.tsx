@@ -30,7 +30,7 @@ export default function PaymentResult() {
       try {
         const response = await dispatch(verifyPayment(sessionId)).unwrap();
         
-        setStatus(response.status)
+        setStatus(response.data.status)
       } catch (err) {
         toast.error(err as string)
       }

@@ -1,25 +1,27 @@
-import { VideoCallModal } from "../shared/VideoCall";
+import { ZegoCallModal } from "../shared/ZegoCall";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
-import { useVideoCall } from "../../hooks/useVideoCall";
+import { useDirectCall } from "../../hooks/useDirectCall";
 
-const GlobalVideoCallModal = () => {
-  const { activeCall, endCall } = useVideoCall();
+const DirectCall = () => {
+  const { activeCall, endCall } = useDirectCall();
   const { id, name, role } = useSelector((s: RootState) => s.auth);
 
   if (!activeCall) return null;
 
   return (
-    <VideoCallModal
+    <ZegoCallModal
       open={true}
       roomId={activeCall.roomId}
       userId={id!}
       userName={name!}
-      type={activeCall.type}
+      media={activeCall.type}
+      mode="direct"
       role={role as "learner" | "instructor"}
+      onExit={endCall}
       onClose={endCall}
     />
   );
 };
 
-export default GlobalVideoCallModal;
+export default DirectCall;

@@ -91,8 +91,8 @@ export default function ManageBusinesses() {
           })
         ).unwrap();
 
-        setBusinesses(response.businesses ?? []);
-        setTotalPages(response.totalPages ?? 1);
+        setBusinesses(response.data.businesses ?? []);
+        setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
         setFetchFailure(true);
         console.error("Failed to fetch businesses:", err);
@@ -124,7 +124,7 @@ export default function ManageBusinesses() {
   const handleViewBusiness = useCallback(async (id: string) => {
     try {
       const response = await dispatch(getBusinessData({ id })).unwrap();
-    setBusinessView(response.business);
+    setBusinessView(response.data.business);
     setSelectedId(id);
     } catch (error) {
       toast.error(error as string)

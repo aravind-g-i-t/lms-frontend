@@ -81,8 +81,8 @@ export default function ManageCourses() {
             limit: 5
           })
         ).unwrap();
-        setCourses(response.courses ?? []);
-        setTotalPages(response.pagination.totalPages ?? 1);
+        setCourses(response.data.courses ?? []);
+        setTotalPages(response.data.pagination.totalPages ?? 1);
       } catch (err) {
         toast.error(err as string);
       } finally {
@@ -112,7 +112,7 @@ export default function ManageCourses() {
 
       const updated = courses.map((course) => {
         if (course.id === selectedId) {
-          course.verification = result.verification
+          course.verification = result.data.verification
         }
         return course
       });

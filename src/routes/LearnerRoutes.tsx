@@ -8,6 +8,7 @@ import type { RootState } from "../redux/store"
 import CoursePlayerPage from "../pages/learner/CoursePlayer"
 import LearnerMessagesPage from "../pages/learner/Messages"
 import QuizPage from "../pages/learner/QuizPage"
+import CourseLiveSessionsPage from "../pages/learner/CourseLiveSessions"
 
 const LearnerRoutes = () => {
   const { role } = useSelector((state: RootState) => state.auth);
@@ -25,7 +26,7 @@ const LearnerRoutes = () => {
       <Route path="payment/status" element={<PaymentResult/>}/>
       <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
       <Route path="/courses/:courseId/quiz" element={<QuizPage/>} />
-
+      <Route path="courses/:courseId/live-sessions" element={< CourseLiveSessionsPage/>} />
 
     </Routes>
   )

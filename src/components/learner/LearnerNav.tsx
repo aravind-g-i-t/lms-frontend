@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast"
 import { logout } from "../../services/userAuthServices";
 
 export default function LearnerNav() {
-  const { role,name, profilePic } = useSelector((state: RootState) => state.auth);
+  const { role, name, profilePic } = useSelector((state: RootState) => state.auth);
   const { unreadCount } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -46,14 +46,16 @@ export default function LearnerNav() {
                 <Menu className="w-6 h-6" />
               </button>
 
-              <div className="flex items-center gap-2">
+              <button 
+              onClick={()=>navigate("/home")}
+              className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
                   <span className="text-teal-600 font-bold text-sm">N</span>
                 </div>
                 <span className="text-lg font-semibold hidden sm:inline">
                   NlightN
                 </span>
-              </div>
+              </button>
             </div>
 
             {/* Desktop Navigation */}
@@ -94,21 +96,21 @@ export default function LearnerNav() {
 
             {/* Right side icons */}
             <div className="flex items-center space-x-2 sm:space-x-4">
-              {role==="learner" ? (
+              {role === "learner" ? (
                 <>
-  
-                  <Link
-                to="/learner/messages"
-                className="relative p-2 rounded-lg hover:bg-teal-600 transition-colors hidden sm:block"
-              >
-                <MessageCircleIcon className="w-5 h-5" />
 
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
+                  <Link
+                    to="/learner/messages"
+                    className="relative p-2 rounded-lg hover:bg-teal-600 transition-colors hidden sm:block"
+                  >
+                    <MessageCircleIcon className="w-5 h-5" />
+
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
 
                   {/* Profile Button */}
                   <button
@@ -208,7 +210,7 @@ export default function LearnerNav() {
             >
               Home
             </Link>
-            {role ==="learner" && (
+            {role === "learner" && (
               <Link
                 to="/learner/dashboard"
                 onClick={closeSidebar}
@@ -227,7 +229,7 @@ export default function LearnerNav() {
           </nav>
 
           {/* Sidebar Footer */}
-          {role==="learner" && (
+          {role === "learner" && (
             <div className="mt-auto p-4 border-t border-gray-700 space-y-3">
 
               {/* <button className="w-full flex items-center space-x-3 text-gray-300 hover:text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors">

@@ -13,7 +13,7 @@ type ActiveCall = {
   type: "audio"|"video";
 };
 
-export const VideoCallContext = createContext<{
+export const DirectCallContext = createContext<{
   activeCall: ActiveCall | null;
   incomingCall: IncomingCall | null;
   startCall: (roomId: string,participantId:string,type:"video"|"audio") => void;

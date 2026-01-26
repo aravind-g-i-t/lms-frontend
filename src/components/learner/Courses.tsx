@@ -69,9 +69,9 @@ const MyCourses = () => {
           })
         ).unwrap();
 
-        setCourses(result.enrollments);
+        setCourses(result.data.enrollments);
 
-        const totalCount = result.totalCount;
+        const totalCount = result.data.totalCount;
         setTotalPages(Math.ceil(totalCount / itemsPerPage));
 
       } catch (err) {

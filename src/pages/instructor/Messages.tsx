@@ -177,11 +177,11 @@ const InstructorMessagesPage = () => {
         })).unwrap();
         console.log(result);
 
-        const convs: Conversation[] = result.conversations;
+        const convs: Conversation[] = result.data.conversations;
         setConversations(convs);
-        setMessages(result.messages);
-        setCourses(result.courses);
-        setTotalPages(result.totalPages)
+        setMessages(result.data.messages);
+        setCourses(result.data.courses);
+        setTotalPages(result.data.totalPages)
 
         if (courseId) {
           const conv = convs.find(c => c.course.id === courseId && c.learner.id === learnerId);
@@ -376,8 +376,8 @@ const InstructorMessagesPage = () => {
 
 
 
-        setMessages(prev => [...result.messages, ...prev]);
-        setHasMoreMessages(result.hasMore);
+        setMessages(prev => [...result.data.messages, ...prev]);
+        setHasMoreMessages(result.data.hasMore);
 
         requestAnimationFrame(() => {
           container.scrollTop =
@@ -390,46 +390,6 @@ const InstructorMessagesPage = () => {
     return () => container.removeEventListener("scroll", onScroll);
   }, [hasMoreMessages, activeConversation?.id, dispatch, messages.length]);
 
-
-
-
-  // useEffect(() => {
-  //   if (!socket) return;
-
-  //   const handler = (data: {
-  //     conversationId: string;
-  //     callerId: string;
-  //     callerRole: "learner" | "instructor";
-  //   }) => {
-  //     setIncomingCall(data);
-  //   };
-
-  //   socket.on("incomingVideoCall", handler);
-
-  //   return () => {
-  //     socket.off("incomingVideoCall", handler);
-  //   };
-  // }, [socket]);
-
-
-
-
-  // useEffect(() => {
-  //   if (!socket) return;
-
-  //   socket.on("videoCallAccepted", ({ conversationId }) => {
-  //     setActiveCall({ roomId: conversationId })
-  //   });
-
-  //   socket.on("videoCallRejected", () => {
-  //     toast.info("Call rejected");
-  //   });
-
-  //   return () => {
-  //     socket.off("videoCallAccepted");
-  //     socket.off("videoCallRejected");
-  //   };
-  // }, [socket]);
 
 
   useEffect(() => {
@@ -453,29 +413,31 @@ const InstructorMessagesPage = () => {
   }, [socket, id]);
 
 
-  // const acceptCall = () => {
-  //   if (!incomingCall || !socket) return;
 
-  //   socket.emit("acceptVideoCall", {
-  //     conversationId: incomingCall.conversationId,
-  //     callerId: incomingCall.callerId,
-  //   });
+  useEffect(() => {
+    if (!socket) return;
 
-  //   setActiveCall({ roomId: incomingCall.conversationId });
-  //   setIncomingCall(null);
-  // };
+    const handleMessageDeleted = ({ messageIds }: { messageIds: string[] }) => {
+      setMessages(prev =>
+        prev.map(m =>
+          messageIds.includes(m.id)
+            ? {
+              ...m,
+              content: "",
+              attachments: [],
+              isDeletedForEveryone: true,
+            }
+            : m
+        )
+      );
+    };
 
-  // const rejectCall = () => {
-  //   if (!incomingCall || !socket) return;
+    socket.on("messageDeleted", handleMessageDeleted);
 
-  //   socket.emit("rejectVideoCall", {
-  //     callerId: incomingCall.callerId,
-  //   });
-
-  //   setIncomingCall(null);
-  // };
-
-
+    return () => {
+      socket.off("messageDeleted", handleMessageDeleted);
+    };
+  }, [socket]);
 
 
   const handleSendMessage = async () => {
@@ -573,6 +535,7 @@ const InstructorMessagesPage = () => {
       prev.filter(m => !selectedMessageIds.includes(m.id))
     );
 
+
     setSelectedMessageIds([]);
     setIsSelectionMode(false);
     setShowDeleteModal(false);
@@ -592,6 +555,10 @@ const InstructorMessagesPage = () => {
           : m
       )
     );
+    socket?.emit("deleteMessage", {
+      conversationId: activeConversation?.id,
+      messageIds: selectedMessageIds
+    })
 
     setSelectedMessageIds([]);
     setIsSelectionMode(false);
@@ -622,8 +589,8 @@ const InstructorMessagesPage = () => {
         conversationId: conv.id
       })).unwrap();
       console.log("messages:", result);
-      setMessages(result.messages);
-      setHasMoreMessages(result.hasMore)
+      setMessages(result.data.messages);
+      setHasMoreMessages(result.data.hasMore)
 
     }
   };
@@ -745,7 +712,7 @@ const InstructorMessagesPage = () => {
     return d.toLocaleDateString();
   };
 
-  
+
 
   const renderMessageGroups = () => {
     const groups: { date: string; messages: Message[] }[] = [];

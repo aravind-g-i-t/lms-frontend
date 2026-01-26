@@ -84,7 +84,7 @@ const QuizPage: React.FC = () => {
         setLoading(true);
 
         const res = await dispatch(getQuizForLearner({ courseId })).unwrap();
-        const q: Quiz = res.quiz;
+        const q: Quiz = res.data.quiz;
 
         const init: Record<string, number | null> = {};
         q.questions.forEach((qq: QuizQuestion) => {

@@ -83,8 +83,8 @@ export default function ManageInstructors() {
         const response = await dispatch(
           getInstructors({ page, search, status, limit: 5, verificationStatus })
         ).unwrap();
-        setInstructors(response.instructors ?? []);
-        setTotalPages(response.totalPages ?? 1);
+        setInstructors(response.data.instructors ?? []);
+        setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
         setFetchFailure(true)
         console.error("Failed to fetch instructors:", err);
@@ -117,7 +117,7 @@ export default function ManageInstructors() {
   const handleViewInstructor = async (id: string) => {
     try {
       const response = await dispatch(getInstructorData({ id })).unwrap();
-      setInstructorView(response.instructor);
+      setInstructorView(response.data.instructor);
       setSelectedId(id)
     } catch (error) {
       toast.error(error as string)

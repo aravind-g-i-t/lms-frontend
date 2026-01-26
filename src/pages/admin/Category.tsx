@@ -72,8 +72,8 @@ export default function ManageCategories() {
             limit: 5,
           })
         ).unwrap();
-        setCategories(response.categories ?? []);
-        setTotalPages(response.totalPages ?? 1);
+        setCategories(response.data.categories ?? []);
+        setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
         toast.error(err as string);
       } finally {

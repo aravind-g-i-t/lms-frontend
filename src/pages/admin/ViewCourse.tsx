@@ -152,7 +152,7 @@ const ViewCourseForAdmin = () => {
       ).unwrap();
 
       setCourse((prev) =>
-        prev ? ({ ...prev, verification: result.verification } as Course) : prev
+        prev ? ({ ...prev, verification: result.data.verification } as Course) : prev
       );
 
       setModalOpen(false);

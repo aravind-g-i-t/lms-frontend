@@ -1,4 +1,4 @@
-import { useVideoCall } from "../../hooks/useVideoCall";
+import { useDirectCall } from "../../hooks/useDirectCall";
 
 const IncomingCallModal = () => {
   const {
@@ -6,7 +6,7 @@ const IncomingCallModal = () => {
     activeCall,
     acceptCall,
     rejectCall,
-  } = useVideoCall();
+  } = useDirectCall();
 
   return (
     <>

@@ -77,9 +77,9 @@ const Explore = () => {
         ).unwrap();
         console.log(result);
 
-        setCourses(result.courses);
-        setTotalPages(result.pagination.totalPages);
-        setTotalCount(result.pagination.totalCount)
+        setCourses(result.data.courses);
+        setTotalPages(result.data.pagination.totalPages);
+        setTotalCount(result.data.pagination.totalCount)
         setError("");
       } catch {
 

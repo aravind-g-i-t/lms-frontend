@@ -41,14 +41,14 @@ const authSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(signin.fulfilled, (state, action) => {
-                state.role = action.payload.role;
-                state.accessToken = action.payload.accessToken;
-                state.id= action.payload.user.id;
-                state.name= action.payload.user.name;
-                state.profilePic= action.payload.user.profilePic;
+                state.role = action.payload.data.role;
+                state.accessToken = action.payload.data.accessToken;
+                state.id= action.payload.data.user.id;
+                state.name= action.payload.data.user.name;
+                state.profilePic= action.payload.data.user.profilePic;
             })
             .addCase(userTokenRefresh.fulfilled, (state, action) => {
-                state.accessToken = action.payload.accessToken;
+                state.accessToken = action.payload.data.accessToken;
             })
             .addCase(userTokenRefresh.rejected, (state) => {
                 state.role = null;
@@ -58,16 +58,16 @@ const authSlice = createSlice({
                 state.profilePic = null;
             })
             .addCase(googleSignIn.fulfilled, (state, action) => {
-                state.role = action.payload.role;
-                state.accessToken = action.payload.accessToken;
-                state.id= action.payload.user.id;
-                state.name= action.payload.user.name;
-                state.profilePic= action.payload.user.profilePic;
+                state.role = action.payload.data.role;
+                state.accessToken = action.payload.data.accessToken;
+                state.id= action.payload.data.user.id;
+                state.name= action.payload.data.user.name;
+                state.profilePic= action.payload.data.user.profilePic;
             })
             .addCase(adminSignin.fulfilled, (state, action) => {
                 state.role = "admin";
-                state.accessToken = action.payload.accessToken;
-                state.id = action.payload.id;
+                state.accessToken = action.payload.data.accessToken;
+                state.id = action.payload.data.id;
             })
             .addCase(adminLogout.rejected, (state) => {
                 state.role = null;
@@ -98,17 +98,17 @@ const authSlice = createSlice({
                 state.profilePic = null;
             })
             .addCase(getLearnerProfile.fulfilled, (state, action) => {
-                state.name = action.payload.learner.name;
-                state.profilePic = action.payload.learner.profilePic;
+                state.name = action.payload.data.learner.name;
+                state.profilePic = action.payload.data.learner.profilePic;
             })
             .addCase(getInstructorProfile.fulfilled, (state, action) => {
-                state.name = action.payload.instructor.name;
-                state.profilePic = action.payload.instructor.profilePic;
+                state.name = action.payload.data.instructor.name;
+                state.profilePic = action.payload.data.instructor.profilePic;
             })
             .addCase(getBusinessProfile.fulfilled, (state, action) => {
                 console.log(action.payload);
-                state.name = action.payload.business.name;
-                state.profilePic = action.payload.business.profilePic;
+                state.name = action.payload.data.business.name;
+                state.profilePic = action.payload.data.business.profilePic;
             })
     }
 });

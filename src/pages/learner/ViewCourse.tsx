@@ -16,7 +16,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { addToFavourites, getCourseDetailsForLearner, removeFromFavourites } from '../../services/learnerServices';
+import { addToFavourites, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CourseOverviewSkeleton from '../../components/learner/CourseOverviewSkeleton';
 
@@ -67,6 +67,13 @@ export interface Course {
   tags: string[];
   whatYouWillLearn: string[];
   totalRatings: number;
+  ratingDistribution: {
+    5: number;
+    4: number;
+    3: number;
+    2: number;
+    1: number;
+  };
   thumbnail: string | null;
   previewVideo: string | null;
   price: number;
@@ -74,7 +81,28 @@ export interface Course {
   publishedAt: Date | null;
   isEnrolled: boolean;
   enrolledAt: Date | null;
-  isFavourite:boolean
+  isFavourite: boolean
+}
+
+interface Review {
+  id: string;
+  learner: {
+    id: string;
+    name: string;
+    profilePic: string | null;
+  };
+  rating: number;
+  reviewText: string | null;
+  createdAt: Date;
+  isEdited: boolean;
+}
+
+interface MyReview {
+  id: string;
+  rating: number;
+  reviewText: string | null;
+  createdAt: Date;
+  isEdited: boolean;
 }
 
 
@@ -90,7 +118,11 @@ const CourseOverviewPage = () => {
 
 
 
-  const [course, setCourse] = useState<Course|null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [myReview, setMyReview] = useState<MyReview | null>(null)
+  const [myRating, setMyRating] = useState(0);
+  const [myReviewText, setMyReviewText] = useState('');
   const [loading, setLoading] = useState(true);
 
 
@@ -107,12 +139,14 @@ const CourseOverviewPage = () => {
           courseId,
           learnerId: id || null
         })).unwrap();
+
         console.log(response.data);
         setCourse(response.data)
+        
 
       } catch (err) {
         toast.error(err as string);
-      }finally{
+      } finally {
         setLoading(false)
       }
     };
@@ -121,16 +155,44 @@ const CourseOverviewPage = () => {
 
   }, [dispatch, courseId, id]);
 
+  useEffect(() => {
+
+    const fetchReviews = async () => {
+
+      try {
+        if (!courseId) {
+          return
+        }
+        const response = await dispatch(getReviewsForLearner({
+          courseId,
+          skip: reviews.length,
+          limit: 10
+        })).unwrap();
+
+        if (response.data.myReview) {
+          setMyReview(response.data.myReview)
+        }
+        setReviews(response.data.reviews)
+
+      } catch (err) {
+        toast.error(err as string);
+      }
+    };
+
+    fetchReviews();
+
+  }, [dispatch, courseId]);
+
 
   const handleAddToFavourites = async () => {
     if (!course) return null;
 
     try {
       const courseId = course.id;
-      const result =await dispatch(addToFavourites({
+      const result = await dispatch(addToFavourites({
         courseId
       })).unwrap();
-      setCourse({...course,isFavourite:true});
+      setCourse({ ...course, isFavourite: true });
       toast.success(result.message)
     } catch (error) {
       toast.error(error as string)
@@ -145,8 +207,25 @@ const CourseOverviewPage = () => {
       const result = await dispatch(removeFromFavourites({
         courseId
       })).unwrap();
-      setCourse({...course,isFavourite:false})
+      setCourse({ ...course, isFavourite: false })
       toast.success(result.message)
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
+
+  const handleSubmitReview = async () => {
+    if (!course || !myRating) return null;
+
+    try {
+      const courseId = course.id;
+      const result = await dispatch(submitReview({
+        courseId,
+        reviewText: myReviewText.trim() || null,
+        rating: myRating
+      })).unwrap();
+      setMyReview(result.data.review)
+      toast.success(result.data.message)
     } catch (error) {
       toast.error(error as string)
     }
@@ -191,7 +270,7 @@ const CourseOverviewPage = () => {
     return course.modules.reduce((total, module) => total + module.chapters.length, 0);
   };
 
-  if(loading) return <CourseOverviewSkeleton/>
+  if (loading) return <CourseOverviewSkeleton />
   if (!course) return null;
 
 
@@ -237,8 +316,8 @@ const CourseOverviewPage = () => {
               <div className="flex flex-wrap items-center gap-6 text-sm">
                 <div className="flex items-center">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 mr-1" />
-                  <span className="font-semibold mr-1">{course.rating?.toFixed(1) || 'N/A'}</span>
-                  <span className="text-gray-300">({course.totalRatings} ratings)</span>
+                  <span className="font-semibold mr-1">{course.rating|| 'N/A'}</span>
+                  <span className="text-gray-300">({course.rating} ratings)</span>
                 </div>
                 <div className="flex items-center text-gray-300">
                   <Users className="w-5 h-5 mr-1" />
@@ -323,20 +402,20 @@ const CourseOverviewPage = () => {
                       >
                         Enroll Now
                       </button>
-                    {course.isFavourite?(
-                      <button className="w-full border-2 border-gray-400 text-gray-400 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-                        onClick={handleRemoveFromFavourites}
-                      >
-                        Remove from Favourites
-                      </button>
-                    ):(
+                      {course.isFavourite ? (
+                        <button className="w-full border-2 border-gray-400 text-gray-400 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                          onClick={handleRemoveFromFavourites}
+                        >
+                          Remove from Favourites
+                        </button>
+                      ) : (
 
-                      <button className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
-                      onClick={handleAddToFavourites}
-                      >
-                        Add to Favourites
-                      </button>
-                    )}
+                        <button className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
+                          onClick={handleAddToFavourites}
+                        >
+                          Add to Favourites
+                        </button>
+                      )}
                     </>
                   )}
 
@@ -379,6 +458,8 @@ const CourseOverviewPage = () => {
                 ))}
               </div>
             </div>
+
+
 
             {/* Prerequisites */}
             {course.prerequisites.length > 0 && (
@@ -460,6 +541,152 @@ const CourseOverviewPage = () => {
                 ))}
               </div>
             </div>
+
+            <div className="bg-white rounded-lg p-6 shadow">
+              <h2 className="text-2xl font-bold mb-6">Reviews</h2>
+
+              {/* Rating Distribution */}
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = course.ratingDistribution[star as 1 | 2 | 3 | 4 | 5];
+                const percent =
+                  course.totalRatings > 0
+                    ? (count / course.totalRatings) * 100
+                    : 0;
+
+                return (
+                  <div key={star} className="flex items-center mb-2">
+                    <span className="w-10">{star} ★</span>
+                    <div className="flex-1 bg-gray-200 h-2 rounded mx-2">
+                      <div
+                        className="bg-yellow-400 h-2 rounded"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                    <span className="w-10 text-right">{count}</span>
+                  </div>
+                );
+              })}
+
+              {/* Reviews List */}
+              <div className="mt-6 space-y-6">
+                {reviews.length === 0 && (
+                  <p className="text-gray-500">No reviews yet.</p>
+                )}
+
+                {reviews.map((review) => (
+                  <div key={review.id} className="border-b pb-4">
+                    <div className="flex items-center gap-3 mb-1">
+                      <img
+                        src={review.learner.profilePic || '/images/default-profile.jpg'}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <span className="font-semibold">
+                        {review.learner.name}
+                      </span>
+                      {review.isEdited && (
+                        <span className="text-xs text-gray-500">(edited)</span>
+                      )}
+                    </div>
+
+                    <div className="flex mb-2">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-4 h-4 ${s <= review.rating
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-gray-300'
+                            }`}
+                        />
+                      ))}
+                    </div>
+
+                    {review.reviewText && (
+                      <p className="text-gray-700">{review.reviewText}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ADD REVIEW */}
+            {course.isEnrolled && !myReview && (
+              <div className="bg-white rounded-lg p-6 shadow">
+                <h3 className="text-xl font-semibold mb-4">
+                  Leave a review
+                </h3>
+
+                <div className="flex gap-2 mb-4">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      onClick={() => setMyRating(s)}
+                      className={`w-6 h-6 cursor-pointer ${s <= myRating
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
+                        }`}
+                    />
+                  ))}
+                </div>
+
+                <textarea
+                  value={myReviewText}
+                  onChange={(e) => setMyReviewText(e.target.value)}
+                  className="w-full border rounded-lg p-3 mb-4"
+                  rows={4}
+                  placeholder="Share your experience (optional)"
+                />
+
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={myRating === 0}
+                  className="bg-teal-600 text-white px-6 py-2 rounded hover:bg-teal-700 disabled:opacity-50"
+                >
+                  Submit review
+                </button>
+              </div>
+            )}
+
+            {myReview && (
+              <div className="bg-white rounded-lg p-6 shadow border border-teal-200">
+                <h3 className="text-xl font-semibold mb-3">
+                  Your Review
+                </h3>
+
+                <div className="flex items-center gap-2 mb-2">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className={`w-5 h-5 ${s <= myReview.rating
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
+                        }`}
+                    />
+                  ))}
+
+                  {myReview.isEdited && (
+                    <span className="text-sm text-gray-500">(edited)</span>
+                  )}
+                </div>
+
+                {myReview.reviewText && (
+                  <p className="text-gray-700 mb-3">
+                    {myReview.reviewText}
+                  </p>
+                )}
+
+                {/* Future: Edit button */}
+                {/* 
+    <button
+      onClick={handleEditReview}
+      className="text-teal-600 text-sm font-medium hover:underline"
+    >
+      Edit review
+    </button>
+    */}
+              </div>
+            )}
+
+
 
             {/* Tags */}
             {course.tags.length > 0 && (

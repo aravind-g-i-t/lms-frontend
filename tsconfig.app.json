@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "../backend/src/shared/utils/customError.ts"]
+  "include": ["src", "../backend/src/shared/utils/customError.ts", "../backend/src/shared/utils/ApiResponse.ts"]
 }

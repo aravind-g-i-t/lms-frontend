@@ -39,8 +39,8 @@ const Certificates = () => {
         const response = await dispatch(getLearnerCertificates({ page, limit })).unwrap();
         console.log(response);
         
-        setCertificates(response.certificates);
-        setTotalPages(response.totalPages);
+        setCertificates(response.data.certificates);
+        setTotalPages(response.data.totalPages);
       } catch (err) {
         toast.error(err as string);
       } finally {

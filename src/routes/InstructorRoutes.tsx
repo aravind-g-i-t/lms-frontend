@@ -4,7 +4,6 @@ import InstructorLayout from "../components/instructor/Layout"
 import InstructorDashboard from "../pages/instructor/Dashboard"
 import InstructorCourses from "../pages/instructor/Courses"
 import InstructorStudents from "../pages/instructor/Students"
-import InstructorLiveSessions from "../pages/instructor/LiveSessions"
 import InstructorMessages from "../pages/instructor/Messages"
 import InstructorWallet from "../pages/instructor/Wallet"
 import InstructorProfile from "../pages/instructor/Profile"
@@ -13,6 +12,7 @@ import ViewCoursePage from "../pages/instructor/ViewCourse"
 import EditCoursePage from "../pages/instructor/EditCourse"
 import { useSelector } from "react-redux"
 import type { RootState } from "../redux/store"
+import InstructorLiveSessions from "../pages/instructor/LiveSession"
 
 const InstructorRoutes = () => {
   const { role } = useSelector((state: RootState) => state.auth)
@@ -34,6 +34,8 @@ const InstructorRoutes = () => {
           <Route path="courses/create" element={< CreateCourse/>} />
           <Route path="courses/:courseId/preview" element={< ViewCoursePage/>} />
           <Route path="courses/:courseId/edit" element={< EditCoursePage/>} />
+          
+
           
         </Route>
     </Routes>

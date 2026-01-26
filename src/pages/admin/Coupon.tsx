@@ -121,8 +121,8 @@ export default function ManageCoupons() {
           })
         ).unwrap();
 
-        setCoupons(response.coupons ?? []);
-        setTotalPages(response.totalPages ?? 1);
+        setCoupons(response.data.coupons ?? []);
+        setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
         toast.error(err as string);
       } finally {

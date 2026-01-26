@@ -107,7 +107,7 @@ const BusinessProfile = () => {
     const fetchProfile = async () => {
       try {
         const response = await dispatch(getBusinessProfile()).unwrap();
-        const data = response.business;
+        const data = response.data.business;
         console.log(data);
 
 

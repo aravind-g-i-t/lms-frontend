@@ -76,7 +76,9 @@ const LearnerProfile: React.FC = () => {
     const fetchProfile = async () => {
       try {
         const response = await dispatch(getLearnerProfile()).unwrap();
-        const learner = response.learner;
+        console.log(response);
+        
+        const learner = response.data.learner;
         setEditableName(learner.name);
         setEmail(learner.email);
         setProfilePic(learner.profilePic);

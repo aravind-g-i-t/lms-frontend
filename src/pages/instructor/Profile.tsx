@@ -123,7 +123,7 @@ const InstructorProfile = () => {
     const fetchProfile = async () => {
       try {
         const response = await dispatch(getInstructorProfile()).unwrap();
-        const data = response.instructor;
+        const data = response.data.instructor;
 
         setName(data.name);
         setEmail(data.email);

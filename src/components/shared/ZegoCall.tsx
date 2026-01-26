@@ -7,25 +7,33 @@ interface VideoCallModalProps {
   userId: string;
   userName: string;
   role: "learner" | "instructor";
-  type:"audio"|"video"
+  media:"audio"|"video";
+  mode:"direct"|"live-session"
+  onExit:()=>void;
   onClose: () => void;
 }
 
 const APP_ID = parseInt(import.meta.env.VITE_ZEGO_APP_ID);
 const SERVER_SECRET = import.meta.env.VITE_ZEGO_SERVER_SECRET;
 
-export const VideoCallModal = ({
+export const ZegoCallModal = ({
   open,
   roomId,
   userId,
   userName,
   role,
-  type,
+  media,
+  mode,
+  onExit,
   onClose,
 }: VideoCallModalProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const zpRef = useRef<any>(null);
+
+  const isLiveSession = mode === "live-session";
+  const isInstructor = role ==="instructor"
+
 
   useEffect(() => {
     if (!open || !containerRef.current) return;
@@ -35,31 +43,31 @@ export const VideoCallModal = ({
       SERVER_SECRET,
       roomId,
       userId,
-      userName
+      userName,
     );
 
     zpRef.current = ZegoUIKitPrebuilt.create(kitToken);
 
     zpRef.current.joinRoom({
       container: containerRef.current,
-      scenario: { mode: type === "audio"
-        ? ZegoUIKitPrebuilt.OneONoneCall
-        : ZegoUIKitPrebuilt.VideoConference },
+      scenario: { mode: isLiveSession
+        ? ZegoUIKitPrebuilt.VideoConference
+        : ZegoUIKitPrebuilt.OneONoneCall},
       showPreJoinView: false,
-      maxUsers: 2,
-      turnOnCameraWhenJoining: type==="video",
-      turnOnMicrophoneWhenJoining: type==="audio",
-      showScreenSharingButton:type==="video"&& role === "instructor",
-      showMyCameraToggleButton: type==="video",
-      showLeaveRoomConfirmDialog: false,
-      showLeaveRoomButton: false,
-      showLayoutButton: false,
-      showTextChat: false,
-      showUserList: false,
+      maxUsers: isLiveSession ? 100 : 2,
+      turnOnCameraWhenJoining: media==="video",
+      turnOnMicrophoneWhenJoining: media==="audio",
+      showScreenSharingButton:isLiveSession && isInstructor,
+      showMyCameraToggleButton: media==="video",
+      showLeaveRoomConfirmDialog: isLiveSession,
+      showLeaveRoomButton: isLiveSession,
+      showLayoutButton: isLiveSession,
+      showTextChat: isLiveSession,
+      showUserList: isLiveSession,
 
 
       onLeaveRoom: () => {
-        onClose();
+        onExit();
       },
     });
 
@@ -67,19 +75,19 @@ export const VideoCallModal = ({
       zpRef.current?.destroy();
       zpRef.current = null;
     };
-  }, [type,open, roomId, userId, userName, role, onClose]);
+  }, [mode,media,isInstructor,isLiveSession,open, roomId, userId, userName, role, onClose,onExit]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
       <div className="relative w-full h-full md:w-[90%] md:h-[90%] bg-black rounded-xl overflow-hidden">
-        <button
+        {isLiveSession && isInstructor &&<button
           onClick={onClose}
           className="absolute top-4 right-4 z-50 bg-white text-black px-3 py-1 rounded"
         >
-          End Call
-        </button>
+          End Session
+        </button>}
 
         <div ref={containerRef} className="w-full h-full" />
       </div>

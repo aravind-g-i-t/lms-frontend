@@ -14,6 +14,7 @@ export const getLearnerProfile = createAsyncThunk(
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
             }
+            console.log(result.data);
             return result.data
         } catch (error: unknown) {
 
@@ -611,6 +612,100 @@ export const deleteLearnerMessages = createAsyncThunk(
             const res = await axiosInstance.post("/learner/messages/delete",  input );
 
             return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const joinLiveSession = createAsyncThunk(
+    "learner/session/join",
+    async (input:{sessionId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.post("/learner/session/join",input);
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getLiveSessionsForLearner = createAsyncThunk(
+    "learner/sessions",
+    async (input:{page:number,limit:number,status?:string,courseId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/sessions",{
+                params: input,
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const submitReview = createAsyncThunk(
+    "learner/course/review",
+    async (input:{courseId:string; rating:number; reviewText:string|null},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.post("/learner/course/review",input);
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+
+export const getReviewsForLearner = createAsyncThunk(
+    "learner/course/reviews",
+    async (input:{courseId:string; skip:number; limit:number}
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/course/reviews",{
+                params: input,
+            });
+
+            console.log(res.data);
+            return res.data;
+            
         } catch (error: unknown) {
             if (error instanceof AxiosError) {
                 console.log(error.response?.data);
