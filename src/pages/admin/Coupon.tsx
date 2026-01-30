@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {  useEffect, useMemo, useState } from "react";
 import { Plus, Edit2, X } from "lucide-react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
@@ -11,6 +11,7 @@ import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import * as yup from "yup";
 import { toast } from "react-toastify";
 import { createCoupon, getCoupons, updateCoupon, updateCouponStatus } from "../../services/adminServices";
+import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
 type DiscountType = "percentage" | "amount";
 
@@ -98,6 +99,13 @@ export default function ManageCoupons() {
     isActive: true,
     usageLimit: 1,
   });
+
+  const [confirmState, setConfirmState] = useState<{
+    id: string;
+    isActive: boolean;
+  } | null>(null);
+
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -215,15 +223,40 @@ export default function ManageCoupons() {
     }
   };
 
-  const toggleStatus = useCallback(async (id: string) => {
-    await dispatch(updateCouponStatus( id )).unwrap();
+  const requestToggleStatus = (id: string, isActive: boolean) => {
+    setConfirmState({ id, isActive });
+  };
 
-    setCoupons(
-      coupons.map((c) =>
-        c.id === id ? { ...c, isActive: !c.isActive } : c
-      )
-    );
-  },[coupons,dispatch]);
+  const confirmToggleStatus = async () => {
+    if (!confirmState) return;
+
+    try {
+      setActionLoading(true);
+
+      await dispatch(
+        updateCouponStatus(confirmState.id)
+      ).unwrap();
+
+      setCoupons((prev) =>
+        prev.map((c) =>
+          c.id === confirmState.id
+            ? { ...c, isActive: !c.isActive }
+            : c
+        )
+      );
+
+      toast.success(
+        `Coupon ${
+          confirmState.isActive ? "deactivated" : "activated"
+        } successfully`
+      );
+    } catch (err) {
+      toast.error(err as string);
+    } finally {
+      setActionLoading(false);
+      setConfirmState(null);
+    }
+  };
 
   const columns=useMemo<Column<Coupon>[]>(() =>  [
     { header: "Code", accessor: "code" },
@@ -268,7 +301,7 @@ export default function ManageCoupons() {
           </button>
 
           <button
-            onClick={() => toggleStatus(row.id)}
+            onClick={() => requestToggleStatus(row.id, row.isActive)}
             className={`px-2 py-1 text-xs rounded ${row.isActive
               ? "bg-teal-100 text-teal-700 hover:bg-teal-200"
               : "bg-red-100 text-red-700 hover:bg-red-200"
@@ -279,7 +312,7 @@ export default function ManageCoupons() {
         </div>
       ),
     },
-  ],[toggleStatus]);
+  ],[]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -510,6 +543,26 @@ export default function ManageCoupons() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!confirmState}
+        title={
+          confirmState?.isActive
+            ? "Deactivate Coupon"
+            : "Activate Coupon"
+        }
+        description={
+          confirmState?.isActive
+            ? "This coupon will no longer be usable."
+            : "This coupon will become active again."
+        }
+        confirmText={
+          confirmState?.isActive ? "Deactivate" : "Activate"
+        }
+        destructive={confirmState?.isActive}
+        loading={actionLoading}
+        onCancel={() => setConfirmState(null)}
+        onConfirm={confirmToggleStatus}
+      />
     </div>
   );
 }

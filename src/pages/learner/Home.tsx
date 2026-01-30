@@ -1,13 +1,17 @@
-import { useState } from 'react';
-import { Star, Clock, BookOpen, Users, ChevronRight, Play, Award } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Star, Clock, BookOpen, Users, ChevronRight, Play } from 'lucide-react';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../../redux/store';
+import { getHomeData, getHomeDataForLearner, getPopularCourses } from '../../services/learnerServices';
+import { toast } from 'react-toastify';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
 
 interface EnrolledCourse {
   id: string;
-  courseId:string;
+  courseId: string;
   courseTitle: string;
   thumbnail: string;
   instructor: { id: string; name: string };
@@ -16,7 +20,7 @@ interface EnrolledCourse {
   completedChapters: number;
   totalChapters: number;
   lastAccessedAt: Date;
-  enrolledAt:Date
+  enrolledAt: Date
 }
 
 interface Course {
@@ -38,238 +42,88 @@ interface Course {
   enrollmentCount: number,
 }
 
-interface Instructor {
-  id: string,
-  name: string,
-  designation: string,
-  profilePic: string,
-  expertise: string[],
+interface Category {
+  id: string;
+  name: string;
+  count: number;
 }
+
+// interface Instructor {
+//   id: string,
+//   name: string,
+//   designation: string,
+//   profilePic: string,
+//   expertise: string[],
+// }
 
 const LearnerHome = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>()
+  const { id, name } = useSelector((state: RootState) => state.auth)
   const [activeCategory, setActiveCategory] = useState('all');
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [popularCourses, setPopularCourses] = useState<Course[]>([]);
+  const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  // const [topInstructors, setTopInstructors] = useState<Instructor[]>([])
 
-  // Mock data based on schemas
-  const enrolledCourses: EnrolledCourse[] = [
-    {
-      id: '1',
-      courseId:"c01",
-      courseTitle: 'Advanced React Patterns',
-      thumbnail: '/api/placeholder/400/250',
-      instructor: { 
-        id: "en1", 
-        name: "Sarah Johnson" 
-      },
-      duration: 1800,
-        progressPercentage: 65,
-        completedChapters: 3,
-        totalChapters: 42,
-        lastAccessedAt: new Date('2024-01-24'),
-        enrolledAt:new Date('2024-01-24')
-    },
-    {
-      id: '2',
-      courseId:"c02",
-      courseTitle: 'UI/UX Design Masterclass',
-      thumbnail: '/api/placeholder/400/250',
-      instructor: { 
-        id: "en1", 
-        name: "Michael Chen" 
-      },
-      duration: 1440,
-        progressPercentage: 32,
-        completedChapters: 2,
-        totalChapters: 38,
-        lastAccessedAt: new Date('2024-01-23'),
-        enrolledAt:new Date('2024-01-24')
-    }
-  ];
+  useEffect(() => {
 
-  const recommendedCourses: Course[] = [
-    {
-      id: '3',
-      title: 'Full Stack Web Development',
-      description: 'Master modern web development with React, Node.js, and MongoDB',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "inst1",
-        name: "gkjaskjf"
-      },
-      level: 'intermediate',
-      duration: 2400,
-      totalChapters: 42,
-      totalModules: 8,
-      price: 3999,
-      rating: 4.8,
-      totalRatings: 1247,
-      enrollmentCount: 8432,
-    },
-    {
-      id: '4',
-      title: 'Data Science with Python',
-      description: 'Learn data analysis, visualization, and machine learning fundamentals',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "inst2",
-        name: "fsafa",
-      },
-      level: 'beginner',
-      duration: 2100,
-      totalChapters: 38,
-      totalModules: 7,
-      price: 3499,
-      rating: 4.9,
-      totalRatings: 2156,
-      enrollmentCount: 12340,
-    },
-    {
-      id: '5',
-      title: 'Advanced JavaScript Concepts',
-      description: 'Deep dive into closures, prototypes, async patterns, and more',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "inst3",
-        name: "fsafafdfsd",
-      },
-      level: 'advanced',
-      duration: 1800,
-      totalChapters: 35,
-      totalModules: 6,
-      price: 4499,
-      rating: 4.7,
-      totalRatings: 892,
-      enrollmentCount: 5621,
-    },
-    {
-      id: '6',
-      title: 'Mobile App Development',
-      description: 'Build cross-platform mobile apps with React Native',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "ins42",
-        name: "fdjfmdslfk",
-      },
-      level: 'intermediate',
-      duration: 2700,
-      totalChapters: 48,
-      totalModules: 9,
-      price: 4299,
-      rating: 4.6,
-      totalRatings: 673,
-      enrollmentCount: 4231,
-    }
-  ];
 
-  const popularCourses = [
-    {
-      id: '3',
-      title: 'Full Stack Web Development',
-      description: 'Master modern web development with React, Node.js, and MongoDB',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "inst1",
-        name: "gkjaskjf"
-      },
-      level: 'intermediate',
-      duration: 2400,
-      totalChapters: 42,
-      totalModules: 8,
-      price: 3999,
-      rating: 4.8,
-      totalRatings: 1247,
-      enrollmentCount: 8432,
-    },
-    {
-      id: '4',
-      title: 'Data Science with Python',
-      description: 'Learn data analysis, visualization, and machine learning fundamentals',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "inst2",
-        name: "fsafa",
-      },
-      level: 'beginner',
-      duration: 2100,
-      totalChapters: 38,
-      totalModules: 7,
-      price: 3499,
-      rating: 4.9,
-      totalRatings: 2156,
-      enrollmentCount: 12340,
-    },
-    {
-      id: '5',
-      title: 'Advanced JavaScript Concepts',
-      description: 'Deep dive into closures, prototypes, async patterns, and more',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "inst3",
-        name: "fsafafdfsd",
-      },
-      level: 'advanced',
-      duration: 1800,
-      totalChapters: 35,
-      totalModules: 6,
-      price: 4499,
-      rating: 4.7,
-      totalRatings: 892,
-      enrollmentCount: 5621,
-    },
-    {
-      id: '6',
-      title: 'Mobile App Development',
-      description: 'Build cross-platform mobile apps with React Native',
-      thumbnail: '/api/placeholder/350/200',
-      instructor: {
-        id: "ins42",
-        name: "fdjfmdslfk",
-      },
-      level: 'intermediate',
-      duration: 2700,
-      totalChapters: 48,
-      totalModules: 9,
-      price: 4299,
-      rating: 4.6,
-      totalRatings: 673,
-      enrollmentCount: 4231,
-    }
-  ]
+    const fetchHomePageData = async () => {
+      try {
+        const result = await dispatch(getHomeData()).unwrap();
 
-  const topInstructors: Instructor[] = [
-    {
-      id: '1',
-      name: 'Dr. Robert Martinez',
-      designation: 'Senior Software Architect',
-      profilePic: '/api/placeholder/80/80',
-      expertise: ['Cloud Computing', 'System Design', 'Microservices'],
+        console.log(result);
 
-    },
-    {
-      id: '2',
-      name: 'Emily Chang',
-      designation: 'UX Design Lead',
-      profilePic: '/api/placeholder/80/80',
-      expertise: ['UI/UX Design', 'Product Design', 'Figma'],
+        setCategories(result.data.categories);
+      } catch (error) {
+        toast.error(error as string);
+      }
+    };
+    fetchHomePageData();
+  }, [dispatch]);
 
-    },
-    {
-      id: '3',
-      name: 'James Anderson',
-      designation: 'AI Research Scientist',
-      profilePic: '/api/placeholder/80/80',
-      expertise: ['Machine Learning', 'Deep Learning', 'AI'],
 
-    }
-  ];
+  useEffect(() => {
 
-  const categories = [
-    { id: 'all', name: 'All Courses', count: 234 },
-    { id: 'development', name: 'Development', count: 89 },
-    { id: 'design', name: 'Design', count: 56 },
-    { id: 'data-science', name: 'Data Science', count: 42 },
-    { id: 'business', name: 'Business', count: 47 }
-  ];
+    if (!id) return
+    const fetchLearnerData = async () => {
+      try {
+        const result = await dispatch(getHomeDataForLearner()).unwrap();
+
+        console.log(result);
+
+        setEnrolledCourses(result.data.enrolledCourses);
+        setRecommendedCourses(result.data.recommendedCourses)
+      } catch (error) {
+        toast.error(error as string);
+      }
+    };
+    fetchLearnerData();
+  }, [id, dispatch]);
+
+  useEffect(() => {
+
+    const fetchPopularCourses = async () => {
+      try {
+        const result = await dispatch(getPopularCourses({
+          categoryId: activeCategory === "all" ? null : activeCategory,
+          limit: 4
+        })).unwrap();
+
+        console.log(result);
+
+        setPopularCourses(result.data.courses);
+      } catch (error) {
+        toast.error(error as string);
+      }
+    };
+    fetchPopularCourses();
+  }, [dispatch, activeCategory]);
+
+
+
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -304,12 +158,13 @@ const LearnerHome = () => {
       <LearnerNav />
 
       {/* Hero Section */}
+      {id?(
       <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <h1 className="text-5xl font-bold mb-4">
-                Welcome back, Aravind!
+                Welcome back, {name}!
               </h1>
               <p className="text-xl mb-2 opacity-90">
                 Continue your learning journey
@@ -323,15 +178,15 @@ const LearnerHome = () => {
                   className="bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                   Continue Learning
                 </button>
-                <button 
-                onClick={()=>navigate("/explore")}
-                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-600 transition-colors">
+                <button
+                  onClick={() => navigate("/explore")}
+                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-600 transition-colors">
                   Explore Courses
                 </button>
               </div>
             </div>
-            <div className="hidden md:block">
-              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-6">
+            {/* {!!enrolledCourses.length && <div className="hidden md:block">
+              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm font-semibold">Your Active Courses</span>
                   <BookOpen className="w-5 h-5" />
@@ -344,7 +199,7 @@ const LearnerHome = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Chapters Completed</span>
                     <span className="text-2xl font-bold">
-                      {enrolledCourses.reduce((sum, course) => sum + course.completedChapters, 0)}
+                      {enrolledCourses.reduce((sum, course) => sum + course.progressPercentage, 0)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -355,13 +210,38 @@ const LearnerHome = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div>} */}
           </div>
         </div>
       </div>
+      ):(
+      <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+          <h1 className="text-5xl font-bold mb-6">
+            Learn skills that matter
+          </h1>
+          <p className="text-xl mb-10 opacity-90">
+            Join thousands of learners and start your journey today
+          </p>
+
+          <div className="flex justify-center gap-4">
+            <button 
+            onClick={()=>navigate("/signin")}
+            className="bg-white text-teal-600 px-10 py-4 rounded-lg font-semibold hover:bg-gray-100">
+              Get Started
+            </button>
+            <button 
+            onClick={()=>navigate("/explore")}
+            className="border-2 border-white px-10 py-4 rounded-lg font-semibold hover:bg-white hover:text-teal-600">
+              Explore Courses
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
 
       {/* Continue Learning Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {!!enrolledCourses.length && <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold text-gray-900">Continue Learning</h2>
           <Link to="/learner/dashboard" className="text-teal-500 hover:text-teal-600 font-semibold flex items-center">
@@ -413,11 +293,24 @@ const LearnerHome = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Categories */}
-      <div className="bg-white py-8 border-y">
+      <div className="bg-white py-8 ">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-gray-900">
+              {activeCategory === 'all'
+                ? 'Popular Courses'
+                : `Popular ${categories.find(c => c.id === activeCategory)?.name} Courses`}
+            </h2>
+
+            <Link to={"/explore"} className="text-teal-500 hover:text-teal-600 font-semibold flex items-center">
+              View All <ChevronRight className="w-5 h-5 ml-1" />
+            </Link>
+          </div>
+          <br />
+          <br />
           <div className="flex items-center space-x-4 overflow-x-auto pb-2">
             {categories.map((category) => (
               <button
@@ -437,17 +330,6 @@ const LearnerHome = () => {
 
       {/* Popular Courses */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">
-            {/* {activeCategory === 'all'
-              ? 'Popular Courses'
-              : `Popular ${categories.find(c => c.id === activeCategory)?.name} Courses`} */}
-          </h2>
-
-          <Link to={"/explore"} className="text-teal-500 hover:text-teal-600 font-semibold flex items-center">
-            View All <ChevronRight className="w-5 h-5 ml-1" />
-          </Link>
-        </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {popularCourses.map((course) => (
@@ -479,7 +361,7 @@ const LearnerHome = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                    <span className="font-semibold text-sm">{course.rating}</span>
+                    <span className="font-semibold text-sm">{course.rating ? course.rating.toFixed(1) : "Unrated"}</span>
                     <span className="text-xs text-gray-500 ml-1">({course.totalRatings})</span>
                   </div>
                   <div className="flex items-center text-xs text-gray-500">
@@ -490,8 +372,10 @@ const LearnerHome = () => {
 
                 <div className="border-t pt-3 flex items-center justify-between">
                   <span className="text-2xl font-bold text-teal-600">₹{course.price}</span>
-                  <button className="bg-gradient-to-r from-teal-400 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-teal-500 hover:to-teal-700 transition-all text-sm font-semibold">
-                    Enroll Now
+                  <button
+                    onClick={() => navigate(`/course/${course.id}`)}
+                    className="bg-gradient-to-r from-teal-400 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-teal-500 hover:to-teal-700 transition-all text-sm font-semibold">
+                    Preview
                   </button>
                 </div>
               </div>
@@ -502,7 +386,7 @@ const LearnerHome = () => {
 
 
       {/* Recommended Courses */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {!!id &&<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Recommended for You</h2>
           <p className="text-gray-600">Personalized course suggestions based on your interests</p>
@@ -549,8 +433,10 @@ const LearnerHome = () => {
 
                 <div className="border-t pt-3 flex items-center justify-between">
                   <span className="text-2xl font-bold text-teal-600">₹{course.price}</span>
-                  <button className="bg-gradient-to-r from-teal-400 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-teal-500 hover:to-teal-700 transition-all text-sm font-semibold">
-                    Enroll Now
+                  <button
+                    onClick={() => navigate(`/course/${course.id}`)}
+                    className="bg-gradient-to-r from-teal-400 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-teal-500 hover:to-teal-700 transition-all text-sm font-semibold">
+                    Preview
                   </button>
                 </div>
               </div>
@@ -559,15 +445,17 @@ const LearnerHome = () => {
         </div>
 
         <div className="text-center mt-8">
-          <button className="bg-white text-teal-600 border-2 border-teal-600 px-8 py-3 rounded-lg hover:bg-teal-50 transition-colors font-semibold">
+          <button
+            onClick={() => navigate("/explore")}
+            className="bg-white text-teal-600 border-2 border-teal-600 px-8 py-3 rounded-lg hover:bg-teal-50 transition-colors font-semibold">
             Explore More Courses
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* Top Instructors */}
-      <div className="bg-gradient-to-br from-gray-50 to-teal-50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* <div className="bg-gradient-to-br from-gray-50 to-teal-50 py-12">
+        {!!topInstructors.length &&<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Learn from Verified Experts</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -575,7 +463,7 @@ const LearnerHome = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+           <div className="grid md:grid-cols-3 gap-6">
             {topInstructors.map((instructor) => (
               <div key={instructor.id} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow text-center">
                 <div className="relative inline-block mb-4">
@@ -607,8 +495,8 @@ const LearnerHome = () => {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </div>}
+      </div> */}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">

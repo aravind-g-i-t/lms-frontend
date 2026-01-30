@@ -17,6 +17,7 @@ import FallbackUI from "../../components/shared/FallbackUI";
 import ReactModal from "react-modal";
 import { X } from "lucide-react";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
+import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
 type Instructor = {
   id: string;
@@ -67,100 +68,133 @@ export default function ManageInstructors() {
   const [status, setStatus] = useState<Status>("All");
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>("All");
-  const [newVerificationStatus, setNewVerificationStatus] = useState<"Verified"
-    | "Rejected">("Verified");
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [instructorView, setInstructorView] = useState<InstructorView | null>(null);
+
+  const [newVerificationStatus, setNewVerificationStatus] =
+    useState<"Verified" | "Rejected">("Verified");
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [instructorView, setInstructorView] =
+    useState<InstructorView | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [fetchFailure, setFetchFailure] = useState(false);
+
   const remarksRef = useRef<HTMLInputElement>(null);
   const [idProofModal, setIdProofModal] = useState(false);
+
+  // ✅ Confirmation state
+  const [confirmState, setConfirmState] = useState<{
+    id: string;
+    isActive: boolean;
+  } | null>(null);
+
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const response = await dispatch(
           getInstructors({ page, search, status, limit: 5, verificationStatus })
         ).unwrap();
+
         setInstructors(response.data.instructors ?? []);
         setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
-        setFetchFailure(true)
-        console.error("Failed to fetch instructors:", err);
-        toast.error(err as string)
+        setFetchFailure(true);
+        toast.error(err as string);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
 
     fetchInstructors();
-
-
   }, [dispatch, page, search, status, verificationStatus]);
 
-  const handleToggleStatus = async (payload: { id: string }) => {
-    try {
-      await dispatch(toggleInstructorStatus(payload)).unwrap();
+  // ---------- Block / Unblock ----------
+  const handleRequestToggle = (id: string, isActive: boolean) => {
+    setConfirmState({ id, isActive });
+  };
 
-      const updatedInstructors = instructors.map((instructor) =>
-        instructor.id === payload.id
-          ? { ...instructor, isActive: !instructor.isActive }
-          : instructor
+  const handleConfirmToggle = async () => {
+    if (!confirmState) return;
+
+    try {
+      setActionLoading(true);
+
+      await dispatch(
+        toggleInstructorStatus({ id: confirmState.id })
+      ).unwrap();
+
+      setInstructors((prev) =>
+        prev.map((instructor) =>
+          instructor.id === confirmState.id
+            ? { ...instructor, isActive: !instructor.isActive }
+            : instructor
+        )
       );
-      setInstructors(updatedInstructors);
+
+      toast.success(
+        `Instructor ${
+          confirmState.isActive ? "blocked" : "unblocked"
+        } successfully`
+      );
     } catch (error) {
-      toast.error(error as string)
+      toast.error(error as string);
+    } finally {
+      setActionLoading(false);
+      setConfirmState(null);
     }
   };
 
+  // ---------- View ----------
   const handleViewInstructor = async (id: string) => {
     try {
       const response = await dispatch(getInstructorData({ id })).unwrap();
       setInstructorView(response.data.instructor);
-      setSelectedId(id)
+      setSelectedId(id);
     } catch (error) {
-      toast.error(error as string)
+      toast.error(error as string);
     }
   };
 
+  // ---------- Verification ----------
   const updateVerificationStatus = async () => {
-    if (!selectedId) {
-      return;
-    }
+    if (!selectedId) return;
+
     const remarks = remarksRef.current?.value || null;
 
     try {
-      await dispatch(updateInstructorVerificationStatus({
-        id: selectedId,
-        remarks,
-        status: newVerificationStatus
-      })).unwrap()
-      toast.success('Verification status updated successfully');
+      await dispatch(
+        updateInstructorVerificationStatus({
+          id: selectedId,
+          remarks,
+          status: newVerificationStatus,
+        })
+      ).unwrap();
+
+      toast.success("Verification status updated successfully");
+
       const verification = {
         remarks,
-        status: newVerificationStatus
-      }
-      setInstructorView((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          verification,
-        };
-      });
+        status: newVerificationStatus,
+      };
 
-      const updatedInstructors = instructors.map(instructor => {
-        if (instructor.id === selectedId) {
-          instructor.verification = verification
-        };
-        return instructor
-      })
+      setInstructorView((prev) =>
+        prev ? { ...prev, verification } : prev
+      );
 
-      setInstructors(updatedInstructors)
+      setInstructors((prev) =>
+        prev.map((instructor) =>
+          instructor.id === selectedId
+            ? { ...instructor, verification }
+            : instructor
+        )
+      );
     } catch (error) {
-      toast.error(error as string)
+      toast.error(error as string);
     }
-  }
+  };
 
   const columns: Column<Instructor>[] = [
     {
@@ -181,29 +215,13 @@ export default function ManageInstructors() {
       header: "Status",
       render: (row) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${row.isActive
-            ? "bg-green-100 text-green-700"
-            : "bg-red-100 text-red-700"
-            }`}
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.isActive
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
         >
           {row.isActive ? "Active" : "Blocked"}
-        </span>
-      ),
-    },
-    {
-      header: "Verification",
-      render: (row) => (
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${row.verification.status === "Verified"
-            ? "bg-green-100 text-green-700 border border-green-200"
-            : row.verification.status === "Rejected"
-              ? "bg-red-100 text-red-700 border border-red-200"
-              : row.verification.status === "Under Review"
-                ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                : "bg-gray-100 text-gray-700 border border-gray-200"
-            }`}
-        >
-          {row.verification.status}
         </span>
       ),
     },
@@ -212,11 +230,12 @@ export default function ManageInstructors() {
       render: (row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => handleToggleStatus({ id: row.id })}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${row.isActive
-              ? "bg-red-500 text-white hover:bg-red-600"
-              : "bg-teal-600 text-white hover:bg-teal-700"
-              }`}
+            onClick={() => handleRequestToggle(row.id, row.isActive)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium ${
+              row.isActive
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-teal-600 text-white hover:bg-teal-700"
+            }`}
           >
             {row.isActive ? "Block" : "Unblock"}
           </button>
@@ -231,14 +250,8 @@ export default function ManageInstructors() {
     },
   ];
 
-  
-
-
-
-
   if (loading) return <UserListSkeleton />;
-
-  if (fetchFailure) return <FallbackUI />
+  if (fetchFailure) return <FallbackUI />;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -513,6 +526,22 @@ export default function ManageInstructors() {
           </div>
         </div>
       )}
+       <ConfirmDialog
+        open={!!confirmState}
+        title={
+          confirmState?.isActive ? "Block Instructor" : "Unblock Instructor"
+        }
+        description={
+          confirmState?.isActive
+            ? "This instructor will no longer be able to access the platform."
+            : "This instructor will regain access to the platform."
+        }
+        confirmText={confirmState?.isActive ? "Block" : "Unblock"}
+        destructive={confirmState?.isActive}
+        loading={actionLoading}
+        onCancel={() => setConfirmState(null)}
+        onConfirm={handleConfirmToggle}
+      />
     </div>
   );
 }

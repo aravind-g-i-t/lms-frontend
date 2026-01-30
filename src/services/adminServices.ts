@@ -601,3 +601,23 @@ export const getCourseDetailsForAdmin = createAsyncThunk(
         }
     }
 );
+
+export const getAdminDashboard = createAsyncThunk(
+    "admin/dashboard",
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.get(`/admin/dashboard`);
+            console.log(res.data);
+            
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)

@@ -11,6 +11,7 @@ import FallbackUI from "../../components/shared/FallbackUI";
 import { toast } from "react-toastify";
 import { X } from "lucide-react";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
+import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
 type Learner = {
   id: string;
@@ -41,6 +42,13 @@ export default function ManageLearners() {
   const [learnerView, setLearnerView] = useState<LearnerView | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchFailure, setFetchFailure] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    id: string;
+    isActive: boolean;
+  } | null>(null);
+
+  const [actionLoading, setActionLoading] = useState(false);
+
 
   useEffect(() => {
     const fetchLearners = async () => {
@@ -63,17 +71,38 @@ export default function ManageLearners() {
 
   }, [dispatch, page, search, status]);
 
-  const handleToggleStatus = useCallback(async (payload: { id: string }) => {
+  const handleRequestToggle = useCallback((id: string, isActive: boolean) => {
+    setConfirmState({ id, isActive });
+  }, []);
+
+  const handleConfirmToggle = async () => {
+    if (!confirmState) return;
+
     try {
-      await dispatch(toggleLearnerStatus(payload)).unwrap();
-      const updatedLearners = learners.map((learner) =>
-        learner.id === payload.id ? { ...learner, isActive: !learner.isActive } : learner
+      setActionLoading(true);
+
+      await dispatch(toggleLearnerStatus({ id: confirmState.id })).unwrap();
+
+      setLearners((prev) =>
+        prev.map((learner) =>
+          learner.id === confirmState.id
+            ? { ...learner, isActive: !learner.isActive }
+            : learner
+        )
       );
-      setLearners(updatedLearners);
+
+      toast.success(
+        `Learner ${confirmState.isActive ? "blocked" : "unblocked"} successfully`
+      );
     } catch (error) {
-      toast.error(error as string)
+      toast.error(error as string);
+    } finally {
+      setActionLoading(false);
+      setConfirmState(null);
     }
-  },[dispatch,learners]);
+  };
+
+
 
   const handleViewLearner = useCallback(async (id: string) => {
     try {
@@ -82,9 +111,9 @@ export default function ManageLearners() {
     } catch (error) {
       toast.error(error as string)
     }
-  },[dispatch]);
+  }, [dispatch]);
 
-  const columns=useMemo< Column<Learner>[]>(() => [
+  const columns = useMemo<Column<Learner>[]>(() => [
     {
       header: "Learner",
       render: (row) => (
@@ -112,12 +141,11 @@ export default function ManageLearners() {
       render: (row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => handleToggleStatus({ id: row.id })}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              row.isActive
-                ? "bg-red-500 text-white hover:bg-red-600"
-                : "bg-teal-600 text-white hover:bg-teal-700"
-            }`}
+            onClick={() => handleRequestToggle(row.id, row.isActive)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${row.isActive
+              ? "bg-red-500 text-white hover:bg-red-600"
+              : "bg-teal-600 text-white hover:bg-teal-700"
+              }`}
           >
             {row.isActive ? "Block" : "Unblock"}
           </button>
@@ -130,7 +158,7 @@ export default function ManageLearners() {
         </div>
       ),
     },
-  ],[handleToggleStatus,handleViewLearner]);
+  ], [handleRequestToggle, handleViewLearner]);
 
   if (loading) return <UserListSkeleton />;
   if (fetchFailure) return <FallbackUI />
@@ -239,6 +267,25 @@ export default function ManageLearners() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!confirmState}
+        title={
+          confirmState?.isActive
+            ? "Block Learner"
+            : "Unblock Learner"
+        }
+        description={
+          confirmState?.isActive
+            ? "This learner will no longer be able to access the platform."
+            : "This learner will regain access to the platform."
+        }
+        confirmText={confirmState?.isActive ? "Block" : "Unblock"}
+        destructive={confirmState?.isActive}
+        loading={actionLoading}
+        onCancel={() => setConfirmState(null)}
+        onConfirm={handleConfirmToggle}
+      />
+
     </div>
   );
 }

@@ -986,3 +986,51 @@ export const endLiveSession = createAsyncThunk(
         }
     }
 );
+
+export const GetInstructorEarnings = createAsyncThunk(
+    "instructor/earnings",
+    async (input:{page:number,limit:number,status?:string,search?:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/instructor/earnings",{
+                params: input,
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const GetInstructorDashboard = createAsyncThunk(
+    "instructor/dashboard",
+    async (_,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/instructor/dashboard");
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

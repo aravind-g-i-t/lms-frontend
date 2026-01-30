@@ -16,7 +16,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { addToFavourites, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview } from '../../services/learnerServices';
+import { addToFavourites, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview, updateReview } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CourseOverviewSkeleton from '../../components/learner/CourseOverviewSkeleton';
 
@@ -124,6 +124,8 @@ const CourseOverviewPage = () => {
   const [myRating, setMyRating] = useState(0);
   const [myReviewText, setMyReviewText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isEditingReview, setIsEditingReview] = useState(false);
+
 
 
   useEffect(() => {
@@ -142,7 +144,7 @@ const CourseOverviewPage = () => {
 
         console.log(response.data);
         setCourse(response.data)
-        
+
 
       } catch (err) {
         toast.error(err as string);
@@ -213,6 +215,13 @@ const CourseOverviewPage = () => {
       toast.error(error as string)
     }
   }
+  const startEditReview = () => {
+    if (!myReview) return;
+
+    setMyRating(myReview.rating);
+    setMyReviewText(myReview.reviewText || '');
+    setIsEditingReview(true);
+  };
 
   const handleSubmitReview = async () => {
     if (!course || !myRating) return null;
@@ -230,6 +239,30 @@ const CourseOverviewPage = () => {
       toast.error(error as string)
     }
   }
+
+  const handleUpdateReview = async () => {
+    if (!course || !myRating || !myReview) return;
+
+    try {
+      const result = await dispatch(updateReview({
+        courseId: course.id,
+        reviewText: myReviewText.trim() || null,
+        rating: myRating
+      })).unwrap();
+
+      setMyReview(result.data.review);
+      setIsEditingReview(false);
+      setMyRating(0);
+      setMyReviewText('');
+      toast.success(result.data.message);
+    } catch (error) {
+      toast.error(error as string);
+    }
+  };
+
+
+
+
 
   const toggleModule = (index: number) => {
     const newExpanded = new Set(expandedModules);
@@ -316,8 +349,8 @@ const CourseOverviewPage = () => {
               <div className="flex flex-wrap items-center gap-6 text-sm">
                 <div className="flex items-center">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 mr-1" />
-                  <span className="font-semibold mr-1">{course.rating|| 'N/A'}</span>
-                  <span className="text-gray-300">({course.rating} ratings)</span>
+                  <span className="font-semibold mr-1">{course.rating?.toFixed(1) || 'N/A'}</span>
+                  <span className="text-gray-300">({course.totalRatings} ratings)</span>
                 </div>
                 <div className="flex items-center text-gray-300">
                   <Users className="w-5 h-5 mr-1" />
@@ -609,10 +642,10 @@ const CourseOverviewPage = () => {
             </div>
 
             {/* ADD REVIEW */}
-            {course.isEnrolled && !myReview && (
+            {course.isEnrolled && (!myReview || isEditingReview) && (
               <div className="bg-white rounded-lg p-6 shadow">
                 <h3 className="text-xl font-semibold mb-4">
-                  Leave a review
+                  {isEditingReview ? 'Edit your review' : 'Leave a review'}
                 </h3>
 
                 <div className="flex gap-2 mb-4">
@@ -636,55 +669,60 @@ const CourseOverviewPage = () => {
                   placeholder="Share your experience (optional)"
                 />
 
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={myRating === 0}
-                  className="bg-teal-600 text-white px-6 py-2 rounded hover:bg-teal-700 disabled:opacity-50"
-                >
-                  Submit review
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={isEditingReview ? handleUpdateReview : handleSubmitReview}
+                    disabled={myRating === 0}
+                    className="bg-teal-600 text-white px-6 py-2 rounded hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    {isEditingReview ? 'Update review' : 'Submit review'}
+                  </button>
+
+                  {isEditingReview && (
+                    <button
+                      onClick={() => setIsEditingReview(false)}
+                      className="border px-6 py-2 rounded hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
-            {myReview && (
+
+            {myReview && !isEditingReview && (
               <div className="bg-white rounded-lg p-6 shadow border border-teal-200">
-                <h3 className="text-xl font-semibold mb-3">
-                  Your Review
-                </h3>
+                <h3 className="text-xl font-semibold mb-3">Your Review</h3>
 
                 <div className="flex items-center gap-2 mb-2">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
                       className={`w-5 h-5 ${s <= myReview.rating
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-gray-300'
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
                         }`}
                     />
                   ))}
-
                   {myReview.isEdited && (
                     <span className="text-sm text-gray-500">(edited)</span>
                   )}
                 </div>
 
                 {myReview.reviewText && (
-                  <p className="text-gray-700 mb-3">
-                    {myReview.reviewText}
-                  </p>
+                  <p className="text-gray-700 mb-3">{myReview.reviewText}</p>
                 )}
 
-                {/* Future: Edit button */}
-                {/* 
-    <button
-      onClick={handleEditReview}
-      className="text-teal-600 text-sm font-medium hover:underline"
-    >
-      Edit review
-    </button>
-    */}
+                <button
+                  onClick={startEditReview}
+                  className="text-teal-600 text-sm font-medium hover:underline"
+                >
+                  Edit review
+                </button>
               </div>
             )}
+
 
 
 

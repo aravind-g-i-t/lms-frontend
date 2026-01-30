@@ -717,3 +717,98 @@ export const getReviewsForLearner = createAsyncThunk(
         }
     }
 );
+
+export const getHomeData = createAsyncThunk(
+    "learner/home",
+    async (_
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/home");
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getHomeDataForLearner = createAsyncThunk(
+    "learner/home/learner-data",
+    async (_
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/home/learner-data");
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getPopularCourses = createAsyncThunk(
+    "learner/courses/popular",
+    async (input:{categoryId:string|null; limit:number}
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get("/learner/courses/popular",{
+                params: input,
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const updateReview = createAsyncThunk(
+    "learner/course/review/update",
+    async (input:{courseId:string; rating:number; reviewText:string|null},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.patch("/learner/course/review",input);
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
