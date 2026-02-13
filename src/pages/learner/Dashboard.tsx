@@ -1,7 +1,7 @@
 import { useState, type JSX } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { BookOpen, Award, Wallet, History, Settings, Heart } from 'lucide-react';
+import { BookOpen, Award, Wallet, Settings, Heart } from 'lucide-react';
 import type { RootState } from '../../redux/store';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { lazy, Suspense } from 'react';
@@ -32,7 +32,7 @@ const LearnerDashboard = () => {
     { id: 'favourites' as TabType, label: 'My Favourites', icon: Heart },
     { id: 'certificates' as TabType, label: 'Certificates', icon: Award },
     { id: 'wallet' as TabType, label: 'Wallet', icon: Wallet },
-    { id: 'history' as TabType, label: 'Purchase History', icon: History },
+    // { id: 'history' as TabType, label: 'Purchase History', icon: History },
   ];
 
   // const renderContent = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import {
     ChevronLeft, ChevronRight, CheckCircle, Circle,
@@ -280,7 +280,9 @@ const CoursePlayerPage = () => {
                             {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                         <div className="hidden sm:block">
-                            <h1 className="text-white font-semibold text-sm line-clamp-1">{course.title}</h1>
+                            <h1 className="text-white font-semibold text-sm line-clamp-1">
+                                <Link to={`/course/${courseId}`} >{course.title}</Link>
+                            </h1>
                             <p className="text-gray-400 text-xs">by {course.instructor.name}</p>
                         </div>
                     </div>

@@ -1,49 +1,90 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, Gift, CreditCard } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
+import { getWalletData } from '../../services/learnerServices';
 // import { getWalletDetails } from '../../../redux/services/learnerServices';
 
 interface WalletData {
   balance: number;
-  totalEarned: number;
-  totalSpent: number;
   transactions: Transaction[];
 }
 
 interface Transaction {
   id: string;
   type: 'credit' | 'debit';
+  reason: 'course_purchase' | 'refund' | 'redeem';
   amount: number;
-  description: string;
-  date: Date;
+  courseTitle: string | null;
+  createdAt: Date;
 }
+
+const reasonLabel: Record<Transaction['reason'], string> = {
+  course_purchase: 'Course Purchase',
+  refund: 'Refund',
+  redeem: 'Redeem',
+};
 
 const MyWallet = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const limit=5
 
   useEffect(() => {
     const fetchWallet = async () => {
       try {
         setLoading(true);
-        // const response = await dispatch(getWalletDetails()).unwrap();
-        // setWallet(response.data);
-        
-        // Mock data
+        const response = await dispatch(getWalletData({
+          page,
+          limit
+        })).unwrap();
         setWallet({
-          balance: 1250.00,
-          totalEarned: 500.00,
-          totalSpent: 2500.00,
-          transactions: [
-            { id: 't1', type: 'credit', amount: 100, description: 'Referral bonus', date: new Date('2025-01-10') },
-            { id: 't2', type: 'debit', amount: 799, description: 'Course purchase: React Masterclass', date: new Date('2025-01-08') },
-            { id: 't3', type: 'credit', amount: 50, description: 'Course completion reward', date: new Date('2025-01-05') },
-            { id: 't4', type: 'debit', amount: 499, description: 'Course purchase: Node.js Backend', date: new Date('2024-12-20') },
-          ]
+          balance:response.data.balance,
+          transactions:response.data.transactions
         });
+        setTotalPages(response.data.totalPages)
+
+        // setWallet({
+        //   balance: 1250.00,
+        //   transactions: [
+        //     {
+        //       id: 't1',
+        //       type: 'credit',
+        //       reason: 'refund',
+        //       amount: 100,
+        //       courseTitle: 'React Masterclass',
+        //       createdAt: new Date('2025-01-10'),
+        //     },
+        //     {
+        //       id: 't2',
+        //       type: 'debit',
+        //       reason: 'course_purchase',
+        //       amount: 799,
+        //       courseTitle: 'React Masterclass',
+        //       createdAt: new Date('2025-01-08'),
+        //     },
+        //     {
+        //       id: 't3',
+        //       type: 'credit',
+        //       reason: 'redeem',
+        //       amount: 50,
+        //       courseTitle: null,
+        //       createdAt: new Date('2025-01-05'),
+        //     },
+        //     {
+        //       id: 't4',
+        //       type: 'debit',
+        //       reason: 'course_purchase',
+        //       amount: 499,
+        //       courseTitle: 'Node.js Backend',
+        //       createdAt: new Date('2024-12-20'),
+        //     },
+        //   ],
+        // });
       } catch (err) {
         toast.error(err as string);
       } finally {
@@ -52,119 +93,162 @@ const MyWallet = () => {
     };
 
     fetchWallet();
-  }, [dispatch]);
+  }, [dispatch,page]);
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading wallet...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (!wallet) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-        <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Wallet Not Available</h3>
-        <p className="text-gray-500">Unable to load wallet details.</p>
+      <div className="flex flex-col items-center justify-center h-64 gap-2">
+        <Wallet className="w-10 h-10 text-teal-300" />
+        <h2 className="text-xl font-semibold text-gray-700">Wallet Not Available</h2>
+        <p className="text-gray-400 text-sm">Unable to load wallet details.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 max-w-2xl mx-auto space-y-6">
+
       {/* Balance Card */}
-      <div className="bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Wallet className="w-8 h-8" />
-            <span className="text-teal-100">Available Balance</span>
+          <div className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 opacity-90" />
+            <span className="text-sm font-medium opacity-90">Available Balance</span>
           </div>
-          <button className="flex items-center gap-2 bg-white text-teal-600 px-4 py-2 rounded-lg hover:bg-teal-50 text-sm font-medium">
-            <Plus className="w-4 h-4" /> Add Money
+          <button className="flex items-center gap-1 bg-white/20 hover:bg-white/30 transition px-3 py-1.5 rounded-full text-sm font-medium">
+            + Add Money
           </button>
         </div>
-        <div className="text-4xl font-bold mb-6">₹{wallet.balance.toLocaleString()}</div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white/10 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-teal-100 text-sm mb-1">
-              <ArrowDownLeft className="w-4 h-4" /> Total Earned
-            </div>
-            <div className="text-xl font-semibold">₹{wallet.totalEarned.toLocaleString()}</div>
-          </div>
-          <div className="bg-white/10 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-teal-100 text-sm mb-1">
-              <ArrowUpRight className="w-4 h-4" /> Total Spent
-            </div>
-            <div className="text-xl font-semibold">₹{wallet.totalSpent.toLocaleString()}</div>
-          </div>
-        </div>
+        <p className="text-4xl font-bold tracking-tight">
+          ₹{wallet.balance.toLocaleString()}
+        </p>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-2">
-          <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-            <Plus className="w-6 h-6 text-teal-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">Add Money</span>
-        </button>
-        <button className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-2">
-          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-            <Gift className="w-6 h-6 text-purple-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">Redeem Code</span>
-        </button>
-        <button className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-2">
-          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-            <CreditCard className="w-6 h-6 text-amber-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">Payment Methods</span>
-        </button>
-        <button className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-2">
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <ArrowUpRight className="w-6 h-6 text-blue-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">Withdraw</span>
-        </button>
-      </div>
+      {/* <div className="grid grid-cols-4 gap-3">
+        {[
+          { icon: <ArrowUpRight className="w-5 h-5" />, label: 'Add Money' },
+          { icon: <Gift className="w-5 h-5" />, label: 'Redeem Code' },
+          { icon: <CreditCard className="w-5 h-5" />, label: 'Payment Methods' },
+          { icon: <ArrowDownLeft className="w-5 h-5" />, label: 'Withdraw' },
+        ].map(({ icon, label }) => (
+          <button
+            key={label}
+            className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-teal-200 transition"
+          >
+            <div className="text-teal-600">{icon}</div>
+            <span className="text-xs font-medium text-gray-600 text-center">{label}</span>
+          </button>
+        ))}
+      </div> */}
 
       {/* Recent Transactions */}
-      <div className="bg-white rounded-xl shadow-sm">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900">Recent Transactions</h3>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h3 className="font-semibold text-gray-800">Recent Transactions</h3>
         </div>
-        <div className="divide-y divide-gray-100">
+
+        <ul className="divide-y divide-gray-50">
           {wallet.transactions.map((txn) => (
-            <div key={txn.id} className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  txn.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
-                }`}>
-                  {txn.type === 'credit' ? (
-                    <ArrowDownLeft className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <ArrowUpRight className="w-5 h-5 text-red-600" />
-                  )}
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">{txn.description}</div>
-                  <div className="text-xs text-gray-500">{formatDate(txn.date)}</div>
-                </div>
+            <li key={txn.id} className="flex items-center gap-4 px-5 py-4">
+              {/* Icon */}
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${txn.type === 'credit'
+                    ? 'bg-teal-50 text-teal-600'
+                    : 'bg-red-50 text-red-500'
+                  }`}
+              >
+                {txn.type === 'credit' ? (
+                  <ArrowDownLeft className="w-5 h-5" />
+                ) : (
+                  <ArrowUpRight className="w-5 h-5" />
+                )}
               </div>
-              <div className={`font-semibold ${txn.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+
+              {/* Details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {reasonLabel[txn.reason]}
+                  </p>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium shrink-0">
+                    {txn.reason.replace('_', ' ')}
+                  </span>
+                </div>
+                {txn.courseTitle && (
+                  <p className="text-xs text-gray-400 truncate mt-0.5">{txn.courseTitle}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-0.5">{formatDate(txn.createdAt)}</p>
+              </div>
+
+              {/* Amount */}
+              <span
+                className={`text-sm font-semibold shrink-0 ${txn.type === 'credit' ? 'text-teal-600' : 'text-red-500'
+                  }`}
+              >
                 {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
-              </div>
-            </div>
+              </span>
+            </li>
           ))}
-        </div>
-        <div className="p-4 border-t border-gray-100">
-          <button className="w-full text-center text-teal-600 hover:text-teal-700 text-sm font-medium">
+        </ul>
+
+        {/* <div className="px-5 py-3 border-t border-gray-100 text-center">
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={page >= totalPages}
+            className="text-sm text-teal-600 font-medium hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             View All Transactions
           </button>
-        </div>
+        </div> */}
       </div>
+        {!!totalPages && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+            >
+              Prev
+            </button>
+
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i + 1)}
+                className={`px-3 py-1 rounded ${page === i + 1 ? "bg-teal-600 text-white" : "bg-gray-200 text-gray-700"
+                  }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            <button
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              disabled={page === totalPages}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
     </div>
   );
 };

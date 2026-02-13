@@ -16,7 +16,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { addToFavourites, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview, updateReview } from '../../services/learnerServices';
+import { addToFavourites, cancelEnrollment, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview, updateReview } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CourseOverviewSkeleton from '../../components/learner/CourseOverviewSkeleton';
 
@@ -183,6 +183,7 @@ const CourseOverviewPage = () => {
 
     fetchReviews();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, courseId]);
 
 
@@ -261,7 +262,20 @@ const CourseOverviewPage = () => {
   };
 
 
+  const handleCancelEnrollment= async()=>{
+    if (!course) return null;
 
+    try {
+      const courseId = course.id;
+      await dispatch(cancelEnrollment({
+        courseId
+      })).unwrap();
+      setCourse({ ...course, isEnrolled: false, enrolledAt:null });
+      toast.success("Enrollment cancelled successfully.")
+    } catch (error) {
+      toast.error(error as string)
+    }
+  }
 
 
   const toggleModule = (index: number) => {
@@ -302,6 +316,19 @@ const CourseOverviewPage = () => {
 
     return course.modules.reduce((total, module) => total + module.chapters.length, 0);
   };
+
+  const canCancelEnrollment = (enrolledAt: Date | null) => {
+    if (!enrolledAt) return false;
+
+    const now = new Date();
+    const enrolledDate = new Date(enrolledAt);
+
+    const diffMs = now.getTime() - enrolledDate.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    return diffDays <= 7; // within 7 days
+  };
+
 
   if (loading) return <CourseOverviewSkeleton />
   if (!course) return null;
@@ -414,6 +441,15 @@ const CourseOverviewPage = () => {
                       >
                         Continue Learning
                       </button>
+
+                      {canCancelEnrollment(course.enrolledAt) && (
+                        <button
+                          onClick={handleCancelEnrollment}
+                          className="w-full border-2 border-red-500 text-red-500 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors mb-3"
+                        >
+                          Cancel Enrollment
+                        </button>
+                      )}
 
                       <button
                         onClick={() => navigate('/learner/dashboard')}
@@ -654,8 +690,8 @@ const CourseOverviewPage = () => {
                       key={s}
                       onClick={() => setMyRating(s)}
                       className={`w-6 h-6 cursor-pointer ${s <= myRating
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-gray-300'
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
                         }`}
                     />
                   ))}

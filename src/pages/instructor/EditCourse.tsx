@@ -222,7 +222,6 @@ const EditCoursePage = () => {
       } as Course : prev);
       
       // setShowQuizForm(true);
-      toast.success('Quiz created successfully');
     } catch (error) {
       toast.error(error as string);
     }

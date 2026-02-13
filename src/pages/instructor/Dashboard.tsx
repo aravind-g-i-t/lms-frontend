@@ -20,7 +20,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { GetInstructorDashboard } from '../../services/instructorServices';
+import { getInstructorDashboard } from '../../services/instructorServices';
 
 interface DashboardStats {
   totalCourses: number;
@@ -75,7 +75,7 @@ const InstructorDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const response= await dispatch(GetInstructorDashboard()).unwrap();
+        const response= await dispatch(getInstructorDashboard()).unwrap();
         setStats(response.data.stats);
         setTopCourses(response.data.topCourses)
         setUpcomingSessions(response.data.upcomingSessions)
@@ -114,7 +114,7 @@ const InstructorDashboard = () => {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    }).format(date);
+    }).format(new Date(date));
   };
 
   // const getActivityIcon = (type: string) => {
@@ -236,7 +236,7 @@ const InstructorDashboard = () => {
           </div>
           <h3 className="text-gray-600 text-sm font-medium mb-1">Average Rating</h3>
           <div className="flex items-baseline">
-            <p className="text-3xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.averageRating?stats.averageRating.toFixed(1):"N/A"}</p>
             <span className="text-gray-500 ml-2 text-sm">/ 5.0</span>
           </div>
           <p className="text-sm text-gray-500 mt-1">{stats.totalRatings} ratings</p>
@@ -281,7 +281,7 @@ const InstructorDashboard = () => {
                     </div>
                     <div className="flex items-center">
                       <Star className="w-4 h-4 mr-1 text-yellow-500 fill-yellow-500" />
-                      {course.rating?.toFixed(1)}
+                      {course.rating?course.rating.toFixed(1):"N/A"}
                     </div>
                     {/* <div className="flex items-center">
                       <IndianRupee className="w-4 h-4 mr-1" />
@@ -407,7 +407,7 @@ const InstructorDashboard = () => {
             </Link>
 
             <Link
-              to="/instructor/earnings"
+              to="/instructor/wallet"
               className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group"
             >
               <TrendingUp className="w-8 h-8 text-gray-400 group-hover:text-green-600 mb-2" />

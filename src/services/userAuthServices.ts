@@ -7,9 +7,6 @@ import { API } from "../constants/api";
 
 
 
-
-
-
 export const sendOTP = createAsyncThunk(
     "/send-otp",
     async (singupInput: SignupRequest, { rejectWithValue }) => {

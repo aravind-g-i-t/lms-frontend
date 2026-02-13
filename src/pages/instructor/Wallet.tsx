@@ -15,7 +15,7 @@ import type { AppDispatch } from '../../redux/store';
 import { toast } from 'react-toastify';
 import { Pagination } from '../../components/shared/Pagination';
 // import { SearchBar } from '../../components/shared/SearchBar';
-import { GetInstructorEarnings } from '../../services/instructorServices';
+import { getInstructorEarnings } from '../../services/instructorServices';
 
 
 
@@ -60,7 +60,7 @@ const InstructorWalletPage = () => {
     const fetchWalletData = async () => {
       try {
         setLoading(true);
-        const response = await dispatch(GetInstructorEarnings({
+        const response = await dispatch(getInstructorEarnings({
           page,
           limit: 4,
           status: selectedFilter === "all" ? undefined : selectedFilter,
@@ -386,7 +386,7 @@ const InstructorWalletPage = () => {
                     <div className="text-right ml-4">
                       <p className="text-2xl font-bold text-gray-900 flex items-center">
                         <IndianRupee className="w-5 h-5" />
-                        {earning.amount.toLocaleString('en-IN')}
+                        {formatCurrency(earning.amount)}
                       </p>
                       {earning.status === "pending" && (
                         <p className="text-xs text-yellow-600 mt-1">In holding</p>

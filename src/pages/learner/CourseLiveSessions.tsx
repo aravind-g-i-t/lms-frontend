@@ -26,7 +26,7 @@ interface LiveSession {
   startedAt: Date | null;
   endedAt: Date | null;
   durationInMinutes: number;
-  status: "live" | "scheduled" | "cancelled"|"ended";
+  status: "live" | "scheduled" | "cancelled" | "ended";
 }
 
 
@@ -57,7 +57,7 @@ const CourseLiveSessionsPage = () => {
           })
         ).unwrap();
         console.log(response);
-        
+
         setSessions(response.data.sessions);
         setTotalPages(response.data.totalPages);
       } catch (err) {
@@ -71,6 +71,78 @@ const CourseLiveSessionsPage = () => {
     fetchSessions();
   }, [page, courseId, dispatch, navigate]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLiveStarted = ({
+      sessionId,
+      courseId: startedCourseId,
+      startedAt,
+    }: {
+      sessionId: string;
+      courseId: string;
+      startedAt: string;
+    }) => {
+
+      if (startedCourseId !== courseId) return;
+
+      setSessions(prev =>
+        prev.map(session =>
+          session.id === sessionId
+            ? {
+              ...session,
+              status: "live",
+              startedAt: new Date(startedAt),
+            }
+            : session
+        )
+      );
+
+      toast.info("Live session started!");
+    };
+
+    socket.on("liveSessionStarted", handleLiveStarted);
+
+    return () => {
+      socket.off("liveSessionStarted", handleLiveStarted);
+    };
+  }, [socket, courseId]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLiveEnded = ({
+      sessionId,
+      endedAt,
+    }: {
+      sessionId: string;
+      endedAt: string;
+    }) => {
+
+      setSessions(prev =>
+        prev.map(session =>
+          session.id === sessionId
+            ? {
+              ...session,
+              status: "ended",
+              endedAt: new Date(endedAt),
+            }
+            : session
+        )
+      );
+
+      toast.info("Live session ended!");
+    };
+
+    socket.on("liveSessionEnded", handleLiveEnded);
+
+    return () => {
+      socket.off("liveSessionEnded", handleLiveEnded);
+    };
+  }, [socket, courseId]);
+
+
+
   const formatDateTime = (date: Date) =>
     new Date(date).toLocaleString("en-IN", {
       dateStyle: "medium",
@@ -78,7 +150,7 @@ const CourseLiveSessionsPage = () => {
     });
 
   const handleJoinSession = async (sessionId: string) => {
-    if(!socket) return 
+    if (!socket) return
     try {
       const result = await dispatch(
         joinLiveSession({ sessionId })
@@ -149,11 +221,10 @@ const CourseLiveSessionsPage = () => {
           sessions.map((session) => (
             <div
               key={session.id}
-              className={`rounded-lg p-5 border flex items-center justify-between gap-6 ${
-                session.status === "live"
-                  ? "bg-gray-800 border-red-500/40"
-                  : "bg-gray-800 border-gray-700"
-              }`}
+              className={`rounded-lg p-5 border flex items-center justify-between gap-6 ${session.status === "live"
+                ? "bg-gray-800 border-red-500/40"
+                : "bg-gray-800 border-gray-700"
+                }`}
             >
               {/* Left */}
               <div className="space-y-1 flex-1">
@@ -216,11 +287,10 @@ const CourseLiveSessionsPage = () => {
               <button
                 key={pageNum}
                 onClick={() => setPage(pageNum)}
-                className={`px-3 py-1 rounded text-sm ${
-                  page === pageNum
-                    ? "bg-teal-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={`px-3 py-1 rounded text-sm ${page === pageNum
+                  ? "bg-teal-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
               >
                 {pageNum}
               </button>

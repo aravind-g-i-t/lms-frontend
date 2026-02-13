@@ -446,7 +446,7 @@ export const updateCourseVerification = createAsyncThunk(
     "/admin/course/status",
     async (input: { courseId: string, status: string, remarks: string | null }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("/admin/course/verification", input);
+            const result = await axiosInstance.patch(API.ADMIN.COURSE_VERIFICATION, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -478,7 +478,7 @@ export const createCoupon = createAsyncThunk(
         usageLimit: number;
     }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post("/admin/coupon", input);
+            const result = await axiosInstance.post(API.ADMIN.COUPON, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -505,7 +505,7 @@ export const getCoupons = createAsyncThunk(
         try {
             console.log(page, isActive, limit, search);
 
-            const res = await axiosInstance.get("/admin/coupons", {
+            const res = await axiosInstance.get(API.ADMIN.COUPONS, {
                 params: { page, limit, search, isActive },
             });
 
@@ -537,7 +537,7 @@ export const updateCoupon = createAsyncThunk(
         usageLimit: number;
     }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.put("/admin/coupon", input);
+            const result = await axiosInstance.put(API.ADMIN.COUPON, input);
             console.log(result);
 
             if (!result.data.success) {
@@ -559,7 +559,7 @@ export const updateCouponStatus = createAsyncThunk(
     "/admin/coupon/status/update",
     async (id:string, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("/admin/coupon/status", {id});
+            const result = await axiosInstance.patch(API.ADMIN.COUPON_STATUS, {id});
             console.log(result);
 
             if (!result.data.success) {
@@ -585,7 +585,7 @@ export const getCourseDetailsForAdmin = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/admin/course", {
+            const res = await axiosInstance.get(API.ADMIN.COURSE, {
                 params: { id },
             });
 
@@ -606,7 +606,7 @@ export const getAdminDashboard = createAsyncThunk(
     "admin/dashboard",
     async (_, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.get(`/admin/dashboard`);
+            const res = await axiosInstance.get(API.ADMIN.DASHBOARD);
             console.log(res.data);
             
             return res.data;
@@ -621,3 +621,28 @@ export const getAdminDashboard = createAsyncThunk(
         }
     },
 )
+
+export const getCourseAnalytics = createAsyncThunk(
+    "admin/course/analytics",
+    async (input:{ courseId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get(API.ADMIN.COURSE_ANALYTICS,{
+                params:input
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

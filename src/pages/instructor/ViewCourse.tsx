@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
-import { getCourseDetails, submitCourseForReview, updateCourseStatus } from '../../services/instructorServices';
+import { getCourseDetails, getInstructorCourseAnalytics, submitCourseForReview, updateCourseStatus } from '../../services/instructorServices';
 import { toast } from 'react-toastify';
 import { formatDuration } from '../../utils/formats';
 
@@ -91,6 +91,28 @@ export interface Course {
   };
 }
 
+interface CourseAnalytics {
+enrollmentStats: {
+  total: number;
+  active: number;
+  completed: number;
+  completionRate: number;
+  trend: {
+    date: string;
+    enrollments: number;
+    revenue: number;
+  }[];
+};
+progressStats: {
+  averageProgress: number;
+};
+recentEnrollments: {
+  learnerId: string;
+  learnerName: string;
+  enrolledAt: string;
+  progressPercentage: number;
+}[];
+}
 
 
 const ViewCoursePage = () => {
@@ -102,7 +124,7 @@ const ViewCoursePage = () => {
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
   const [showPreview, setShowPreview] = useState(false);
   const [showRemarks, setShowRemarks] = useState(false);
-
+  const [analytics, setAnalytics] = useState<CourseAnalytics | null>(null);
 
 
 
@@ -143,6 +165,7 @@ const ViewCoursePage = () => {
     }
   });
 
+
   useEffect(() => {
 
     const fetchCourseDetails = async () => {
@@ -162,7 +185,23 @@ const ViewCoursePage = () => {
     fetchCourseDetails();
   }, [dispatch, courseId]);
 
+  useEffect(() => {
+    const fetchAnalytics = async () => {
 
+      try {
+        if (!courseId) return;
+        const response = await dispatch(getInstructorCourseAnalytics({
+          courseId,
+        })).unwrap();
+        console.log(response.data);
+        setAnalytics(response.data)
+
+      } catch (err) {
+        toast.error(err as string);
+      }
+    };
+    fetchAnalytics();
+  }, [dispatch, courseId]);
 
 
   const toggleModule = (index: number) => {
@@ -693,6 +732,85 @@ const statusConfig = useMemo(
                 </div>
               </div>
 
+              {analytics && (
+            <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Course Analytics
+              </h3>
+
+              {/* Top Stats */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Total</p>
+                  <p className="text-xl font-semibold">
+                    {analytics.enrollmentStats.total}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Active</p>
+                  <p className="text-xl font-semibold text-blue-600">
+                    {analytics.enrollmentStats.active}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Completed</p>
+                  <p className="text-xl font-semibold text-green-600">
+                    {analytics.enrollmentStats.completed}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Completion</p>
+                  <p className="text-xl font-semibold text-teal-600">
+                    {Math.round(analytics.enrollmentStats.completionRate)}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Average Progress */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Average Progress</p>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-teal-600 h-3 rounded-full transition-all"
+                    style={{ width: `${analytics.progressStats.averageProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs mt-1 text-gray-500">
+                  {Math.round(analytics.progressStats.averageProgress)}%
+                </p>
+              </div>
+
+              {/* Recent Enrollments */}
+              <div>
+                <p className="text-sm font-medium mb-2">Recent Enrollments</p>
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {analytics.recentEnrollments.map((e) => (
+                    <div
+                      key={e.learnerId + e.enrolledAt}
+                      className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2"
+                    >
+                      <div>
+                        <p className="font-medium">{e.learnerName}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(e.enrolledAt).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <span className="text-xs text-gray-600">
+                        {Math.round(e.progressPercentage)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
 
               {/* Action Buttons (for instructors) */}
               <div className="bg-white rounded-lg shadow-sm p-6">
@@ -705,13 +823,13 @@ const statusConfig = useMemo(
                     <Edit className="w-4 h-4 mr-2" />
                     Edit Course
                   </Link>
-                  <Link
+                  {/* <Link
                     to={`/instructor/courses/${course.id}/analytics`}
                     className="flex items-center justify-center w-full px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                   >
                     <BarChart3 className="w-4 h-4 mr-2" />
                     View Analytics
-                  </Link>
+                  </Link> */}
                 </div>
               </div>
             </div>

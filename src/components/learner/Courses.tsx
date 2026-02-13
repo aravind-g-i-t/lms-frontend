@@ -278,7 +278,7 @@ const MyCourses = () => {
       )}
 
       {/* Pagination */}
-      {totalPages  && (
+      {!!totalPages  && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
             className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"

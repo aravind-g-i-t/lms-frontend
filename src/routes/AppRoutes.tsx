@@ -14,6 +14,7 @@ import ResetOtpVerification from "../pages/auth/ResetOTPVerify";
 import Home from "../pages/learner/Home";
 import Explore from "../pages/learner/Explore";
 import CourseOverviewPage from "../pages/learner/ViewCourse";
+import ViewInstructorPage from "../pages/learner/ViewInstructor";
 
 const AppRoutes = () => {
   const { role } = useSelector((state: RootState) =>state.auth);
@@ -30,6 +31,7 @@ const AppRoutes = () => {
 
       <Route path="/explore" element={<Explore/>}/>
       <Route path="/course/:courseId" element={<CourseOverviewPage/>}/>
+      <Route path="/instructor/:instructorId/preview" element={<ViewInstructorPage/>}/>
       {!role &&<Route path="/signup" element={<UserSignup/>}/>}
       {!role && email && <Route path="/verify-otp" element={<OtpVerification/>}/>}
       {!role &&<Route path="/reset/email" element={<ForgotPassword/>}/>}

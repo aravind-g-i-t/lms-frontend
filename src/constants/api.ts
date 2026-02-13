@@ -1,3 +1,4 @@
+
 export const API = {
     ADMIN:{
         SIGNIN:"/admin/signin",
@@ -13,7 +14,16 @@ export const API = {
         CATEGORY:"/admin/category",
         CATEGORIES:"/admin/categories",
         STATUS:"/admin/category/status",
-        COURSES:"/admin/courses"
+        COURSES:"/admin/courses",
+        COURSE:"/admin/course",
+        COURSE_VERIFICATION:"/admin/course/verification",
+        COURSE_ANALYTICS:"/admin/course/analytics",
+        COUPON:"/admin/coupon",
+        COUPONS:"/admin/coupons",
+        COUPON_STATUS:"/admin/coupon/status",
+        DASHBOARD:"/admin/dashboard",
+
+
 
     },
     AUTH: {
@@ -34,6 +44,34 @@ export const API = {
         COURSES: "/learner/courses",
         PROFILE_IMAGE:`/learner/profile/image`,
         PASSWORD:`/learner/password`,
+        COURSE_PREVIEW:"/learner/course/preview",
+        CHECKOUT:"/learner/course/checkout",
+        INITIATE_PAYMENT:"/payment/initiate",
+        VERIFY_PAYMENT:"/payment/verify",
+        ENROLLMENTS:"/learner/enrollments",
+        LEARN_COURSE:"/learner/course/learn",
+        CHAPTER_COMPLETE:"learner/progress/chapter/complete",
+        FAVOURITES:"/learner/favourites",
+        CONVERSATIONS:"/learner/conversations",
+        QUIZ:"/learner/quiz",
+        CERTIFICATES:"/learner/certificates",
+        MESSAGES:"/learner/messages",
+        COURSE_VIDEO:"/learner/video",
+        PING:"/learner/ping",
+        CURRENT_CHAPTER:"/learner/progress/chapter/current",
+        DELETE_MESSAGE:"/learner/messages/delete",
+        JOIN_SESSION:"/learner/session/join",
+        SESSIONS:"/learner/sessions",
+        REVIEW:"/learner/course/review",
+        REVIEWS:"/learner/course/reviews",
+        HOME:"/learner/home",
+        HOME_LEARNER_DATA:"/learner/home/learner-data",
+        POPULAR_COURSES:"/learner/courses/popular",
+        CANCEL_ENROLLMENT:"/learner/enrollment/cancel",
+        WALLET:"/learner/wallet"
+
+
+
     },
     INSTRUCTOR: {
         DASHBOARD: "/instructor/dashboard",
@@ -55,7 +93,31 @@ export const API = {
         COURSE_PREREQUISITES:"instructor/course/prerequisites",
         ADD_MODULE:"/instructor/course/module/add",
         ADD_CHAPTER:"/instructor/course/chapter/add",
-        UPDATE_MODULE:"/instructor/course/module/update"
+        UPDATE_MODULE:"/instructor/course/module/update",
+        DELETE_MODULE:"/instructor/course/module/delete",
+        UPDATE_CHAPTER_INFO:"/instructor/course/chapter/update",
+        UPDATE_VIDEO:"/instructor/course/video/update",
+        DELETE_CHAPTER:"/instructor/course/chapter/delete",
+        COURSE_VERIFICATION:"/instructor/course/verification",
+        UPDATE_COURSE_STATUS:"/instructor/course/status",
+        ADD_RESOURCE:"/instructor/course/resource/add",
+        DELETE_RESOURCE:"/instructor/course/resource/delete",
+        QUIZ:"/instructor/course/quiz",
+        QUIZ_QUESTION:"/instructor/course/quiz/question",
+        CONVERSATIONS:"/instructor/conversations",
+        MESSAGES:"/instructor/messages",
+        DELETE_MESSAGES:"/instructor/messages/delete",
+        COURSE_OPTIONS:"/instructor/course/options",
+        SESSION:"/instructor/session",
+        SESSIONS:"/instructor/sessions",
+        START_SESSION:"/instructor/session/start",
+        END_SESSION:"/instructor/session/end",
+        CANCEL_SESSION:"/instructor/session/cancel",
+        EARNINGS:"/instructor/earnings",
+        COURSE_ANALYTICS:"/instructor/course/analytics",
+        LEARNERS:"/instructor/learners"
+
+
     },
     BUSINESS: {
         DASHBOARD: "/business/dashboard",

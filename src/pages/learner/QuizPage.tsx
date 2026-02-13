@@ -9,53 +9,53 @@ import { QuizSkeleton } from "../../components/learner/QuizSkeleton";
 
 
 interface QuizQuestion {
-    id: string;
-    question: string;
-    options: string[];
-    correctAnswer: number; 
-    points: number;
-    explanation: string|null; 
-    order: number;
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  points: number;
+  explanation: string | null;
+  order: number;
 }
 
 interface Quiz {
-    id: string;
-    courseId: string; 
-    passingScore: number|null;
-    timeLimitMinutes: number | null;
-    questions: QuizQuestion[];
-    totalPoints: number;
-    totalQuestions: number;
-    createdAt: Date;
-    updatedAt: Date;
+  id: string;
+  courseId: string;
+  passingScore: number | null;
+  timeLimitMinutes: number | null;
+  questions: QuizQuestion[];
+  totalPoints: number;
+  totalQuestions: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export type QuizAttemptStatus="in_progress"|"passed"| "failed"|"abandoned"
+export type QuizAttemptStatus = "in_progress" | "passed" | "failed" | "abandoned"
 
 
 export interface QuizAttempt {
-    id: string;
-    quizId: string;
-    learnerId: string;
-    courseId: string;
-    status: QuizAttemptStatus;
-    startedAt: Date;
-    submittedAt: Date | null;
-    score: number | null; 
-    maxScore: number; 
-    percentage: number | null;
-    timeTakenSeconds: number | null;
-    correctAnswers: number | null; 
-    totalQuestions: number;
-    answers: QuizAnswer[];
-    createdAt: Date;
+  id: string;
+  quizId: string;
+  learnerId: string;
+  courseId: string;
+  status: QuizAttemptStatus;
+  startedAt: Date;
+  submittedAt: Date | null;
+  score: number | null;
+  maxScore: number;
+  percentage: number | null;
+  timeTakenSeconds: number | null;
+  correctAnswers: number | null;
+  totalQuestions: number;
+  answers: QuizAnswer[];
+  createdAt: Date;
 }
 
 export interface QuizAnswer {
-    questionId: string;
-    selectedOption: number | null;
-    isCorrect: boolean | null;
-    pointsEarned: number;
+  questionId: string;
+  selectedOption: number | null;
+  isCorrect: boolean | null;
+  pointsEarned: number;
 }
 
 const QuizPage: React.FC = () => {
@@ -75,7 +75,7 @@ const QuizPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
 
-//   const [startTimeMs, setStartTimeMs] = useState<number>(0);
+  //   const [startTimeMs, setStartTimeMs] = useState<number>(0);
 
   useEffect(() => {
     const load = async () => {
@@ -94,7 +94,7 @@ const QuizPage: React.FC = () => {
         setQuiz(q);
         setAnswers(init);
         // setStartTimeMs(Date.now());
-      } catch  {
+      } catch {
         toast.error("Failed to load quiz");
         navigate(`/learner/courses/${courseId}/learn`);
       } finally {
@@ -128,7 +128,7 @@ const QuizPage: React.FC = () => {
 
     // const timeTakenSeconds = Math.floor((Date.now() - startTimeMs) / 1000);
 
-    
+
     const answersPayload: Array<{ questionId: string; selectedOption: number | null }> =
       Object.entries(answers).map(([questionId, selectedOption]) => ({
         questionId,
@@ -143,23 +143,23 @@ const QuizPage: React.FC = () => {
 
     try {
       if (submitting) return;
-  setSubmitting(true);
+      setSubmitting(true);
       const res = await dispatch(submitQuizAttempt(payload)).unwrap();
-      
-      console.log("result:",res);
-      
-      const attempt: QuizAttempt = res.quizAttempt;
+
+      console.log("result:", res);
+
+      const attempt: QuizAttempt = res.data.quizAttempt;
       setResult(attempt);
-     
+
       setSubmitted(true);
     } catch (err) {
       toast.error(err as string);
-    }finally{
+    } finally {
       setSubmitting(false)
     }
   };
 
-  if (loading) return <QuizSkeleton/>
+  if (loading) return <QuizSkeleton />
 
   if (!quiz) {
     return (
@@ -174,14 +174,14 @@ const QuizPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4">
         <div className="bg-gray-800 max-w-lg w-full p-8 rounded-xl shadow-lg text-center border border-gray-700">
-          {result.status==="passed" ? (
+          {result.status === "passed" ? (
             <CheckCircle2 className="w-14 h-14 text-teal-500 mx-auto mb-3" />
           ) : (
             <CheckCircle2 className="w-14 h-14 text-red-500 mx-auto mb-3 rotate-180" />
           )}
 
           <h1 className="text-2xl font-semibold text-white mb-2">
-            {result.status==="passed" ? "Congratulations!" : "Quiz Completed"}
+            {result.status === "passed" ? "Congratulations!" : "Quiz Completed"}
           </h1>
 
           <p className="text-gray-400 mb-3">
@@ -195,9 +195,9 @@ const QuizPage: React.FC = () => {
 
           <p className="text-gray-400 mb-3">Percentage: {result.percentage ?? 0}%</p>
 
-          <p className="text-gray-400 mb-6">
+          {/* <p className="text-gray-400 mb-6">
             Time Taken: {result.timeTakenSeconds ?? 0}s
-          </p>
+          </p> */}
 
           <div className="flex items-center justify-center gap-3">
             <button
@@ -299,7 +299,7 @@ const QuizPage: React.FC = () => {
             disabled={submitting}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-semibold"
           >
-            Submit Quiz <CheckCircle2 className="w-4 h-4" />
+            {submitting?"Submitting...":"Submit Quiz"} <CheckCircle2 className="w-4 h-4" />
           </button>
         )}
       </footer>

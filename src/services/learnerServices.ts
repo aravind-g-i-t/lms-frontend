@@ -149,7 +149,7 @@ export const getCourseDetailsForLearner = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/course/preview", {
+            const res = await axiosInstance.get(API.LEARNER.COURSE_PREVIEW, {
                 params: { courseId, learnerId },
             });
 
@@ -172,7 +172,7 @@ export const getCourseDetailsForCheckout = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/course/checkout", {
+            const res = await axiosInstance.get(API.LEARNER.CHECKOUT, {
                 params: { courseId }
             });
             return res.data;
@@ -205,7 +205,7 @@ export const createPaymentSession = createAsyncThunk(
         try {
             console.log(courseId, method, couponId);
 
-            const res = await axiosInstance.post("/payment/initiate", {
+            const res = await axiosInstance.post(API.LEARNER.INITIATE_PAYMENT, {
                 courseId,
                 method,
                 couponId,
@@ -230,7 +230,7 @@ export const verifyPayment = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/payment/verify", {
+            const res = await axiosInstance.get(API.LEARNER.VERIFY_PAYMENT, {
                 params: { sessionId },
             });
 
@@ -254,7 +254,7 @@ export const getEnrollments = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/enrollments", {
+            const res = await axiosInstance.get(API.LEARNER.ENROLLMENTS, {
                 params: input,
             });
 
@@ -277,7 +277,7 @@ export const getFullCourseForLearner = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/course/learn", {
+            const res = await axiosInstance.get(API.LEARNER.LEARN_COURSE, {
                 params: { courseId },
             });
 
@@ -298,7 +298,7 @@ export const markChapterAsCompleted = createAsyncThunk(
     "learner/progress/chapter/complete",
     async (data: { courseId: string; chapterId:string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("learner/progress/chapter/complete", data);
+            const result = await axiosInstance.patch(API.LEARNER.CHAPTER_COMPLETE, data);
             console.log(result);
 
             if (!result.data.success) {
@@ -320,7 +320,7 @@ export const addToFavourites = createAsyncThunk(
     "learner/favourites/add",
     async (data: { courseId: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.post("/learner/favourites", data);
+            const result = await axiosInstance.post(API.LEARNER.FAVOURITES, data);
             console.log(result);
 
             if (!result.data.success) {
@@ -367,7 +367,7 @@ export const getFavourites = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/favourites", {
+            const res = await axiosInstance.get(API.LEARNER.FAVOURITES, {
                 params: input,
             });
 
@@ -384,29 +384,29 @@ export const getFavourites = createAsyncThunk(
     }
 );
 
-export const getConversationId = createAsyncThunk(
-    "learner/conversation-id",
-    async (input: { courseId:string,instructorId:string },
-        { rejectWithValue }
-    ) => {
-        try {
+// export const getConversationId = createAsyncThunk(
+//     "learner/conversation-id",
+//     async (input: { courseId:string,instructorId:string },
+//         { rejectWithValue }
+//     ) => {
+//         try {
 
-            const res = await axiosInstance.get("/learner/conversation-id", {
-                params: input,
-            });
+//             const res = await axiosInstance.get("/learner/conversation-id", {
+//                 params: input,
+//             });
 
-            return res.data;
-        } catch (error: unknown) {
-            if (error instanceof AxiosError) {
-                console.log(error.response?.data);
-                return rejectWithValue(error.response?.data?.message || "Invalid request");
-            }
-            console.log(error);
+//             return res.data;
+//         } catch (error: unknown) {
+//             if (error instanceof AxiosError) {
+//                 console.log(error.response?.data);
+//                 return rejectWithValue(error.response?.data?.message || "Invalid request");
+//             }
+//             console.log(error);
 
-            return rejectWithValue("Something went wrong. Please try again.");
-        }
-    }
-);
+//             return rejectWithValue("Something went wrong. Please try again.");
+//         }
+//     }
+// );
 
 export const getLearnerConversations = createAsyncThunk(
     "learner/conversations",
@@ -415,7 +415,7 @@ export const getLearnerConversations = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/conversations", {
+            const res = await axiosInstance.get(API.LEARNER.CONVERSATIONS, {
                 params: input,
             });
 
@@ -439,7 +439,7 @@ export const getQuizForLearner = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/quiz", {
+            const res = await axiosInstance.get(API.LEARNER.QUIZ, {
                 params: input,
             });
 
@@ -474,7 +474,7 @@ export const submitQuizAttempt = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.post("/learner/quiz", input);
+            const res = await axiosInstance.post(API.LEARNER.QUIZ, input);
 
             return res.data;
         } catch (error: unknown) {
@@ -497,7 +497,7 @@ export const getLearnerCertificates = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/certificates", {params:input});
+            const res = await axiosInstance.get(API.LEARNER.CERTIFICATES, {params:input});
 
             return res.data;
         } catch (error: unknown) {
@@ -519,7 +519,7 @@ export const getLearnerMessages = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/messages", {params:input});
+            const res = await axiosInstance.get(API.LEARNER.MESSAGES, {params:input});
 
             return res.data;
         } catch (error: unknown) {
@@ -541,7 +541,7 @@ export const getCourseVideo = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/video", {params:input});
+            const res = await axiosInstance.get(API.LEARNER.COURSE_VIDEO, {params:input});
 
             return res.data;
         } catch (error: unknown) {
@@ -563,7 +563,7 @@ export const pingLearner = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/learner/ping");
+            const res = await axiosInstance.get(API.LEARNER.PING);
 
             console.log(res);
             
@@ -584,7 +584,7 @@ export const updateCurrentChapter = createAsyncThunk(
     "learner/progress/chapter/current",
     async (data: { courseId: string; chapterId:string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("learner/progress/chapter/current", data);
+            const result = await axiosInstance.patch(API.LEARNER.CURRENT_CHAPTER, data);
             console.log(result);
 
             if (!result.data.success) {
@@ -609,7 +609,7 @@ export const deleteLearnerMessages = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.post("/learner/messages/delete",  input );
+            const res = await axiosInstance.post(API.LEARNER.DELETE_MESSAGE,  input );
 
             return res.data;
         } catch (error: unknown) {
@@ -630,7 +630,7 @@ export const joinLiveSession = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.post("/learner/session/join",input);
+            const res = await axiosInstance.post(API.LEARNER.JOIN_SESSION,input);
 
             return res.data;
         } catch (error: unknown) {
@@ -651,7 +651,7 @@ export const getLiveSessionsForLearner = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/sessions",{
+            const res = await axiosInstance.get(API.LEARNER.SESSIONS,{
                 params: input,
             });
 
@@ -676,7 +676,7 @@ export const submitReview = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.post("/learner/course/review",input);
+            const res = await axiosInstance.post(API.LEARNER.REVIEW,input);
 
             return res.data;
         } catch (error: unknown) {
@@ -699,7 +699,7 @@ export const getReviewsForLearner = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/course/reviews",{
+            const res = await axiosInstance.get(API.LEARNER.REVIEWS,{
                 params: input,
             });
 
@@ -725,7 +725,7 @@ export const getHomeData = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/home");
+            const res = await axiosInstance.get(API.LEARNER.HOME);
 
             console.log(res.data);
             return res.data;
@@ -749,7 +749,7 @@ export const getHomeDataForLearner = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/home/learner-data");
+            const res = await axiosInstance.get(API.LEARNER.HOME_LEARNER_DATA);
 
             console.log(res.data);
             return res.data;
@@ -773,7 +773,7 @@ export const getPopularCourses = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/learner/courses/popular",{
+            const res = await axiosInstance.get(API.LEARNER.POPULAR_COURSES,{
                 params: input,
             });
 
@@ -798,9 +798,56 @@ export const updateReview = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.patch("/learner/course/review",input);
+            const res = await axiosInstance.patch(API.LEARNER.REVIEW,input);
 
             return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const cancelEnrollment = createAsyncThunk(
+    "learner/enrollment/cancel",
+    async (input:{courseId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.patch(API.LEARNER.CANCEL_ENROLLMENT,input);
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getWalletData = createAsyncThunk(
+    "learner/wallet",
+    async (input:{page:number; limit:number}
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get(API.LEARNER.WALLET,{
+                params: input,
+            });
+
+            console.log(res.data);
+            return res.data;
+            
         } catch (error: unknown) {
             if (error instanceof AxiosError) {
                 console.log(error.response?.data);

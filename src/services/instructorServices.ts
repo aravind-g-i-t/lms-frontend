@@ -464,7 +464,7 @@ export const deleteModule = createAsyncThunk(
     "instructor/course/module/delete",
     async (input: { courseId: string, moduleId: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/module/delete", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.DELETE_MODULE, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -507,7 +507,7 @@ export const updateChapterInfo = createAsyncThunk(
     "instructor/course/chapter/update",
     async (input: { courseId: string, moduleId: string, chapterId: string, title: string, description: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/chapter/update", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.UPDATE_CHAPTER_INFO, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -528,7 +528,7 @@ export const updateVideo = createAsyncThunk(
     "instructor/course/video/update",
     async (input: { courseId: string, moduleId: string, chapterId: string, duration: number, video: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/video/update", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.UPDATE_VIDEO, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -549,7 +549,7 @@ export const deleteChapter = createAsyncThunk(
     "instructor/course/chapter/delete",
     async (input: { courseId: string, moduleId: string, chapterId: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/chapter/delete", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.DELETE_CHAPTER, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -570,7 +570,7 @@ export const submitCourseForReview = createAsyncThunk(
     "instructor/course/verification",
     async (input: { courseId: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/verification", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.COURSE_VERIFICATION, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -591,7 +591,7 @@ export const updateCourseStatus = createAsyncThunk(
     "instructor/course/status",
     async (input: { courseId: string, status: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/status", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.UPDATE_COURSE_STATUS, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -612,7 +612,7 @@ export const addResource = createAsyncThunk(
     "instructor/course/resource/add",
     async (input: { courseId: string, moduleId: string, chapterId: string, name: string, file: string, size: number }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/resource/add", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.ADD_RESOURCE, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -633,7 +633,7 @@ export const deleteResource = createAsyncThunk(
     "instructor/course/resource/delete",
     async (input: { courseId: string, moduleId: string, chapterId: string, resourceId: string }, { rejectWithValue }) => {
         try {
-            const result = await axiosInstance.patch("instructor/course/resource/delete", input);
+            const result = await axiosInstance.patch(API.INSTRUCTOR.DELETE_RESOURCE, input);
 
             if (!result.data.success) {
                 return rejectWithValue(result.data.message)
@@ -657,7 +657,7 @@ export const createQuiz = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.post("/instructor/course/quiz", input);
+            const res = await axiosInstance.post(API.INSTRUCTOR.QUIZ, input);
 
             return res.data;
         } catch (error: unknown) {
@@ -679,7 +679,7 @@ export const updateQuiz = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.patch("/instructor/course/quiz", input);
+            const res = await axiosInstance.patch(API.INSTRUCTOR.QUIZ, input);
 
             return res.data;
         } catch (error: unknown) {
@@ -791,7 +791,7 @@ export const deleteQuiz = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.delete("/instructor/course/quiz", {
+            const res = await axiosInstance.delete(API.INSTRUCTOR.QUIZ, {
                 params: input
             });
 
@@ -816,7 +816,7 @@ export const getInstructorConversations = createAsyncThunk(
         try {
             console.log(input);
             
-            const res = await axiosInstance.get("/instructor/conversations", {
+            const res = await axiosInstance.get(API.INSTRUCTOR.CONVERSATIONS, {
                 params: input,
             });
 
@@ -840,7 +840,7 @@ export const getInstructorMessages = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.get("/instructor/messages", { params: input });
+            const res = await axiosInstance.get(API.INSTRUCTOR.MESSAGES, { params: input });
 
             return res.data;
         } catch (error: unknown) {
@@ -863,7 +863,7 @@ export const deleteInstructorMessages = createAsyncThunk(
     ) => {
         try {
 
-            const res = await axiosInstance.post("/instructor/messages/delete",  input );
+            const res = await axiosInstance.post(API.INSTRUCTOR.DELETE_MESSAGES,  input );
 
             return res.data;
         } catch (error: unknown) {
@@ -884,7 +884,7 @@ export const getCourseOptions = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/instructor/course/options");
+            const res = await axiosInstance.get(API.INSTRUCTOR.COURSE_OPTIONS);
 
             return res.data;
         } catch (error: unknown) {
@@ -905,7 +905,7 @@ export const createLiveSession = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.post("/instructor/session",input);
+            const res = await axiosInstance.post(API.INSTRUCTOR.SESSION,input);
 
             return res.data;
         } catch (error: unknown) {
@@ -926,7 +926,7 @@ export const GetLiveSessionsForInstructor = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/instructor/sessions",{
+            const res = await axiosInstance.get(API.INSTRUCTOR.SESSIONS,{
                 params: input,
             });
 
@@ -951,7 +951,7 @@ export const startLiveSession = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.post("/instructor/session/start",input);
+            const res = await axiosInstance.post(API.INSTRUCTOR.START_SESSION,input);
 
             return res.data;
         } catch (error: unknown) {
@@ -972,7 +972,7 @@ export const endLiveSession = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.post("/instructor/session/end",input);
+            const res = await axiosInstance.post(API.INSTRUCTOR.END_SESSION,input);
 
             return res.data;
         } catch (error: unknown) {
@@ -987,13 +987,34 @@ export const endLiveSession = createAsyncThunk(
     }
 );
 
-export const GetInstructorEarnings = createAsyncThunk(
+export const cancelLiveSession = createAsyncThunk(
+    "instructor/session/cancel",
+    async (input:{sessionId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.post(API.INSTRUCTOR.CANCEL_SESSION,input);
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getInstructorEarnings = createAsyncThunk(
     "instructor/earnings",
     async (input:{page:number,limit:number,status?:string,search?:string},
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/instructor/earnings",{
+            const res = await axiosInstance.get(API.INSTRUCTOR.EARNINGS,{
                 params: input,
             });
 
@@ -1012,13 +1033,63 @@ export const GetInstructorEarnings = createAsyncThunk(
     }
 );
 
-export const GetInstructorDashboard = createAsyncThunk(
+export const getInstructorDashboard = createAsyncThunk(
     "instructor/dashboard",
     async (_,
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.get("/instructor/dashboard");
+            const res = await axiosInstance.get(API.INSTRUCTOR.DASHBOARD);
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getInstructorCourseAnalytics = createAsyncThunk(
+    "instructor/course/analytics",
+    async (input:{ courseId:string},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get(API.INSTRUCTOR.COURSE_ANALYTICS,{
+                params:input
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getLearnerEnrollmentsForInstructor = createAsyncThunk(
+    "instructor/learners",
+    async (input:{ search?:string; page:number; limit:number},
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get(API.INSTRUCTOR.LEARNERS,{
+                params:input
+            });
 
             console.log(res.data);
             return res.data;

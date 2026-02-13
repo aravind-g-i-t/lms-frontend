@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Star, Clock, BookOpen, Users, ChevronRight, Play } from 'lucide-react';
+import { Star, Clock, BookOpen, Users, ChevronRight, Play, User } from 'lucide-react';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -158,34 +158,34 @@ const LearnerHome = () => {
       <LearnerNav />
 
       {/* Hero Section */}
-      {id?(
-      <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h1 className="text-5xl font-bold mb-4">
-                Welcome back, {name}!
-              </h1>
-              <p className="text-xl mb-2 opacity-90">
-                Continue your learning journey
-              </p>
-              <p className="text-lg mb-8 opacity-80">
-                Pick up where you left off and master new skills
-              </p>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => navigate("/learner/dashboard")}
-                  className="bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                  Continue Learning
-                </button>
-                <button
-                  onClick={() => navigate("/explore")}
-                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-600 transition-colors">
-                  Explore Courses
-                </button>
+      {id ? (
+        <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h1 className="text-5xl font-bold mb-4">
+                  Welcome back, {name}!
+                </h1>
+                <p className="text-xl mb-2 opacity-90">
+                  Continue your learning journey
+                </p>
+                <p className="text-lg mb-8 opacity-80">
+                  Pick up where you left off and master new skills
+                </p>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => navigate("/learner/dashboard")}
+                    className="bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                    Continue Learning
+                  </button>
+                  <button
+                    onClick={() => navigate("/explore")}
+                    className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-600 transition-colors">
+                    Explore Courses
+                  </button>
+                </div>
               </div>
-            </div>
-            {/* {!!enrolledCourses.length && <div className="hidden md:block">
+              {/* {!!enrolledCourses.length && <div className="hidden md:block">
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm font-semibold">Your Active Courses</span>
@@ -211,33 +211,33 @@ const LearnerHome = () => {
                 </div>
               </div>
             </div>} */}
+            </div>
           </div>
         </div>
-      </div>
-      ):(
-      <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <h1 className="text-5xl font-bold mb-6">
-            Learn skills that matter
-          </h1>
-          <p className="text-xl mb-10 opacity-90">
-            Join thousands of learners and start your journey today
-          </p>
+      ) : (
+        <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+            <h1 className="text-5xl font-bold mb-6">
+              Learn skills that matter
+            </h1>
+            <p className="text-xl mb-10 opacity-90">
+              Join thousands of learners and start your journey today
+            </p>
 
-          <div className="flex justify-center gap-4">
-            <button 
-            onClick={()=>navigate("/signin")}
-            className="bg-white text-teal-600 px-10 py-4 rounded-lg font-semibold hover:bg-gray-100">
-              Get Started
-            </button>
-            <button 
-            onClick={()=>navigate("/explore")}
-            className="border-2 border-white px-10 py-4 rounded-lg font-semibold hover:bg-white hover:text-teal-600">
-              Explore Courses
-            </button>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => navigate("/signin")}
+                className="bg-white text-teal-600 px-10 py-4 rounded-lg font-semibold hover:bg-gray-100">
+                Get Started
+              </button>
+              <button
+                onClick={() => navigate("/explore")}
+                className="border-2 border-white px-10 py-4 rounded-lg font-semibold hover:bg-white hover:text-teal-600">
+                Explore Courses
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Continue Learning Section */}
@@ -266,7 +266,7 @@ const LearnerHome = () => {
                       Last accessed {getTimeSinceAccess(course.lastAccessedAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">by {course.instructor.name}</p>
+                  <p className="text-sm text-teal-600 mb-3">by {course.instructor.name}</p>
                   <div className="flex items-center text-sm text-gray-500 mb-3">
                     <Clock className="w-4 h-4 mr-1" />
                     <span>{formatDuration(course.duration)}</span>
@@ -285,7 +285,9 @@ const LearnerHome = () => {
                       ></div>
                     </div>
                   </div>
-                  <button className="bg-teal-500 text-white px-6 py-2 rounded-lg hover:bg-teal-600 transition-colors w-full">
+                  <button 
+                  onClick={()=>navigate(`/learner/courses/${course.courseId}/learn`)}
+                  className="bg-teal-500 text-white px-6 py-2 rounded-lg hover:bg-teal-600 transition-colors w-full">
                     Continue
                   </button>
                 </div>
@@ -348,8 +350,20 @@ const LearnerHome = () => {
               </div>
 
               <div className="p-5">
-                <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.description}</p>
+                <h3 className="font-bold text-gray-900 mb-1 line-clamp-2">
+                  {course.title}
+                </h3>
+
+                {/* Instructor name */}
+                <div className="flex items-center text-xs text-teal-500 mb-2">
+                  <User className="w-3.5 h-3.5 mr-1 opacity-70" />
+                  <span className="font-medium">{course.instructor.name}</span>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  {course.description}
+                </p>
+
 
                 <div className="flex items-center text-sm text-gray-500 mb-3">
                   <Clock className="w-4 h-4 mr-1" />
@@ -386,7 +400,7 @@ const LearnerHome = () => {
 
 
       {/* Recommended Courses */}
-      {!!id &&<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {!!id && recommendedCourses.length&& <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Recommended for You</h2>
           <p className="text-gray-600">Personalized course suggestions based on your interests</p>
@@ -410,6 +424,7 @@ const LearnerHome = () => {
 
               <div className="p-5">
                 <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
+                <p className="text-sm text-teal-600 mb-3 line-clamp-2">{course.instructor.name}</p>
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.description}</p>
 
                 <div className="flex items-center text-sm text-gray-500 mb-3">
@@ -518,7 +533,7 @@ const LearnerHome = () => {
             <div>
               <h4 className="font-semibold mb-4">Platform</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-gray-400 hover:text-white">Browse Courses</a></li>
+                <li><a href="/explore" className="text-gray-400 hover:text-white">Browse Courses</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white">Become Instructor</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white">Pricing</a></li>
               </ul>

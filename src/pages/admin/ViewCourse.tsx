@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { toast } from "react-toastify";
@@ -21,7 +21,7 @@ import {
   XCircle,
   ArrowLeft,
 } from "lucide-react";
-import { getCourseDetailsForAdmin, updateCourseVerification } from "../../services/adminServices";
+import { getCourseAnalytics, getCourseDetailsForAdmin, updateCourseVerification } from "../../services/adminServices";
 import FallbackUI from "../../components/shared/FallbackUI";
 import CourseSkeleton from "../../components/admin/CourseSkeleton";
 
@@ -85,6 +85,30 @@ interface Course {
   publishedAt: Date | null;
 }
 
+interface CourseAnalytics {
+  enrollmentStats: {
+    total: number;
+    active: number;
+    completed: number;
+    completionRate: number;
+    trend: {
+      date: string;
+      enrollments: number;
+      revenue: number;
+    }[];
+  };
+  progressStats: {
+    averageProgress: number;
+  };
+  recentEnrollments: {
+    learnerId: string;
+    learnerName: string;
+    enrolledAt: string;
+    progressPercentage: number;
+  }[];
+}
+
+
 const STATUS_LABEL: Record<CourseStatus, string> = {
   "archived": "Archived",
   "draft": "Draft",
@@ -108,15 +132,17 @@ const ViewCourseForAdmin = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"approve" | "reject" | "block" | "unblock" | null>(null);
   const [remarks, setRemarks] = useState("");
-  const [loading,setLoading]=useState(false)
+  const [loading, setLoading] = useState(false)
 
 
 
-  const [course, setCourse] = useState<Course|null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [analytics, setAnalytics] = useState<CourseAnalytics | null>(null);
+
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
-      
+
       try {
         setLoading(true)
         if (!courseId) return;
@@ -124,12 +150,35 @@ const ViewCourseForAdmin = () => {
         setCourse(response.data);
       } catch (err) {
         toast.error(err as string);
-      }finally{
+      } finally {
         setLoading(false)
       }
     };
     fetchCourseDetails();
   }, [dispatch, courseId]);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+
+      try {
+        setLoading(true)
+        if (!courseId) return;
+        const response = await dispatch(getCourseAnalytics({
+          courseId,
+        })).unwrap();
+        console.log(response.data);
+        setAnalytics(response.data)
+
+      } catch (err) {
+        toast.error(err as string);
+      } finally {
+        setLoading(false)
+      }
+    };
+    fetchAnalytics();
+  }, [dispatch, courseId]);
+
+
 
 
   const handleCourseApporval = async () => {
@@ -174,9 +223,9 @@ const ViewCourseForAdmin = () => {
     if (newExpanded.has(index)) newExpanded.delete(index);
     else newExpanded.add(index);
     setExpandedModules(newExpanded);
-  },[expandedModules]);
+  }, [expandedModules]);
 
-  
+
 
   const getLevelColor = (level: CourseLevel) => {
     switch (level) {
@@ -214,9 +263,11 @@ const ViewCourseForAdmin = () => {
       : "N/A";
 
 
-  if(loading) return <CourseSkeleton/>
 
-  if(!course) return <FallbackUI/>
+
+  if (loading) return <CourseSkeleton />
+
+  if (!course) return <FallbackUI />
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -270,7 +321,7 @@ const ViewCourseForAdmin = () => {
                 </span>
                 <span className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  {course.rating ?? "N/A"} ({course.totalRatings} ratings)
+                  {course.rating ? course.rating.toFixed(1) : "N/A"} ({course.totalRatings} ratings)
                 </span>
                 <span className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
@@ -461,12 +512,12 @@ const ViewCourseForAdmin = () => {
               >
                 <Edit className="inline w-4 h-4 mr-1" /> Edit Course
               </Link> */}
-              <Link
+              {/* <Link
                 to={`/admin/courses/${course.id}/analytics`}
                 className="block text-center py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100"
               >
                 <BarChart3 className="inline w-4 h-4 mr-1" /> View Analytics
-              </Link>
+              </Link> */}
             </div>
           </div>
 
@@ -479,6 +530,88 @@ const ViewCourseForAdmin = () => {
             <p><strong>Created:</strong> {formatDate(course.createdAt)}</p>
             <p><strong>Updated:</strong> {formatDate(course.updatedAt)}</p>
           </div>
+
+          {analytics && (
+            <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Course Analytics
+              </h3>
+
+              {/* Top Stats */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Total</p>
+                  <p className="text-xl font-semibold">
+                    {analytics.enrollmentStats.total}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Active</p>
+                  <p className="text-xl font-semibold text-blue-600">
+                    {analytics.enrollmentStats.active}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Completed</p>
+                  <p className="text-xl font-semibold text-green-600">
+                    {analytics.enrollmentStats.completed}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-gray-500">Completion</p>
+                  <p className="text-xl font-semibold text-teal-600">
+                    {Math.round(analytics.enrollmentStats.completionRate)}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Average Progress */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Average Progress</p>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-teal-600 h-3 rounded-full transition-all"
+                    style={{ width: `${analytics.progressStats.averageProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs mt-1 text-gray-500">
+                  {Math.round(analytics.progressStats.averageProgress)}%
+                </p>
+              </div>
+
+              {/* Recent Enrollments */}
+              <div>
+                <p className="text-sm font-medium mb-2">Recent Enrollments</p>
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {analytics.recentEnrollments.map((e) => (
+                    <div
+                      key={e.learnerId + e.enrolledAt}
+                      className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2"
+                    >
+                      <div>
+                        <p className="font-medium">{e.learnerName}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(e.enrolledAt).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <span className="text-xs text-gray-600">
+                        {Math.round(e.progressPercentage)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+
+
         </div>
       </div>
       {modalOpen && (
@@ -545,6 +678,8 @@ const ViewCourseForAdmin = () => {
   );
 };
 
+
+
 const ExpandableChapter = ({
   chapter,
   index,
@@ -597,6 +732,8 @@ const ExpandableChapter = ({
     </div>
   );
 };
+
+
 
 
 export default ViewCourseForAdmin;
