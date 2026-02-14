@@ -694,7 +694,7 @@ export const submitReview = createAsyncThunk(
 
 export const getReviewsForLearner = createAsyncThunk(
     "learner/course/reviews",
-    async (input:{courseId:string; skip:number; limit:number}
+    async (input:{courseId:string; skip:number; limit:number,learnerId?:string}
 ,
         { rejectWithValue }
     ) => {

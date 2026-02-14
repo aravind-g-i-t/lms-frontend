@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { CreditCard, Wallet } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
 import { toast } from "react-toastify";
 import { createPaymentSession, getCourseDetailsForCheckout } from "../../services/learnerServices";
@@ -286,7 +286,7 @@ export default function Checkout() {
                   <CreditCard className="w-5 h-5" /> Stripe
                 </label>
 
-                <label
+                {/* <label
                   className={`flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer ${paymentMethod === "wallet"
                     ? "border-teal-600 bg-teal-50"
                     : "border-gray-300"
@@ -300,7 +300,7 @@ export default function Checkout() {
                     className="hidden"
                   />
                   <Wallet className="w-5 h-5" /> Wallet
-                </label>
+                </label> */}
               </div>
             </div>
 

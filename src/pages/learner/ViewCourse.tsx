@@ -81,7 +81,8 @@ export interface Course {
   publishedAt: Date | null;
   isEnrolled: boolean;
   enrolledAt: Date | null;
-  isFavourite: boolean
+  isFavourite: boolean;
+  isCompleted:boolean
 }
 
 interface Review {
@@ -168,7 +169,8 @@ const CourseOverviewPage = () => {
         const response = await dispatch(getReviewsForLearner({
           courseId,
           skip: reviews.length,
-          limit: 10
+          limit: 10,
+          learnerId:id?id:undefined
         })).unwrap();
 
         if (response.data.myReview) {
@@ -678,7 +680,7 @@ const CourseOverviewPage = () => {
             </div>
 
             {/* ADD REVIEW */}
-            {course.isEnrolled && (!myReview || isEditingReview) && (
+            {course.isEnrolled && course.isCompleted&& (!myReview || isEditingReview) && (
               <div className="bg-white rounded-lg p-6 shadow">
                 <h3 className="text-xl font-semibold mb-4">
                   {isEditingReview ? 'Edit your review' : 'Leave a review'}

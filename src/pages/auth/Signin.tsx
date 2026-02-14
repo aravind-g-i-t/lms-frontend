@@ -57,7 +57,7 @@ export default function Signin() {
   const roles = [
     { label: 'Learner', value: 'learner' },
     { label: 'Instructor', value: 'instructor' },
-    { label: 'Business', value: 'business' }
+    // { label: 'Business', value: 'business' }
   ] as const;
 
 
