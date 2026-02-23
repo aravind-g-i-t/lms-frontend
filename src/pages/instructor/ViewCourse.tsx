@@ -20,8 +20,8 @@ import { useDispatch } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
 import { getCourseDetails, getInstructorCourseAnalytics, submitCourseForReview, updateCourseStatus } from '../../services/instructorServices';
-import { toast } from 'react-toastify';
 import { formatDuration } from '../../utils/formats';
+import { useFeedback } from '../../hooks/useFeedback';
 
 // ✅ Replace enums with union types
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
@@ -119,6 +119,7 @@ const ViewCoursePage = () => {
   const { courseId } = useParams<{ courseId: string }>();
   console.log(courseId);
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate()
 
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
@@ -178,12 +179,12 @@ const ViewCoursePage = () => {
         setCourse(response.data)
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
 
     fetchCourseDetails();
-  }, [dispatch, courseId]);
+  }, [dispatch, courseId,feedback]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -197,11 +198,11 @@ const ViewCoursePage = () => {
         setAnalytics(response.data)
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
     fetchAnalytics();
-  }, [dispatch, courseId]);
+  }, [dispatch, courseId,feedback]);
 
 
   const toggleModule = (index: number) => {
@@ -271,9 +272,9 @@ const statusConfig = useMemo(
       setCourse(prev =>
         prev ? ({ ...prev, verification: { ...course.verification, status: "under_review" } } as Course) : prev
       );
-      toast.success("Course submitted for verification.")
+      feedback.success("Success", "Course submitted for verification.")
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
 
 
@@ -289,9 +290,9 @@ const statusConfig = useMemo(
       setCourse(prev =>
         prev ? ({ ...prev, status: "published" } as Course) : prev
       );
-      toast.success("Course published successfully.")
+      feedback.success("Course published successfully.")
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error",error as string)
     }
   }
 
@@ -305,9 +306,9 @@ const statusConfig = useMemo(
       setCourse(prev =>
         prev ? ({ ...prev, status: "archived" } as Course) : prev
       );
-      toast.success("Course archived successfully.")
+      feedback.success("Success", "Course archived successfully.")
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -668,10 +669,10 @@ const statusConfig = useMemo(
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Course Details</h3>
                 <div className="space-y-3 text-sm">
-                  <div>
+                  {/* <div>
                     <span className="text-gray-600">Course ID:</span>
                     <p className="font-mono text-gray-900 mt-1">{course.id}</p>
-                  </div>
+                  </div> */}
 
                   <div>
                     <span className="text-gray-600">Category:</span>

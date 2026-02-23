@@ -5,7 +5,7 @@ import LearnerNav from "../../components/learner/LearnerNav";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { verifyPayment } from "../../services/learnerServices";
-import { toast } from "react-toastify";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type PaymentStatus = "success" | "failed" | "loading";
 
@@ -15,6 +15,7 @@ export default function PaymentResult() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [status, setStatus] = useState<PaymentStatus>("loading");
 
@@ -32,12 +33,12 @@ export default function PaymentResult() {
         
         setStatus(response.data.status)
       } catch (err) {
-        toast.error(err as string)
+        feedback.error("Error", err as string)
       }
     };
 
     handleVerifyPayment();
-  }, [searchParams, dispatch]);
+  }, [searchParams, dispatch,feedback]);
 
   if (status === "loading") {
     return (

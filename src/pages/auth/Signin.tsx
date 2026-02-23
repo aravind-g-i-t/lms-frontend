@@ -6,10 +6,10 @@ import { signin } from '../../services/userAuthServices';
 import { Eye, EyeOff } from "lucide-react";
 import GoogleSigninButton from '../../components/shared/GoogleSigninButton';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useFeedback } from '../../hooks/useFeedback';
 
 
 type Role = 'learner' | 'instructor' | 'business';
@@ -48,8 +48,8 @@ const getSchema = (role: Role) => yup.object().shape({
 export default function Signin() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-
-
+  const feedback = useFeedback();
+  
 
 
   const [show, setShow] = useState(false);
@@ -74,7 +74,7 @@ export default function Signin() {
       navigate(`/${selectedRole}/dashboard`);
     } catch (err) {
       console.error("Signin failed:", err);
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     }
   };
 

@@ -14,10 +14,11 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
-import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
 // import { getInstructorDetailsForLearner } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
+import { useFeedback } from '../../hooks/useFeedback';
+import { getInstructorDetailsForLearner } from '../../services/learnerServices';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
 
@@ -32,6 +33,9 @@ export interface Instructor {
   resume: string | null;
   website: string | null;
   bio: string | null;
+  totalStudents: number;
+  totalCourses: number;
+  averageRating: number | null;
 }
 
 export interface Course {
@@ -51,230 +55,229 @@ export interface Course {
   publishedAt: Date | null;
 }
 
-interface InstructorDetails extends Instructor {
-  courses: Course[];
-  totalStudents: number;
-  totalCourses: number;
-  averageRating: number | null;
-}
 
-// MOCK DATA FOR TESTING
-const mockInstructorData: InstructorDetails = {
-  id: 'inst_001',
-  name: 'Dr. Sarah Johnson',
-  email: 'sarah.johnson@example.com',
-  joiningDate: new Date('2020-03-15'),
-  expertise: ['React', 'Node.js', 'TypeScript', 'System Design', 'Cloud Architecture', 'DevOps'],
-  designation: 'Senior Software Architect & Tech Lead',
-  profilePic: 'https://i.pravatar.cc/300?img=47',
-  resume: 'https://example.com/resume.pdf',
-  website: 'https://sarahjohnson.dev',
-  bio: 'Passionate educator with 15+ years of experience in software development and architecture. I specialize in building scalable web applications and teaching modern development practices. My mission is to help developers master the art of writing clean, maintainable code while understanding the underlying principles that make great software.',
-  totalStudents: 45678,
-  totalCourses: 12,
-  averageRating: 4.8,
-  courses: [
-    {
-      id: 'course_001',
-      title: 'Complete React Masterclass 2024',
-      description: 'Master React from basics to advanced concepts including hooks, context, Redux, and performance optimization.',
-      enrollmentCount: 12543,
-      instructorId: 'inst_001',
-      level: 'intermediate',
-      duration: 2400, // 40 hours in minutes
-      totalChapters: 156,
-      totalModules: 18,
-      tags: ['React', 'JavaScript', 'Frontend', 'Web Development'],
-      thumbnail: 'https://picsum.photos/seed/react/400/225',
-      price: 2999,
-      rating: 4.9,
-      publishedAt: new Date('2024-01-15'),
-    },
-    {
-      id: 'course_002',
-      title: 'Node.js Backend Development',
-      description: 'Build scalable backend applications with Node.js, Express, MongoDB, and REST APIs.',
-      enrollmentCount: 8765,
-      instructorId: 'inst_001',
-      level: 'intermediate',
-      duration: 1800, // 30 hours
-      totalChapters: 120,
-      totalModules: 14,
-      tags: ['Node.js', 'Express', 'MongoDB', 'Backend', 'API'],
-      thumbnail: 'https://picsum.photos/seed/nodejs/400/225',
-      price: 2499,
-      rating: 4.7,
-      publishedAt: new Date('2023-11-20'),
-    },
-    {
-      id: 'course_003',
-      title: 'TypeScript for Beginners',
-      description: 'Learn TypeScript from scratch and add type safety to your JavaScript projects.',
-      enrollmentCount: 15234,
-      instructorId: 'inst_001',
-      level: 'beginner',
-      duration: 900, // 15 hours
-      totalChapters: 78,
-      totalModules: 10,
-      tags: ['TypeScript', 'JavaScript', 'Programming'],
-      thumbnail: 'https://picsum.photos/seed/typescript/400/225',
-      price: 1999,
-      rating: 4.8,
-      publishedAt: new Date('2023-09-10'),
-    },
-    {
-      id: 'course_004',
-      title: 'Advanced System Design',
-      description: 'Design scalable, fault-tolerant systems using industry-standard patterns and practices.',
-      enrollmentCount: 6543,
-      instructorId: 'inst_001',
-      level: 'advanced',
-      duration: 2100, // 35 hours
-      totalChapters: 98,
-      totalModules: 12,
-      tags: ['System Design', 'Architecture', 'Scalability', 'Microservices'],
-      thumbnail: 'https://picsum.photos/seed/systemdesign/400/225',
-      price: 3499,
-      rating: 4.9,
-      publishedAt: new Date('2024-02-01'),
-    },
-    {
-      id: 'course_005',
-      title: 'Docker & Kubernetes Essentials',
-      description: 'Master containerization and orchestration with Docker and Kubernetes.',
-      enrollmentCount: 9876,
-      instructorId: 'inst_001',
-      level: 'intermediate',
-      duration: 1500, // 25 hours
-      totalChapters: 95,
-      totalModules: 11,
-      tags: ['Docker', 'Kubernetes', 'DevOps', 'Containers'],
-      thumbnail: 'https://picsum.photos/seed/docker/400/225',
-      price: 2799,
-      rating: 4.7,
-      publishedAt: new Date('2023-12-05'),
-    },
-    {
-      id: 'course_006',
-      title: 'Web Development Bootcamp',
-      description: 'Complete web development course covering HTML, CSS, JavaScript, and modern frameworks.',
-      enrollmentCount: 18765,
-      instructorId: 'inst_001',
-      level: 'beginner',
-      duration: 3600, // 60 hours
-      totalChapters: 245,
-      totalModules: 24,
-      tags: ['HTML', 'CSS', 'JavaScript', 'Web Development', 'Bootcamp'],
-      thumbnail: 'https://picsum.photos/seed/webdev/400/225',
-      price: 3999,
-      rating: 4.8,
-      publishedAt: new Date('2023-08-01'),
-    },
-    {
-      id: 'course_007',
-      title: 'AWS Cloud Practitioner',
-      description: 'Get started with Amazon Web Services and prepare for the AWS certification.',
-      enrollmentCount: 7234,
-      instructorId: 'inst_001',
-      level: 'beginner',
-      duration: 1200, // 20 hours
-      totalChapters: 86,
-      totalModules: 9,
-      tags: ['AWS', 'Cloud', 'Certification'],
-      thumbnail: 'https://picsum.photos/seed/aws/400/225',
-      price: 2299,
-      rating: 4.6,
-      publishedAt: new Date('2023-10-15'),
-    },
-    {
-      id: 'course_008',
-      title: 'GraphQL API Development',
-      description: 'Build modern APIs with GraphQL, Apollo Server, and best practices.',
-      enrollmentCount: 5432,
-      instructorId: 'inst_001',
-      level: 'advanced',
-      duration: 1350, // 22.5 hours
-      totalChapters: 67,
-      totalModules: 8,
-      tags: ['GraphQL', 'API', 'Apollo', 'Backend'],
-      thumbnail: 'https://picsum.photos/seed/graphql/400/225',
-      price: 2599,
-      rating: 4.8,
-      publishedAt: new Date('2024-01-10'),
-    },
-    {
-      id: 'course_009',
-      title: 'React Native Mobile Apps',
-      description: 'Create cross-platform mobile applications using React Native.',
-      enrollmentCount: 8934,
-      instructorId: 'inst_001',
-      level: 'intermediate',
-      duration: 2700, // 45 hours
-      totalChapters: 134,
-      totalModules: 16,
-      tags: ['React Native', 'Mobile', 'iOS', 'Android'],
-      thumbnail: 'https://picsum.photos/seed/reactnative/400/225',
-      price: 3299,
-      rating: 4.7,
-      publishedAt: new Date('2023-07-20'),
-    },
-    {
-      id: 'course_010',
-      title: 'JavaScript ES6+ Fundamentals',
-      description: 'Deep dive into modern JavaScript features and best practices.',
-      enrollmentCount: 11234,
-      instructorId: 'inst_001',
-      level: 'beginner',
-      duration: 1050, // 17.5 hours
-      totalChapters: 92,
-      totalModules: 11,
-      tags: ['JavaScript', 'ES6', 'Programming', 'Frontend'],
-      thumbnail: 'https://picsum.photos/seed/javascript/400/225',
-      price: 1799,
-      rating: 4.9,
-      publishedAt: new Date('2023-06-01'),
-    },
-    {
-      id: 'course_011',
-      title: 'MongoDB Database Design',
-      description: 'Learn NoSQL database design patterns and MongoDB optimization techniques.',
-      enrollmentCount: 6789,
-      instructorId: 'inst_001',
-      level: 'intermediate',
-      duration: 1440, // 24 hours
-      totalChapters: 88,
-      totalModules: 10,
-      tags: ['MongoDB', 'Database', 'NoSQL', 'Backend'],
-      thumbnail: 'https://picsum.photos/seed/mongodb/400/225',
-      price: 2199,
-      rating: 4.6,
-      publishedAt: new Date('2023-09-25'),
-    },
-    {
-      id: 'course_012',
-      title: 'Microservices Architecture',
-      description: 'Design and implement microservices using modern patterns and technologies.',
-      enrollmentCount: 4567,
-      instructorId: 'inst_001',
-      level: 'advanced',
-      duration: 2550, // 42.5 hours
-      totalChapters: 112,
-      totalModules: 13,
-      tags: ['Microservices', 'Architecture', 'Docker', 'Kubernetes', 'System Design'],
-      thumbnail: 'https://picsum.photos/seed/microservices/400/225',
-      price: 3799,
-      rating: 4.9,
-      publishedAt: new Date('2024-03-01'),
-    },
-  ],
-};
+
+// const mockInstructor: Instructor = {
+//   id: 'inst_001',
+//   name: 'Dr. Sarah Johnson',
+//   email: 'sarah.johnson@example.com',
+//   joiningDate: new Date('2020-03-15'),
+//   expertise: ['React', 'Node.js', 'TypeScript', 'System Design', 'Cloud Architecture', 'DevOps'],
+//   designation: 'Senior Software Architect & Tech Lead',
+//   profilePic: 'https://i.pravatar.cc/300?img=47',
+//   resume: 'https://example.com/resume.pdf',
+//   website: 'https://sarahjohnson.dev',
+//   bio: 'Passionate educator with 15+ years of experience in software development and architecture. I specialize in building scalable web applications and teaching modern development practices. My mission is to help developers master the art of writing clean, maintainable code while understanding the underlying principles that make great software.',
+//   totalStudents: 45678,
+//   totalCourses: 12,
+//   averageRating: 4.8,
+// }
+
+// const mockCourses: Course[] = [
+//   {
+//       id: 'course_001',
+//       title: 'Complete React Masterclass 2024',
+//       description: 'Master React from basics to advanced concepts including hooks, context, Redux, and performance optimization.',
+//       enrollmentCount: 12543,
+//       instructorId: 'inst_001',
+//       level: 'intermediate',
+//       duration: 2400, // 40 hours in minutes
+//       totalChapters: 156,
+//       totalModules: 18,
+//       tags: ['React', 'JavaScript', 'Frontend', 'Web Development'],
+//       thumbnail: 'https://picsum.photos/seed/react/400/225',
+//       price: 2999,
+//       rating: 4.9,
+//       publishedAt: new Date('2024-01-15'),
+//     },
+//     {
+//       id: 'course_002',
+//       title: 'Node.js Backend Development',
+//       description: 'Build scalable backend applications with Node.js, Express, MongoDB, and REST APIs.',
+//       enrollmentCount: 8765,
+//       instructorId: 'inst_001',
+//       level: 'intermediate',
+//       duration: 1800, // 30 hours
+//       totalChapters: 120,
+//       totalModules: 14,
+//       tags: ['Node.js', 'Express', 'MongoDB', 'Backend', 'API'],
+//       thumbnail: 'https://picsum.photos/seed/nodejs/400/225',
+//       price: 2499,
+//       rating: 4.7,
+//       publishedAt: new Date('2023-11-20'),
+//     },
+//     {
+//       id: 'course_003',
+//       title: 'TypeScript for Beginners',
+//       description: 'Learn TypeScript from scratch and add type safety to your JavaScript projects.',
+//       enrollmentCount: 15234,
+//       instructorId: 'inst_001',
+//       level: 'beginner',
+//       duration: 900, // 15 hours
+//       totalChapters: 78,
+//       totalModules: 10,
+//       tags: ['TypeScript', 'JavaScript', 'Programming'],
+//       thumbnail: 'https://picsum.photos/seed/typescript/400/225',
+//       price: 1999,
+//       rating: 4.8,
+//       publishedAt: new Date('2023-09-10'),
+//     },
+//     {
+//       id: 'course_004',
+//       title: 'Advanced System Design',
+//       description: 'Design scalable, fault-tolerant systems using industry-standard patterns and practices.',
+//       enrollmentCount: 6543,
+//       instructorId: 'inst_001',
+//       level: 'advanced',
+//       duration: 2100, // 35 hours
+//       totalChapters: 98,
+//       totalModules: 12,
+//       tags: ['System Design', 'Architecture', 'Scalability', 'Microservices'],
+//       thumbnail: 'https://picsum.photos/seed/systemdesign/400/225',
+//       price: 3499,
+//       rating: 4.9,
+//       publishedAt: new Date('2024-02-01'),
+//     },
+//     {
+//       id: 'course_005',
+//       title: 'Docker & Kubernetes Essentials',
+//       description: 'Master containerization and orchestration with Docker and Kubernetes.',
+//       enrollmentCount: 9876,
+//       instructorId: 'inst_001',
+//       level: 'intermediate',
+//       duration: 1500, // 25 hours
+//       totalChapters: 95,
+//       totalModules: 11,
+//       tags: ['Docker', 'Kubernetes', 'DevOps', 'Containers'],
+//       thumbnail: 'https://picsum.photos/seed/docker/400/225',
+//       price: 2799,
+//       rating: 4.7,
+//       publishedAt: new Date('2023-12-05'),
+//     },
+//     {
+//       id: 'course_006',
+//       title: 'Web Development Bootcamp',
+//       description: 'Complete web development course covering HTML, CSS, JavaScript, and modern frameworks.',
+//       enrollmentCount: 18765,
+//       instructorId: 'inst_001',
+//       level: 'beginner',
+//       duration: 3600, // 60 hours
+//       totalChapters: 245,
+//       totalModules: 24,
+//       tags: ['HTML', 'CSS', 'JavaScript', 'Web Development', 'Bootcamp'],
+//       thumbnail: 'https://picsum.photos/seed/webdev/400/225',
+//       price: 3999,
+//       rating: 4.8,
+//       publishedAt: new Date('2023-08-01'),
+//     },
+//     {
+//       id: 'course_007',
+//       title: 'AWS Cloud Practitioner',
+//       description: 'Get started with Amazon Web Services and prepare for the AWS certification.',
+//       enrollmentCount: 7234,
+//       instructorId: 'inst_001',
+//       level: 'beginner',
+//       duration: 1200, // 20 hours
+//       totalChapters: 86,
+//       totalModules: 9,
+//       tags: ['AWS', 'Cloud', 'Certification'],
+//       thumbnail: 'https://picsum.photos/seed/aws/400/225',
+//       price: 2299,
+//       rating: 4.6,
+//       publishedAt: new Date('2023-10-15'),
+//     },
+//     {
+//       id: 'course_008',
+//       title: 'GraphQL API Development',
+//       description: 'Build modern APIs with GraphQL, Apollo Server, and best practices.',
+//       enrollmentCount: 5432,
+//       instructorId: 'inst_001',
+//       level: 'advanced',
+//       duration: 1350, // 22.5 hours
+//       totalChapters: 67,
+//       totalModules: 8,
+//       tags: ['GraphQL', 'API', 'Apollo', 'Backend'],
+//       thumbnail: 'https://picsum.photos/seed/graphql/400/225',
+//       price: 2599,
+//       rating: 4.8,
+//       publishedAt: new Date('2024-01-10'),
+//     },
+//     {
+//       id: 'course_009',
+//       title: 'React Native Mobile Apps',
+//       description: 'Create cross-platform mobile applications using React Native.',
+//       enrollmentCount: 8934,
+//       instructorId: 'inst_001',
+//       level: 'intermediate',
+//       duration: 2700, // 45 hours
+//       totalChapters: 134,
+//       totalModules: 16,
+//       tags: ['React Native', 'Mobile', 'iOS', 'Android'],
+//       thumbnail: 'https://picsum.photos/seed/reactnative/400/225',
+//       price: 3299,
+//       rating: 4.7,
+//       publishedAt: new Date('2023-07-20'),
+//     },
+//     {
+//       id: 'course_010',
+//       title: 'JavaScript ES6+ Fundamentals',
+//       description: 'Deep dive into modern JavaScript features and best practices.',
+//       enrollmentCount: 11234,
+//       instructorId: 'inst_001',
+//       level: 'beginner',
+//       duration: 1050, // 17.5 hours
+//       totalChapters: 92,
+//       totalModules: 11,
+//       tags: ['JavaScript', 'ES6', 'Programming', 'Frontend'],
+//       thumbnail: 'https://picsum.photos/seed/javascript/400/225',
+//       price: 1799,
+//       rating: 4.9,
+//       publishedAt: new Date('2023-06-01'),
+//     },
+//     {
+//       id: 'course_011',
+//       title: 'MongoDB Database Design',
+//       description: 'Learn NoSQL database design patterns and MongoDB optimization techniques.',
+//       enrollmentCount: 6789,
+//       instructorId: 'inst_001',
+//       level: 'intermediate',
+//       duration: 1440, // 24 hours
+//       totalChapters: 88,
+//       totalModules: 10,
+//       tags: ['MongoDB', 'Database', 'NoSQL', 'Backend'],
+//       thumbnail: 'https://picsum.photos/seed/mongodb/400/225',
+//       price: 2199,
+//       rating: 4.6,
+//       publishedAt: new Date('2023-09-25'),
+//     },
+//     {
+//       id: 'course_012',
+//       title: 'Microservices Architecture',
+//       description: 'Design and implement microservices using modern patterns and technologies.',
+//       enrollmentCount: 4567,
+//       instructorId: 'inst_001',
+//       level: 'advanced',
+//       duration: 2550, // 42.5 hours
+//       totalChapters: 112,
+//       totalModules: 13,
+//       tags: ['Microservices', 'Architecture', 'Docker', 'Kubernetes', 'System Design'],
+//       thumbnail: 'https://picsum.photos/seed/microservices/400/225',
+//       price: 3799,
+//       rating: 4.9,
+//       publishedAt: new Date('2024-03-01'),
+//     },
+// ]
+
+
 
 const ViewInstructorPage = () => {
   const { instructorId } = useParams<{ instructorId: string }>();
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
-  const [instructor, setInstructor] = useState<InstructorDetails | null>(null);
+  const [instructor, setInstructor] = useState<Instructor | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState<'all' | CourseLevel>('all');
 
@@ -286,31 +289,30 @@ const ViewInstructorPage = () => {
           return;
         }
 
-        // FOR TESTING: Use mock data
-        // Comment out these lines and uncomment API call when ready
-        setTimeout(() => {
-          setInstructor(mockInstructorData);
-          setLoading(false);
-        }, 800);
+        // setTimeout(() => {
+        //   setInstructor(mockInstructor);
+        //   setCourses(mockCourses);
+        //   setLoading(false);
+        // }, 800);
 
-        // PRODUCTION: Uncomment this block when API is ready
-        /*
+        
         const response = await dispatch(
           getInstructorDetailsForLearner({ instructorId })
         ).unwrap();
 
         console.log(response.data);
-        setInstructor(response.data);
+        setInstructor(response.data.instructor);
+        setCourses(response.data.courses);
+
         setLoading(false);
-        */
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error",err as string);
         setLoading(false);
       }
     };
 
     fetchInstructorDetails();
-  }, [dispatch, instructorId]);
+  }, [dispatch, instructorId,feedback]);
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A';
@@ -333,8 +335,8 @@ const ViewInstructorPage = () => {
 
   const filteredCourses =
     selectedLevel === 'all'
-      ? instructor?.courses || []
-      : instructor?.courses.filter((c) => c.level === selectedLevel) || [];
+      ? courses || []
+      : courses.filter((c) => c.level === selectedLevel) || [];
 
   if (loading) {
     return (
@@ -659,12 +661,12 @@ const ViewInstructorPage = () => {
         </div>
 
         {/* Course Tags Section */}
-        {instructor.courses.length > 0 && (
+        {courses.length > 0 && (
           <div className="mt-12 bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Popular Topics</h3>
             <div className="flex flex-wrap gap-2">
               {Array.from(
-                new Set(instructor.courses.flatMap((course) => course.tags))
+                new Set(courses.flatMap((course) => course.tags))
               ).map((tag, index) => (
                 <span
                   key={index}

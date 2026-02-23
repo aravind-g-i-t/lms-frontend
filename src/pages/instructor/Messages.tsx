@@ -3,13 +3,13 @@ import { Search, Send, Paperclip, ChevronLeft, ChevronRight, BookOpen, Users, Ar
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../redux/store';
-import { toast } from 'react-toastify';
 import { deleteInstructorMessages, getInstructorConversations, getInstructorMessages } from '../../services/instructorServices';
 import { Video, Phone } from "lucide-react";
 import { useSocket } from '../../hooks/useSocket';
 import { uploadAttachmentToS3 } from '../../config/s3Config';
 import { AttachmentPreview } from '../../components/learner/AttachmentPreview';
 import { DeleteMessageModal } from '../../components/shared/DeleteMessageModal';
+import { useFeedback } from '../../hooks/useFeedback';
 
 
 
@@ -78,6 +78,7 @@ const InstructorMessagesPage = () => {
   const learnerId = state?.learnerId;
   const courseId = state?.courseId;
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const { id } = useSelector((state: RootState) => state.auth);
   const { unreadCount } = useSelector((state: RootState) => state.chat);
@@ -193,13 +194,13 @@ const InstructorMessagesPage = () => {
           }
         }
       } catch (error) {
-        toast.error(error as string)
+        feedback.error("Error", error as string)
       }
     }
     fetchConverations()
 
 
-  }, [courseId, learnerId, currentPage, dispatch, navigate, search, selectedCourse]);
+  }, [courseId, learnerId, currentPage, dispatch, navigate, search, selectedCourse,feedback]);
 
   useEffect(() => {
     if (!socket || !activeConversation?.id) return;

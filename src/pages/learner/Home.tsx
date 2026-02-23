@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../redux/store';
 import { getHomeData, getHomeDataForLearner, getPopularCourses } from '../../services/learnerServices';
-import { toast } from 'react-toastify';
+import { useFeedback } from '../../hooks/useFeedback';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
 
@@ -59,6 +59,7 @@ interface Category {
 const LearnerHome = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>()
+  const feedback = useFeedback();
   const { id, name } = useSelector((state: RootState) => state.auth)
   const [activeCategory, setActiveCategory] = useState('all');
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
@@ -78,11 +79,11 @@ const LearnerHome = () => {
 
         setCategories(result.data.categories);
       } catch (error) {
-        toast.error(error as string);
+        feedback.error("Error", error as string);
       }
     };
     fetchHomePageData();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
 
   useEffect(() => {
@@ -97,11 +98,11 @@ const LearnerHome = () => {
         setEnrolledCourses(result.data.enrolledCourses);
         setRecommendedCourses(result.data.recommendedCourses)
       } catch (error) {
-        toast.error(error as string);
+        feedback.error("Error", error as string);
       }
     };
     fetchLearnerData();
-  }, [id, dispatch]);
+  }, [id, dispatch,feedback]);
 
   useEffect(() => {
 
@@ -116,11 +117,11 @@ const LearnerHome = () => {
 
         setPopularCourses(result.data.courses);
       } catch (error) {
-        toast.error(error as string);
+        feedback.error("Error", error as string);
       }
     };
     fetchPopularCourses();
-  }, [dispatch, activeCategory]);
+  }, [dispatch, activeCategory,feedback]);
 
 
 
@@ -266,7 +267,7 @@ const LearnerHome = () => {
                       Last accessed {getTimeSinceAccess(course.lastAccessedAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-teal-600 mb-3">by {course.instructor.name}</p>
+                  <Link to={`/instructor/${course.instructor.id}/preview`} className="text-sm text-teal-600 mb-3">by {course.instructor.name}</Link>
                   <div className="flex items-center text-sm text-gray-500 mb-3">
                     <Clock className="w-4 h-4 mr-1" />
                     <span>{formatDuration(course.duration)}</span>

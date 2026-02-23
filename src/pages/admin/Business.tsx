@@ -12,11 +12,11 @@ import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
-import { toast } from "react-toastify";
 import { X } from "lucide-react";
 import FallbackUI from "../../components/shared/FallbackUI";
 import ReactModal from "react-modal";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type BusinessView = {
   name: string;
@@ -59,6 +59,7 @@ type VerificationStatus =
 
 export default function ManageBusinesses() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [page, setPage] = useState(1);
@@ -96,7 +97,7 @@ export default function ManageBusinesses() {
       } catch (err) {
         setFetchFailure(true);
         console.error("Failed to fetch businesses:", err);
-        toast.error(err as string)
+        feedback.error("Error fetching businesses", err as string)
       } finally {
         setLoading(false);
       }
@@ -104,7 +105,7 @@ export default function ManageBusinesses() {
 
     fetchBusinesses();
 
-  }, [dispatch, page, search, status, verificationStatus]);
+  }, [dispatch, page, search, status, verificationStatus,feedback]);
 
   const handleToggleStatus = useCallback( async (payload: { id: string }) => {
     try {
@@ -117,19 +118,19 @@ export default function ManageBusinesses() {
     );
     setBusinesses(updatedBusinesses);
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error toggling business status", error as string)
     }
-  },[businesses,dispatch])
+  },[businesses,dispatch,feedback])
 
   const handleViewBusiness = useCallback(async (id: string) => {
     try {
       const response = await dispatch(getBusinessData({ id })).unwrap();
     setBusinessView(response.data.business);
-    setSelectedId(id);
+    setSelectedId(id)
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
-  },[dispatch])
+  },[dispatch,feedback])
 
 
 
@@ -141,13 +142,13 @@ export default function ManageBusinesses() {
     try {
       await dispatch(
       updateBusinessVerificationStatus({
-        id: selectedId,
+        id: selectedId, 
         remarks,
         status: newVerificationStatus,
       })
     ).unwrap();
 
-    toast.success("Verification status updated successfully");
+    feedback.success("Updated","Verification status updated successfully");
 
     const verification = {
       remarks,
@@ -162,7 +163,7 @@ export default function ManageBusinesses() {
     });
     setBusinesses(updatedBusinesses);
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   };
 
@@ -517,6 +518,8 @@ export default function ManageBusinesses() {
             className="rounded-lg"
           />
         </ReactModal>
+
+
       </div>
     </div>
   );

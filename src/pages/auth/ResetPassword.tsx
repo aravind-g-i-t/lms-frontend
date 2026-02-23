@@ -5,11 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { resetPassword } from "../../services/userAuthServices";
 import { clearSignup } from "../../redux/slices/signupSlice";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 export default function ResetPassword() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const { email, role } = useSelector((state: RootState) => state.signup);
 
@@ -51,13 +52,13 @@ export default function ResetPassword() {
     try {
       setLoading(true)
       await dispatch(resetPassword({ role, email, password })).unwrap();
-      toast.success("Password reset successful!");
+      feedback.success("Success", "Password reset successful!");
       dispatch(clearSignup());
       navigate("/signin");
     } catch (err) {
       console.error("Reset password failed", err);
       setError("Failed to reset password. Please try again.");
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setLoading(false)
     }

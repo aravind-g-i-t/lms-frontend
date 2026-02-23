@@ -859,3 +859,29 @@ export const getWalletData = createAsyncThunk(
         }
     }
 );
+
+export const getInstructorDetailsForLearner = createAsyncThunk(
+    "learner/instructor/details",
+    async (input:{instructorId:string}
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get(API.LEARNER.INSTRUCTOR_DETAILS,{
+                params: input,
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);

@@ -3,10 +3,11 @@ import { Search, Menu, X, LogOut, MessageCircleIcon } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import type { AppDispatch, RootState } from "../../redux/store";
-import { toast } from "react-hot-toast"
 import { logout } from "../../services/userAuthServices";
+import { useFeedback } from "../../hooks/useFeedback";
 
 export default function LearnerNav() {
+  const feedback = useFeedback();
   const { role, name, profilePic } = useSelector((state: RootState) => state.auth);
   const { unreadCount } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch<AppDispatch>();
@@ -18,10 +19,10 @@ export default function LearnerNav() {
       const response = await dispatch(logout()).unwrap();
 
       if (response.success) {
-        toast.success("Logged out successfully");
+        feedback.success("Success", "Logged out successfully");
         navigate("/signin");
       } else {
-        toast.error(response?.message || "Failed to log out from server");
+        feedback.error("Error", response?.message || "Failed to log out from server");
         navigate("/signin");
       }
     } catch (error: unknown) {

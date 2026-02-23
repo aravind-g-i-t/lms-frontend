@@ -19,8 +19,8 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
-import { toast } from 'react-toastify';
 import { getInstructorDashboard } from '../../services/instructorServices';
+import { useFeedback } from '../../hooks/useFeedback';
 
 interface DashboardStats {
   totalCourses: number;
@@ -63,6 +63,7 @@ interface Session {
 
 const InstructorDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats|null>(null);
 
@@ -81,13 +82,13 @@ const InstructorDashboard = () => {
         setUpcomingSessions(response.data.upcomingSessions)
         setLoading(false);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

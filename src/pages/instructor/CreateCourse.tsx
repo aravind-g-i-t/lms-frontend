@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Save } from 'lucide-react';
 import { createCourse, getCategoryOptions } from '../../services/instructorServices';
-import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
 import { useNavigate } from 'react-router-dom';
 import * as yup from "yup";
+import { useFeedback } from '../../hooks/useFeedback';
 
 type CourseData = {
   title: string;
@@ -39,6 +39,7 @@ const courseSchema = yup.object().shape({
 
 const CreateCourse = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,11 +50,11 @@ const CreateCourse = () => {
         const response = await dispatch(getCategoryOptions()).unwrap();
         setCategories(response.data.categories);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
     fetchCategories();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const [courseData, setCourseData] = useState<CourseData>({
     title: '',
@@ -109,18 +110,18 @@ const CreateCourse = () => {
 
 
     const response = await dispatch(createCourse(cleaned)).unwrap();
-    toast.success("Course created successfully");
+    feedback.success("Success", "Course created successfully");
     navigate(`/instructor/courses/${response.data.courseId}/edit`);
 
   } catch (error: unknown) {
     if (error instanceof yup.ValidationError) {
-      error.errors.forEach((message: string) => toast.error(message));
+      error.errors.forEach((message: string) => feedback.error("Error", message));
     } else if (typeof error === "string") {
-      toast.error(error);
+      feedback.error("Error", error);
     } else if (error && typeof error === "object" && "message" in error) {
-      toast.error((error as { message: string }).message);
+      feedback.error("Error", (error as { message: string }).message);
     } else {
-      toast.error("An error occurred");
+      feedback.error("Error", "An error occurred");
     }
   } finally {
     setLoading(false);

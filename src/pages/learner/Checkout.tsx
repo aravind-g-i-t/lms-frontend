@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { CreditCard } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
 import { createPaymentSession, getCourseDetailsForCheckout } from "../../services/learnerServices";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { getStripe } from "../../config/stripe";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 interface Course {
@@ -45,6 +45,7 @@ export default function Checkout() {
   const { courseId } = useParams();
   // const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>()
+  const feedback = useFeedback();
 
   const [course, setCourse] = useState<Course | null>(null);
   // const [coupon, setCoupon] = useState("");
@@ -71,12 +72,12 @@ export default function Checkout() {
         setNotApplicableCoupons(response.data.coupons.notApplicable)
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
 
     fetchCourseDetails();
-  }, [dispatch, courseId]);
+  }, [dispatch, courseId,feedback]);
 
 
 
@@ -105,7 +106,7 @@ export default function Checkout() {
 
       await stripe.redirectToCheckout({ sessionId: result.data.sessionId });
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     } finally {
       setIsPaying(false);
     }

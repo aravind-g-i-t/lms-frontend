@@ -1,6 +1,6 @@
 import {
   Wallet,
-  TrendingUp,
+  // TrendingUp,
   Clock,
   CheckCircle,
   XCircle,
@@ -12,10 +12,10 @@ import {
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
-import { toast } from 'react-toastify';
 import { Pagination } from '../../components/shared/Pagination';
 // import { SearchBar } from '../../components/shared/SearchBar';
 import { getInstructorEarnings } from '../../services/instructorServices';
+import { useFeedback } from '../../hooks/useFeedback';
 
 
 
@@ -46,6 +46,7 @@ interface InstructorWallet {
 
 const InstructorWalletPage = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const [loading, setLoading] = useState(true);
   const [wallet, setWallet] = useState<InstructorWallet | null>(null);
 
@@ -73,13 +74,13 @@ const InstructorWalletPage = () => {
 
         setLoading(false)
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
         setLoading(false);
       }
     };
 
     fetchWalletData();
-  }, [dispatch, page, selectedFilter]);
+  }, [dispatch, page, selectedFilter,feedback]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -161,15 +162,7 @@ const InstructorWalletPage = () => {
   //       earning.id.toLowerCase().includes(searchQuery.toLowerCase()))
   //   );
 
-  // const handleExport = () => {
-  //   toast.info('Exporting earnings data...');
-  //   // TODO: Implement export functionality
-  // };
-
-  // const handleRefresh = () => {
-  //   toast.info('Refreshing wallet data...');
-  //   // TODO: Implement refresh functionality
-  // };
+  
 
   if (loading) {
     return (
@@ -225,12 +218,12 @@ const InstructorWalletPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Balance */}
         <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
+          {/* <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-white bg-opacity-20 rounded-lg">
               <Wallet className="w-6 h-6" />
             </div>
             <TrendingUp className="w-5 h-5 opacity-80" />
-          </div>
+          </div> */}
           <h3 className="text-sm font-medium opacity-90 mb-1">Total Balance</h3>
           <p className="text-3xl font-bold">{formatCurrency(totalBalance)}</p>
           <p className="text-sm opacity-75 mt-2">Available + Pending</p>

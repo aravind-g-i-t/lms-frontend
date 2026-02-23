@@ -16,11 +16,11 @@ import {
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
 import { applyForInstructorVerification, getInstructorProfile, resetInstructorPassword, updateInstructorExpertise, updateInstructorIDProof, updateInstructorProfile, updateInstructorProfileImage, updateInstructorResume } from '../../services/instructorServices';
-import { toast } from 'react-toastify';
 import ReactModal from 'react-modal';
 import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from '../../config/s3Config';
 import * as yup from 'yup';
 import { setUserName, setUserProfilePic } from '../../redux/slices/authSlice';
+import { useFeedback } from '../../hooks/useFeedback';
 
 const profileValidationSchema = yup.object().shape({
   username: yup
@@ -80,6 +80,7 @@ const passwordValidationSchema = yup.object().shape({
 
 const InstructorProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [activeTab, setActiveTab] = useState<'personal' | 'settings'>('personal');
   const [isEditing, setIsEditing] = useState(false);
@@ -141,12 +142,12 @@ const InstructorProfile = () => {
         setIdentityProof(data.identityProof)
       } catch (err) {
         console.error("Failed to fetch instructor:", err);
-        toast.error(err as string)
+          feedback.error("Error", err as string)
       }
     };
 
     fetchProfile();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const validateForm = async (): Promise<boolean> => {
     try {
@@ -184,7 +185,7 @@ const InstructorProfile = () => {
   const handleSave = async () => {
     const isValid = await validateForm();
     if (!isValid) {
-      toast.error("Please fix the validation errors before saving");
+      feedback.error("Error", "Please fix the validation errors before saving");
       return;
     }
 
@@ -200,9 +201,9 @@ const InstructorProfile = () => {
       setIsEditing(false);
       setValidationErrors({});
       dispatch(setUserName({ name: username }))
-      toast.success(result.message);
+      feedback.success("Updated",result.message);
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   };
 
@@ -218,14 +219,14 @@ const InstructorProfile = () => {
 
       const downloadUrl = await getPresignedDownloadUrl(objectKey);
 
-      const result = await dispatch(updateInstructorProfileImage({ imageURL: objectKey })).unwrap();
+      await dispatch(updateInstructorProfileImage({ imageURL: objectKey })).unwrap();
 
       dispatch(setUserProfilePic({ profilePic: downloadUrl }));
       setProfilePic(downloadUrl);
 
-      toast.success(result.message);
+      feedback.success("Updated", "Profile picture updated successfully");
     } catch (err) {
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setImageLoading(false);
     }
@@ -251,16 +252,16 @@ const InstructorProfile = () => {
 
     setIsChangingPassword(true);
     try {
-      const response = await dispatch(resetInstructorPassword({ currentPassword, newPassword })).unwrap()
+      await dispatch(resetInstructorPassword({ currentPassword, newPassword })).unwrap()
       setShowChangePassword(false)
       setCurrentPassword("")
       setNewPassword("");
       setConfirmPassword("");
       setValidationErrors({});
-      toast.success(response.message)
+      feedback.success("Password Updated", "Your password has been updated successfully");
 
     } catch (err) {
-      toast.error(err as string)
+      feedback.error("Error", err as string)
     } finally {
       setIsChangingPassword(false);
     }
@@ -274,7 +275,7 @@ const InstructorProfile = () => {
       })).unwrap();
       setExpertise(updatedExpertise)
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -295,7 +296,7 @@ const InstructorProfile = () => {
       setNewSkill("");
       setSkillError("");
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -305,13 +306,13 @@ const InstructorProfile = () => {
     try {
       const objectKey = await uploadPdfToS3(resumeFile);
       if (!objectKey) {
-        toast.error("Resume upload failed");
+        feedback.error("Error", "Resume upload failed");
         return;
       }
 
       const resumeUrl = await getPresignedDownloadUrl(objectKey);
 
-      const result = await dispatch(
+      await dispatch(
         updateInstructorResume({ resume: objectKey })
       ).unwrap();
 
@@ -319,9 +320,9 @@ const InstructorProfile = () => {
       setResumeFile(null);
       setIsResumeEditable(false);
 
-      toast.success(result.message || "Resume updated successfully");
+      feedback.success("Updated","Resume updated successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -336,13 +337,13 @@ const InstructorProfile = () => {
     try {
       const objectKey = await uploadImageToS3(identityProofFile);
       if (!objectKey) {
-        toast.error("Identity proof upload failed");
+        feedback.error("Error", "Identity proof upload failed");
         return;
       }
 
       const identityProofUrl = await getPresignedDownloadUrl(objectKey);
 
-      const result = await dispatch(
+      await dispatch(
         updateInstructorIDProof({ identityProof: objectKey })
       ).unwrap();
 
@@ -350,9 +351,9 @@ const InstructorProfile = () => {
       setIdentityProofFile(null);
       setIsIdentityEditable(false);
 
-      toast.success(result.message || "Identity proof updated successfully");
+      feedback.success("Updated",  "Identity proof updated successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -364,13 +365,13 @@ const InstructorProfile = () => {
   const applyForVerification = async () => {
     try {
       setIsApplying(true);
-      const response = await dispatch(applyForInstructorVerification()).unwrap()
-      toast.success(response.message);
+      await dispatch(applyForInstructorVerification()).unwrap()
+      feedback.success("Verification Requested", "Your application for instructor verification has been submitted successfully. Our team will review your application and get back to you within 5-7 business days.");
       setVerificationStatus("Under Review")
       console.log("Applied for verification");
     } catch (err) {
       console.error("Failed to apply for verification:", err);
-      toast.error(err as string)
+      feedback.error("Error", err as string)
     } finally {
       setIsApplying(false);
     }

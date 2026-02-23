@@ -7,7 +7,7 @@ import {
   Video,
   MessageSquare,
   Wallet,
-  Bell,
+  // Bell,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -15,10 +15,11 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { logout } from "../../services/userAuthServices";
-import toast from "react-hot-toast";
+import { useFeedback } from "../../hooks/useFeedback";
 
 const InstructorLayout: React.FC = () => {
 
+  const feedback = useFeedback();
   const { name, profilePic } = useSelector((state: RootState) => state.auth);
   const { unreadCount } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch<AppDispatch>();
@@ -53,10 +54,10 @@ const InstructorLayout: React.FC = () => {
       const response = await dispatch(logout()).unwrap();
 
       if (response.success) {
-        toast.success("Logged out successfully");
+        feedback.success("Logged out successfully");
         navigate("/signin");
       } else {
-        toast.error(response?.message || "Failed to log out from server");
+        feedback.error("Error", response?.message || "Failed to log out from server");
         navigate("/signin");
       }
     } catch (error: unknown) {
@@ -66,7 +67,7 @@ const InstructorLayout: React.FC = () => {
       if (error instanceof Error) {
         message = error.message;
       }
-      toast.error(message);
+      feedback.error("Error", message);
       navigate("/signin");
     }
   };
@@ -181,13 +182,13 @@ const InstructorLayout: React.FC = () => {
             >
               <Search className="w-5 h-5" />
             </Link> */}
-            <Link
+            {/* <Link
               to="/instructor/notifications"
               title="Notifications"
               className="p-2 rounded-lg hover:bg-teal-600"
             >
               <Bell className="w-5 h-5" />
-            </Link>
+            </Link> */}
             {/* <Link
               to="/instructor/settings"
               title="Settings"

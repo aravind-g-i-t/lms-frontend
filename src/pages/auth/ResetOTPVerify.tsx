@@ -4,7 +4,7 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { useNavigate } from "react-router-dom";
 import { resendOTP, verifyResetOTP } from "../../services/userAuthServices";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 export default function ResetOtpVerification() {
@@ -12,6 +12,7 @@ export default function ResetOtpVerification() {
 
 
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
 
@@ -94,7 +95,7 @@ export default function ResetOtpVerification() {
     try {
       setLoading(true);
       await dispatch(verifyResetOTP({ email, otp })).unwrap();
-      toast.success("OTP verified successfully");
+      feedback.success("Success", "OTP verified successfully");
       navigate("/reset");
     } catch (err) {
       console.error("Reset OTP verification failed", err);
@@ -113,12 +114,12 @@ export default function ResetOtpVerification() {
 
 
       await dispatch(resendOTP({ email })).unwrap();
-      toast.success("OTP resent successfully");
+      feedback.success("Success", "OTP resent successfully");
     } catch (err) {
       console.error(err);
       setError("Failed to resend OTP. Please try again.");
       setResendDisabled(false);
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     }
   };
 

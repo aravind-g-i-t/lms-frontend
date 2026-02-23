@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { sendOTP } from "../../services/userAuthServices";
 import { Eye, EyeOff } from "lucide-react";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 type Role = "learner" | "instructor" | "business";
@@ -75,6 +75,7 @@ const getSchema = (role: Role) =>
 
 const UserSignup = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
 
@@ -108,7 +109,7 @@ const UserSignup = () => {
       await dispatch(sendOTP(signupInput)).unwrap();
       navigate("/verify-otp");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }finally{
       setLoading(false)
     }

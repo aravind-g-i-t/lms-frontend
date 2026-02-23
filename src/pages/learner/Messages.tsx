@@ -7,10 +7,10 @@ import { ConversationListItem } from '../../components/learner/ConversationList'
 import LearnerNav from '../../components/learner/LearnerNav';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { deleteLearnerMessages, getLearnerConversations, getLearnerMessages } from '../../services/learnerServices';
-import { toast } from 'react-toastify';
 import { useSocket } from '../../hooks/useSocket';
 import { uploadAttachmentToS3 } from '../../config/s3Config';
 import { DeleteMessageModal } from '../../components/shared/DeleteMessageModal';
+import { useFeedback } from '../../hooks/useFeedback';
 
 export interface Conversation {
   id: string | null;
@@ -103,6 +103,7 @@ const LearnerMessagesPage = () => {
   const { state } = useLocation();
   const courseId = state?.courseId;
   const dispatch = useDispatch<AppDispatch>()
+  const feedback = useFeedback();
   const navigate = useNavigate()
 
   const { id } = useSelector((state: RootState) => state.auth);
@@ -179,11 +180,11 @@ const LearnerMessagesPage = () => {
           }
         }
       } catch (error) {
-        toast.error(error as string);
+        feedback.error("Error", error as string);
       }
     };
     fetchConverations();
-  }, [courseId, dispatch, navigate]);
+  }, [courseId, dispatch, navigate,feedback]);
 
 
   useEffect(() => {

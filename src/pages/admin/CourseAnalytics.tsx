@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { toast } from "react-toastify";
 import {
   ArrowLeft,
   TrendingUp,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 // import { getCourseAnalytics } from "../../services/adminServices";
 import FallbackUI from "../../components/shared/FallbackUI";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 type CourseLevel = "beginner" | "intermediate" | "advanced"
@@ -256,6 +256,7 @@ const MOCK_COURSE_ANALYTICS: CourseAnalyticsDTO = {
 const CourseAnalytics = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
   const [analytics, setAnalytics] = useState<CourseAnalyticsDTO | null>(null);
@@ -273,14 +274,14 @@ const CourseAnalytics = () => {
         // ).unwrap();
         setAnalytics(MOCK_COURSE_ANALYTICS);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchAnalytics();
-  }, [dispatch, courseId, timeRange]);
+  }, [dispatch, courseId, timeRange, feedback]);
 
 
 

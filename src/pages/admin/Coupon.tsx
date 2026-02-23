@@ -9,9 +9,9 @@ import { Pagination } from "../../components/shared/Pagination";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 
 import * as yup from "yup";
-import { toast } from "react-toastify";
 import { createCoupon, getCoupons, updateCoupon, updateCouponStatus } from "../../services/adminServices";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type DiscountType = "percentage" | "amount";
 
@@ -78,6 +78,7 @@ const couponSchema = yup.object().shape({
 
 export default function ManageCoupons() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"All" | "Active" | "Inactive">("All");
@@ -132,14 +133,14 @@ export default function ManageCoupons() {
         setCoupons(response.data.coupons ?? []);
         setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCoupons();
-  }, [dispatch, page, search, status]);
+  }, [dispatch, page, search, status, feedback]);
 
   const openModal = (item?: Coupon) => {
     if (item) {
@@ -187,13 +188,15 @@ export default function ManageCoupons() {
       const response = await dispatch(createCoupon(validated)).unwrap();
 
       setCoupons([response.data, ...coupons]);
-      toast.success("Coupon added!");
+      feedback.success("Success", "Coupon added successfully!");
 
       closeModal();
     } catch (err) {
       if (err instanceof yup.ValidationError) {
-        toast.error(err.errors[0]);
-      } else toast.error(err as string);
+        feedback.error("Validation Error", err.errors[0]);
+      } else {
+        feedback.error("Error", err as string);
+      }
     }
   };
 
@@ -205,7 +208,7 @@ export default function ManageCoupons() {
         abortEarly: false,
       });
 
-      const response = await dispatch(
+      await dispatch(
         updateCoupon({ id: editingItem.id, ...validated })
       ).unwrap();
 
@@ -215,11 +218,14 @@ export default function ManageCoupons() {
         )
       );
 
-      toast.success(response.message || "Coupon updated!");
+      feedback.success("Success", "Coupon updated successfully!");
       closeModal();
     } catch (err) {
-      if (err instanceof yup.ValidationError) toast.error(err.errors[0]);
-      else toast.error(err as string);
+      if (err instanceof yup.ValidationError) {
+        feedback.error("Validation Error", err.errors[0]);
+      } else {
+        feedback.error("Error", err as string);
+      }
     }
   };
 
@@ -245,13 +251,14 @@ export default function ManageCoupons() {
         )
       );
 
-      toast.success(
+      feedback.success(
+        "Success",
         `Coupon ${
           confirmState.isActive ? "deactivated" : "activated"
         } successfully`
       );
     } catch (err) {
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setActionLoading(false);
       setConfirmState(null);

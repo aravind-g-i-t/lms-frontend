@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { Heart, Search, Star } from "lucide-react";
-import { toast } from "react-toastify";
 
 import type { AppDispatch } from "../../redux/store";
 import { formatDuration } from "../../utils/formats";
 import { getFavourites, removeFromFavourites } from "../../services/learnerServices";
+import { useFeedback } from "../../hooks/useFeedback";
 
 interface FavouriteCourse {
   id: string;
@@ -25,6 +25,7 @@ interface FavouriteCourse {
 
 const MyFavourites = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [courses, setCourses] = useState<FavouriteCourse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,14 +65,14 @@ const MyFavourites = () => {
         setTotalPages(result.data.pagination.totalPages);
         
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchFavs();
-  }, [dispatch, currentPage, debouncedSearch,totalPages]);
+  }, [dispatch, currentPage, debouncedSearch,totalPages,feedback]);
 
   // Reset page on search change
   useEffect(() => {
@@ -83,9 +84,9 @@ const MyFavourites = () => {
     try {
       await dispatch(removeFromFavourites({courseId})).unwrap();
       setCourses((prev) => prev.filter((c) => c.id !== courseId));
-      toast.success("Removed from favourites");
+      feedback.success("Success", "Removed from favourites");
     } catch (err) {
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     }
   };
 

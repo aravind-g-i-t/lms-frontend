@@ -15,9 +15,9 @@ import { Pagination } from "../../components/shared/Pagination";
 import { getLearnerEnrollmentsForInstructor } from "../../services/instructorServices";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { toast } from "react-toastify";
 import { formatDuration } from "../../utils/formats";
 import { useNavigate } from "react-router-dom";
+import { useFeedback } from "../../hooks/useFeedback";
 
 /* =====================================================
    TYPES (NEW STRUCTURE - flat enrollments)
@@ -81,6 +81,7 @@ interface StudentSummary {
 
 const InstructorStudentsPage = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<StudentSummary[]>([]);
@@ -173,7 +174,6 @@ const InstructorStudentsPage = () => {
   //         setStats(response.data);
   //       }
   //     } catch (err) {
-  //       toast.error(err as string);
   //     }
   //   };
   //   fetchStats();
@@ -206,14 +206,14 @@ const InstructorStudentsPage = () => {
           setTotalPages(Math.ceil(response.data.total / limit))
         }
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchLearners();
-  }, [dispatch, page, debouncedSearch]);
+  }, [dispatch, page, debouncedSearch,feedback]);
 
   /* =====================================================
      UTILITY FUNCTIONS
@@ -345,7 +345,7 @@ const InstructorStudentsPage = () => {
               <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl shadow-lg shadow-teal-500/20">
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold gradient-text">My Students</h1>
+              <h1 className="text-4xl font-bold black-text">My Students</h1>
             </div>
             <p className="text-slate-600 text-lg ml-14">Track learners across your courses</p>
           </div>
@@ -488,7 +488,7 @@ const InstructorStudentsPage = () => {
                                 {student.learner.name.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white shadow-sm" />
+                            {/* <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white shadow-sm" /> */}
                           </div>
 
                           {/* Info */}

@@ -12,10 +12,10 @@ import {
     Award
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
-import { toast } from 'react-toastify';
 import { getFullCourseForLearner, markChapterAsCompleted, pingLearner, updateCurrentChapter } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CoursePlayerSkeleton from '../../components/learner/CoursePlayerSkeleton';
+import { useFeedback } from '../../hooks/useFeedback';
 
 
 export interface Resource {
@@ -86,6 +86,7 @@ const CoursePlayerPage = () => {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
+    const feedback = useFeedback();
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -133,7 +134,7 @@ const CoursePlayerPage = () => {
                     setCurrentChapter(courseData.modules[0].chapters[0]);
                 }
             } catch (err) {
-                toast.error(err as string);
+                feedback.error("Error", err as string);
                 navigate('/learner/dashboard');
             } finally {
                 setLoading(false);
@@ -141,7 +142,7 @@ const CoursePlayerPage = () => {
         };
 
         fetchCourse();
-    }, [courseId, dispatch, navigate]);
+    }, [courseId, dispatch, navigate,feedback]);
 
 
 
@@ -149,8 +150,8 @@ const CoursePlayerPage = () => {
         try {
             await dispatch(pingLearner()).unwrap()
 
-        } catch {
-            toast.error("Session expired. Please login again.");
+        } catch  {
+            feedback.error("Error", "Session expired. Please login again.");
         }
     };
 
@@ -209,7 +210,7 @@ const CoursePlayerPage = () => {
 
         try {
             await dispatch(markChapterAsCompleted({ courseId: course.id, chapterId: currentChapter.id })).unwrap();
-            toast.success('Chapter marked as complete!');
+            feedback.success("Success", "Chapter marked as complete!");
 
             setCourse({
                 ...course,
@@ -219,7 +220,7 @@ const CoursePlayerPage = () => {
 
             goToNextChapter();
         } catch (err) {
-            toast.error(err as string);
+            feedback.error("Error", err as string);
         }
     };
 

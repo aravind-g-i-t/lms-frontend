@@ -12,10 +12,10 @@ import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { Pagination } from "../../components/shared/Pagination";
-import { toast } from "react-toastify";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 import * as yup from "yup";
+import { useFeedback } from "../../hooks/useFeedback";
 
 const categorySchema = yup.object().shape({
   name: yup
@@ -57,6 +57,7 @@ interface Category {
 
 export default function ManageCategories() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
@@ -96,14 +97,14 @@ export default function ManageCategories() {
         setCategories(response.data.categories ?? []);
         setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCategories();
-  }, [dispatch, page, search, status]);
+  }, [dispatch, page, search, status,feedback]);
 
   const openModal = (item?: Category) => {
     if (item) {
@@ -139,12 +140,12 @@ export default function ManageCategories() {
 
       setCategories((prev) => [response.data, ...prev]);
       closeModal();
-      toast.success("Category added successfully!");
+      feedback.success("Category Added","Category added successfully!");
     } catch (err) {
       if (err instanceof yup.ValidationError) {
-        toast.error(err.errors[0]);
+        feedback.error("Validation Error", err.errors[0]);
       } else {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     } finally {
       setLoading(false);
@@ -176,12 +177,12 @@ export default function ManageCategories() {
       );
 
       closeModal();
-      toast.success("Category updated successfully!");
+      feedback.success("Category Updated","Category updated successfully!");
     } catch (err) {
       if (err instanceof yup.ValidationError) {
-        toast.error(err.errors[0]);
+        feedback.error("Validation Error", err.errors[0]);
       } else {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     } finally {
       setLoading(false);
@@ -211,13 +212,14 @@ export default function ManageCategories() {
         )
       );
 
-      toast.success(
+      feedback.success(
+        "Success",
         `Category ${
           confirmState.isActive ? "blocked" : "activated"
         } successfully`
       );
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     } finally {
       setActionLoading(false);
       setConfirmState(null);

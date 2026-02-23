@@ -122,8 +122,8 @@ import { useDispatch } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch } from '../../redux/store';
 import { addChapter, addNewModule, addQuestion, addResource, createQuiz, deleteChapter, deleteModule, deleteQuestion, deleteQuiz, deleteResource, getCategoryOptions, getCourseDetails, updateChapterInfo, updateCourseInfo, updateCourseObjectives, updateCoursePrerequisites, updateCoursePreviewVideo, updateCourseTags, updateCourseThumbnail, updateModuleInfo, updateQuestion, updateQuiz, updateVideo } from '../../services/instructorServices';
-import { toast } from 'react-toastify';
 import { getPresignedDownloadUrl, uploadImageToS3, uploadResourceToS3, uploadVideoToS3 } from '../../config/s3Config';
+import { useFeedback } from '../../hooks/useFeedback';
 
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
@@ -134,6 +134,7 @@ export type VerificationStatus = "not_verified" | "under_review" | "verified" | 
 
 const EditCoursePage = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
 
@@ -184,7 +185,7 @@ const EditCoursePage = () => {
         const response = await dispatch(getCategoryOptions()).unwrap();
         setCategories(response.data.categories);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
     const fetchCourseDetails = async () => {
@@ -199,13 +200,13 @@ const EditCoursePage = () => {
 
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
 
     fetchCategories();
     fetchCourseDetails();
-  }, [dispatch, courseId]);
+  }, [dispatch, courseId,feedback]);
 
   const handleCreateQuiz = async () => {
     if (!courseData) return;
@@ -223,7 +224,7 @@ const EditCoursePage = () => {
       
       // setShowQuizForm(true);
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -237,9 +238,9 @@ const EditCoursePage = () => {
         timeLimitMinutes: quizData.timeLimitMinutes
       })).unwrap();
 
-      toast.success('Quiz settings updated');
+      feedback.success("Success", "Quiz settings updated");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -264,9 +265,9 @@ const EditCoursePage = () => {
       } : prev);
 
       setNewQuestion(null);
-      toast.success('Question added successfully');
+      feedback.success("Success", "Question added successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -293,9 +294,9 @@ const EditCoursePage = () => {
       } : prev);
 
       setEditingQuestion(null);
-      toast.success('Question updated');
+      feedback.success("Success", "Question updated");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -315,9 +316,9 @@ const EditCoursePage = () => {
         totalPoints: prev.totalPoints - points
       } : prev);
 
-      toast.success('Question deleted');
+      feedback.success("Success", "Question deleted");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -343,9 +344,9 @@ const EditCoursePage = () => {
         certificationQuizId: null
       } as Course : prev);
 
-      toast.success('Quiz deleted successfully');
+      feedback.success("Success", "Quiz deleted successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -360,7 +361,7 @@ const EditCoursePage = () => {
     try {
       const objectKey = await uploadVideoToS3(chapterVideoFile);
       if (!objectKey) {
-        toast.error("Course video upload failed");
+        feedback.error("Error", "Course video upload failed");
         return;
       }
 
@@ -399,9 +400,9 @@ const EditCoursePage = () => {
       setChapterVideoPreview(null);
       setAddChapterModuleId(null)
 
-      toast.success(result.message || "Chapter added successfully");
+      feedback.success("Success", result.message || "Chapter added successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
 
   };
@@ -412,7 +413,7 @@ const EditCoursePage = () => {
     try {
       const objectKey = await uploadImageToS3(thumbnailFile);
       if (!objectKey) {
-        toast.error("Identity proof upload failed");
+        feedback.error("Error", "Thumbnail upload failed");
         return;
       }
 
@@ -431,9 +432,9 @@ const EditCoursePage = () => {
       setThumbnailFile(null);
       setThumbnailPreview(null);
 
-      toast.success(result.message || "Thumbnail updated successfully");
+      feedback.success("Success", result.message || "Thumbnail updated successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   }
 
@@ -451,7 +452,7 @@ const EditCoursePage = () => {
         prev ? ({ ...prev, thumbnail: null } as Course) : prev
       );
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -461,7 +462,7 @@ const EditCoursePage = () => {
     try {
       const objectKey = await uploadVideoToS3(previewVideoFile);
       if (!objectKey) {
-        toast.error("Preview video upload failed");
+        feedback.error("Error", "Preview video upload failed");
         return;
       }
 
@@ -481,9 +482,9 @@ const EditCoursePage = () => {
       setPreviewVideoFile(null);
       setPreviewVideoPreview(null);
 
-      toast.success(result.message || "Preview video updated successfully");
+      feedback.success("Success", result.message || "Preview video updated successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -502,7 +503,7 @@ const EditCoursePage = () => {
         prev ? ({ ...prev, previewVideo: null } as Course) : prev
       );
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -578,8 +579,9 @@ const EditCoursePage = () => {
         level: courseData.level,
         price: courseData.price
       })).unwrap()
+      feedback.success("Success", "Course information updated successfully");
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -596,7 +598,7 @@ const EditCoursePage = () => {
         description
       })).unwrap()
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -614,7 +616,7 @@ const EditCoursePage = () => {
         description
       })).unwrap()
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -628,7 +630,7 @@ const EditCoursePage = () => {
       console.log("objectKey", objectKey);
 
       if (!objectKey) {
-        toast.error("Video upload failed");
+        feedback.error("Error", "Video upload failed");
         return;
       }
       const videoDuration = await getVideoDuration(videoFile);
@@ -675,7 +677,7 @@ const EditCoursePage = () => {
 
 
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -711,7 +713,7 @@ const EditCoursePage = () => {
           : prev
       );
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -746,7 +748,7 @@ const EditCoursePage = () => {
           : prev
       );
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -764,7 +766,7 @@ const EditCoursePage = () => {
         setNewTag('');
       }
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
 
   };
@@ -784,7 +786,7 @@ const EditCoursePage = () => {
         prev ? ({ ...prev, tags: newTags } as Course) : prev
       );
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   };
 
@@ -801,7 +803,7 @@ const EditCoursePage = () => {
         setNewLearning('');
       }
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
 
   };
@@ -821,7 +823,7 @@ const EditCoursePage = () => {
         prev ? ({ ...prev, whatYouWillLearn: newObjectives } as Course) : prev
       );
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   };
 
@@ -841,7 +843,7 @@ const EditCoursePage = () => {
         setNewPrerequisite('');
       }
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }; 
 
@@ -860,7 +862,7 @@ const EditCoursePage = () => {
         prev ? ({ ...prev, prerequisites: newPrerequisites } as Course) : prev
       );
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   };
 
@@ -893,7 +895,7 @@ const EditCoursePage = () => {
 
       setNewModule(null)
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   };
 
@@ -955,7 +957,7 @@ const EditCoursePage = () => {
     console.log("objectKey", objectKey);
 
     if (!objectKey) {
-      toast.error("Failed to upload resource.");
+      feedback.error("Error", "Failed to upload resource.");
       return;
     }
 

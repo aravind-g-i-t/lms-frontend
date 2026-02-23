@@ -8,10 +8,10 @@ import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import FallbackUI from "../../components/shared/FallbackUI";
-import { toast } from "react-toastify";
 import { X } from "lucide-react";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type Learner = {
   id: string;
@@ -33,6 +33,7 @@ type Status = "All" | "Active" | "Blocked";
 
 export default function ManageLearners() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [learners, setLearners] = useState<Learner[]>([]);
   const [page, setPage] = useState(1);
@@ -60,7 +61,7 @@ export default function ManageLearners() {
       } catch (err) {
         setFetchFailure(true)
         console.error("Failed to fetch learners:", err);
-        toast.error(err as string)
+        feedback.error("Error", err as string)
       } finally {
         setLoading(false)
       }
@@ -69,7 +70,7 @@ export default function ManageLearners() {
     fetchLearners();
 
 
-  }, [dispatch, page, search, status]);
+  }, [dispatch, page, search, status,feedback]);
 
   const handleRequestToggle = useCallback((id: string, isActive: boolean) => {
     setConfirmState({ id, isActive });
@@ -91,11 +92,12 @@ export default function ManageLearners() {
         )
       );
 
-      toast.success(
+      feedback.success(
+        "Success",
         `Learner ${confirmState.isActive ? "blocked" : "unblocked"} successfully`
       );
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     } finally {
       setActionLoading(false);
       setConfirmState(null);
@@ -109,9 +111,9 @@ export default function ManageLearners() {
       const response = await dispatch(getLearnerData({ id })).unwrap();
       setLearnerView(response.data.learner);
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const columns = useMemo<Column<Learner>[]>(() => [
     {

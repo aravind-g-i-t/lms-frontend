@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2 } from "lucide-react";
-import { toast } from "react-toastify";
 import type { AppDispatch } from "../../redux/store";
 import { getQuizForLearner, submitQuizAttempt } from "../../services/learnerServices";
 import { QuizSkeleton } from "../../components/learner/QuizSkeleton";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 interface QuizQuestion {
@@ -61,6 +61,7 @@ export interface QuizAnswer {
 const QuizPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -94,8 +95,8 @@ const QuizPage: React.FC = () => {
         setQuiz(q);
         setAnswers(init);
         // setStartTimeMs(Date.now());
-      } catch {
-        toast.error("Failed to load quiz");
+      } catch (err) {
+        feedback.error("Failed to load quiz", err as string);
         navigate(`/learner/courses/${courseId}/learn`);
       } finally {
         setLoading(false);
@@ -103,7 +104,7 @@ const QuizPage: React.FC = () => {
     };
 
     load();
-  }, [courseId, dispatch, navigate]);
+  }, [courseId, dispatch, navigate,feedback]);
 
   const current = quiz?.questions[currentIndex] ?? null;
 
@@ -153,7 +154,7 @@ const QuizPage: React.FC = () => {
 
       setSubmitted(true);
     } catch (err) {
-      toast.error(err as string);
+      feedback.error("Failed to submit quiz", err as string);
     } finally {
       setSubmitting(false)
     }

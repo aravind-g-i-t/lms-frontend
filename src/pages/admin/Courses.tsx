@@ -6,9 +6,9 @@ import { Pagination } from "../../components/shared/Pagination";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import type { AppDispatch } from "../../redux/store";
 import { getCoursesForAdmin, updateCourseVerification, } from "../../services/adminServices";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus = "not_verified" | "under_review" | "verified" | "rejected" | "blocked";
@@ -54,6 +54,7 @@ const verificationStatusMap: Record<string, string | undefined> = {
 
 export default function ManageCourses() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate()
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -84,14 +85,14 @@ export default function ManageCourses() {
         setCourses(response.data.courses ?? []);
         setTotalPages(response.data.pagination.totalPages ?? 1);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, [dispatch, page, search, status, verStatus]);
+  }, [dispatch, page, search, status, verStatus,feedback]);
 
   const handleCourseApproval = async () => {
     try {
@@ -121,9 +122,9 @@ export default function ManageCourses() {
       setModalOpen(false);
       setRemarks("");
       setModalType(null);
-      toast.success(`Course ${modalType.replace("_", " ") + "ed"} successfully.`);
+      feedback.success("Success", `Course ${modalType.replace("_", " ") + "ed"} successfully.`);
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 

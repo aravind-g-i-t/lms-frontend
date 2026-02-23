@@ -6,7 +6,8 @@ import ScheduleSessionModal from "../../components/instructor/ScheduleSessionMod
 import { cancelLiveSession, GetLiveSessionsForInstructor, startLiveSession } from "../../services/instructorServices";
 import { useSocket } from "../../hooks/useSocket";
 import { useLiveSession } from "../../hooks/useLiveSession";
-import { toast } from "react-toastify";
+import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 type LiveSessionStatus = "scheduled" | "live" | "ended" | "cancelled";
@@ -31,6 +32,7 @@ export interface LiveSession {
 
 const InstructorLiveSessions = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const socket = useSocket()
   const { startSession } = useLiveSession()
 
@@ -41,6 +43,9 @@ const InstructorLiveSessions = () => {
   const [livePage, setLivePage] = useState(1);
   const [liveTotalPages, setLiveTotalPages] = useState(1);
   const [liveLoading, setLiveLoading] = useState(false);
+  const [confirmStartSessionState, setConfirmStartSessionState] = useState<{ sessionId: string, courseId: string } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmCancelSessionState, setConfirmCancelSessionState] = useState<{ sessionId: string, courseId: string } | null>(null);
 
 
   const fetchLiveSessions = useCallback(async () => {
@@ -65,6 +70,7 @@ const InstructorLiveSessions = () => {
   const handleStartSession = async (sessionId: string, courseId: string) => {
     if (!socket) return
     try {
+      setActionLoading(true);
       const result = await dispatch(startLiveSession({ sessionId })).unwrap();
       console.log("result", result.roomId);
 
@@ -86,7 +92,10 @@ const InstructorLiveSessions = () => {
       })
 
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
+    } finally {
+      setActionLoading(false);
+      setConfirmStartSessionState(null);
     }
   }
 
@@ -102,7 +111,7 @@ const InstructorLiveSessions = () => {
       })
 
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -129,7 +138,7 @@ const InstructorLiveSessions = () => {
         )
       );
 
-      toast.info("Live session ended!");
+      feedback.info("Information", "Live session ended!");
     };
 
     socket.on("liveSessionEnded", handleLiveEnded);
@@ -137,11 +146,12 @@ const InstructorLiveSessions = () => {
     return () => {
       socket.off("liveSessionEnded", handleLiveEnded);
     };
-  }, [socket]);
+  }, [socket,feedback]);
 
   const handleCancelSession = async (sessionId: string, courseId: string) => {
     if (!socket) return
     try {
+      setActionLoading(true);
       const result = await dispatch(cancelLiveSession({ sessionId })).unwrap();
       const updatedLiveSession = result.data.liveSession;
       setLiveSessions(sessions => {
@@ -159,7 +169,10 @@ const InstructorLiveSessions = () => {
       });
 
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
+    } finally {
+      setActionLoading(false);
+      setConfirmCancelSessionState(null);
     }
   }
 
@@ -289,7 +302,7 @@ const InstructorLiveSessions = () => {
                       <>
                         <button
                           disabled={!isStartEnabled}
-                          onClick={() => handleStartSession(session.id, session.courseId)}
+                          onClick={() => setConfirmStartSessionState({ sessionId: session.id, courseId: session.courseId })}
                           className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm
                         ${isStartEnabled
                               ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
@@ -301,7 +314,7 @@ const InstructorLiveSessions = () => {
                         </button>
 
                         <button
-                          onClick={() => handleCancelSession(session.id, session.courseId)}
+                          onClick={() => setConfirmCancelSessionState({ sessionId: session.id, courseId: session.courseId })}
                           className="flex items-center px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-all"
                         >
                           <Ban className="w-4 h-4 mr-1.5" />
@@ -377,6 +390,40 @@ const InstructorLiveSessions = () => {
           }}
         />
       </div>
+      <ConfirmDialog
+        open={!!confirmCancelSessionState}
+        title={"Cancel Session"}
+        description={"Are you sure you want to cancel this session? This action cannot be undone."}
+        confirmText={"Yes, Cancel Session"}
+        destructive={true}
+        loading={actionLoading}
+        onCancel={() => setConfirmCancelSessionState(null)}
+        onConfirm={() => {
+          if (!confirmCancelSessionState) return;
+          handleCancelSession(
+            confirmCancelSessionState.sessionId,
+            confirmCancelSessionState.courseId
+          );
+        }}
+
+      />
+      <ConfirmDialog
+        open={!!confirmStartSessionState}
+        title={"Start Session"}
+        description={"Are you sure you want to start this session now?"}
+        confirmText={"Yes, Start Session"}
+        loading={actionLoading}
+        onCancel={() => setConfirmStartSessionState(null)}
+        onConfirm={() => {
+          if (!confirmStartSessionState) return;
+
+          handleStartSession(
+            confirmStartSessionState.sessionId,
+            confirmStartSessionState.courseId
+          );
+        }}
+
+      />
     </div>
   );
 };

@@ -20,10 +20,11 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { logout } from "../../services/userAuthServices";
-import toast from "react-hot-toast";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 const BusinessLayout: React.FC = () => {
+  const feedback= useFeedback();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>()
@@ -54,7 +55,7 @@ const BusinessLayout: React.FC = () => {
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      toast.success("Logged out successfully");
+      feedback.success("Logged Out", "Logged out successfully");
       navigate("/signin");
 
 
@@ -68,7 +69,7 @@ const BusinessLayout: React.FC = () => {
       }
 
 
-      toast.error(message);
+      feedback.error("Error", message);
       navigate("/signin");
     }
   };

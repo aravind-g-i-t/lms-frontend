@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { 
+import {
   BookOpen, Play, CheckCircle, ChevronRight,
   Search, Grid, List, Star,
   Clock
 } from 'lucide-react';
-import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
 import { getEnrollments } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
+import { useFeedback } from '../../hooks/useFeedback';
 
 type ViewMode = 'grid' | 'list';
 
@@ -29,6 +29,7 @@ interface EnrolledCourse {
 }
 
 const MyCourses = () => {
+  const feedback = useFeedback();
   const dispatch = useDispatch<AppDispatch>();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,14 +76,14 @@ const MyCourses = () => {
         setTotalPages(Math.ceil(totalCount / itemsPerPage));
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, [dispatch, currentPage, debouncedSearch]);
+  }, [dispatch, currentPage, debouncedSearch,feedback]);
 
   // Reset page when search or viewMode changes
   useEffect(() => {
@@ -204,7 +205,7 @@ const MyCourses = () => {
                 >
                   <Play className="w-4 h-4" />
                   {course.progressPercentage === 0 ? 'Start Learning' :
-                   course.progressPercentage === 100 ? 'Review' : 'Continue'}
+                    course.progressPercentage === 100 ? 'Review' : 'Continue'}
                 </Link>
               </div>
             </div>
@@ -266,7 +267,7 @@ const MyCourses = () => {
                     >
                       <Play className="w-4 h-4" />
                       {course.progressPercentage === 0 ? 'Start' :
-                       course.progressPercentage === 100 ? 'Review' : 'Continue'}
+                        course.progressPercentage === 100 ? 'Review' : 'Continue'}
                     </Link>
                   </div>
 
@@ -278,7 +279,7 @@ const MyCourses = () => {
       )}
 
       {/* Pagination */}
-      {!!totalPages  && (
+      {!!totalPages && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
             className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
@@ -292,9 +293,8 @@ const MyCourses = () => {
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 rounded ${
-                currentPage === i + 1 ? "bg-teal-600 text-white" : "bg-gray-200 text-gray-700"
-              }`}
+              className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-teal-600 text-white" : "bg-gray-200 text-gray-700"
+                }`}
             >
               {i + 1}
             </button>

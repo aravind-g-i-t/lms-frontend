@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { resendOTP, verifyOTP } from "../../services/userAuthServices";
 import { clearSignup } from "../../redux/slices/signupSlice";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
 import { AlertCircle } from "lucide-react";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 export default function OtpVerification() {
@@ -17,7 +17,8 @@ export default function OtpVerification() {
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-
+  const feedback = useFeedback();
+  
 
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(0);
@@ -107,11 +108,11 @@ export default function OtpVerification() {
 
 
       dispatch(clearSignup());
-      toast.success(response.message);
+      feedback.success("Success", response.message);
       navigate("/signin");
     } catch (err) {
       console.error("OTP verification failed", err);
-      toast.error(err as string);
+      feedback.error("Error", err as string);
       setError("Invalid OTP or expired. Please try again.");
     } finally {
       setLoading(false);
@@ -132,12 +133,12 @@ export default function OtpVerification() {
       await dispatch(resendOTP({ email })).unwrap();
 
 
-      toast.success("A new OTP has been sent to your email.");
+      feedback.success("Success", "A new OTP has been sent to your email.");
     } catch (err) {
       console.error(err);
       setError("Failed to resend OTP. Please try again.");
       setResendDisabled(false);
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setResendLoading(false)
     }

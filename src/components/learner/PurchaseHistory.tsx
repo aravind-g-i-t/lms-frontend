@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { History, Receipt, Download, Eye, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
+import { useFeedback } from '../../hooks/useFeedback';
 // import { getPurchaseHistory } from '../../../redux/services/learnerServices';
 
 type PaymentStatus = 'completed' | 'pending' | 'failed' | 'refunded';
@@ -26,6 +26,7 @@ interface Purchase {
 
 const PurchaseHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -85,14 +86,14 @@ const PurchaseHistory = () => {
           },
         ]);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPurchases();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

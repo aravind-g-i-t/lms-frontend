@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createLiveSession, getCourseOptions } from "../../services/instructorServices";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { toast } from "react-toastify";
+import { useFeedback } from "../../hooks/useFeedback";
 
 interface Props {
     isOpen: boolean;
@@ -17,6 +17,7 @@ interface Course {
 
 const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
     const dispatch = useDispatch<AppDispatch>();
+    const feedback = useFeedback();
 
     const [courseOptions, setCourseOptions] = useState<Course[]>([]);
     const [description, setDescription] = useState("");
@@ -39,7 +40,7 @@ const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
 
     const handleScheduleSession = async () => {
         if (!courseId || !time || !date) {
-            toast.error("Please fill in all required fields");
+            feedback.error("Error", "Please fill in all required fields");
             return;
         }
         setLoading(true);
@@ -61,7 +62,7 @@ const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
             setDurationInMinutes(60);
             onClose();
         } catch (error) {
-            toast.error(error as string);
+            feedback.error(error as string);
         } finally {
             setLoading(false);
         }

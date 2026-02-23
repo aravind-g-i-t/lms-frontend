@@ -5,10 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { adminSignin } from "../../services/adminServices";
 import type { AppDispatch } from "../../redux/store";
 
-import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 interface AdminSigninForm {
@@ -39,6 +39,7 @@ const adminSigninSchema = yup.object().shape({
 
 export default function AdminSignin() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +62,7 @@ export default function AdminSignin() {
       await dispatch(adminSignin(data)).unwrap();
       navigate("/admin/dashboard");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
       console.error("adminSigninError", error);
     } finally {
       setLoading(false);

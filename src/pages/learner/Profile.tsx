@@ -12,10 +12,10 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { getLearnerProfile, learnerResetPassword, updateLearnerProfile, updateLearnerProfileImage } from "../../services/learnerServices";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
 import { getPresignedDownloadUrl, uploadImageToS3 } from "../../config/s3Config";
 import * as yup from "yup";
 import { setUserName, setUserProfilePic } from "../../redux/slices/authSlice";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 // Yup Validation Schemas
@@ -51,7 +51,7 @@ const LearnerProfile: React.FC = () => {
 
 
   const dispatch = useDispatch<AppDispatch>();
-
+  const feedback = useFeedback();
 
   const [editableName, setEditableName] = useState("");
   const [email, setEmail] = useState('');
@@ -86,13 +86,13 @@ const LearnerProfile: React.FC = () => {
         setJoiningDate(learner.joiningDate);
       } catch (err) {
         console.error("Failed to fetch learners:", err);
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     };
 
 
     fetchProfile();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
 
   const handlePasswordChange = (field: string, value: string) => {
@@ -169,12 +169,12 @@ const LearnerProfile: React.FC = () => {
         confirmPassword: "",
       });
       setPasswordErrors({});
-      toast.success(result.message);
+      feedback.success("Success", result.message);
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 3000);
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -216,9 +216,9 @@ const LearnerProfile: React.FC = () => {
 
       setProfilePic(presignedUrl);
       dispatch(setUserProfilePic({ profilePic: presignedUrl }));
-      toast.success(result.message);
+      feedback.success("Success", result.message);
     } catch (err) {
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setImageLoading(false);
     }
@@ -231,7 +231,7 @@ const LearnerProfile: React.FC = () => {
       await profileUpdateSchema.validate({ name: editableName }, { abortEarly: false });
 
       if (!id) {
-        toast.error('User ID not found');
+        feedback.error("Error", "User ID not found");
         return;
       }
 
@@ -245,15 +245,15 @@ const LearnerProfile: React.FC = () => {
 
 
       dispatch(setUserName({ name: newName }));
-      toast.success(result.message);
+      feedback.success("Success", result.message);
       setNameError("");
     } catch (err) {
       if (err instanceof yup.ValidationError) {
         const error = err.errors[0];
         setNameError(error);
-        toast.error(error);
+        feedback.error("Error", error);
       } else {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       }
     }
   };

@@ -9,12 +9,14 @@ import DirectCall from './components/global/DirectCall';
 import { DirectCallProvider } from './providers/DirectCallProvider';
 import LiveSessionCall from './components/global/LIveSessionCall';
 import { LiveSessionProvider } from './providers/LiveSessionProvider';
+import { FeedbackProvider } from './providers/FeedbackProvider';
 
 function App() {
   const clientId=import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   return (
     <>
+    <FeedbackProvider>
     <SocketProvider>
       <DirectCallProvider>
         <LiveSessionProvider>
@@ -30,6 +32,7 @@ function App() {
       </LiveSessionProvider>
     </DirectCallProvider>
     </SocketProvider>
+    </FeedbackProvider>
     </>
   )
 }

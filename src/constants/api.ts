@@ -68,7 +68,8 @@ export const API = {
         HOME_LEARNER_DATA:"/learner/home/learner-data",
         POPULAR_COURSES:"/learner/courses/popular",
         CANCEL_ENROLLMENT:"/learner/enrollment/cancel",
-        WALLET:"/learner/wallet"
+        WALLET:"/learner/wallet",
+        INSTRUCTOR_DETAILS:"/learner/instructor/details"
 
 
 

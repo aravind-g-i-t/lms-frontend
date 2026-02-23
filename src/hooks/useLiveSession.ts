@@ -1,14 +1,15 @@
 import { useContext } from "react";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import type { AppDispatch } from "../redux/store";
 import { LiveSessionContext } from "../context/LiveSessionContext";
 import { endLiveSession } from "../services/instructorServices";
 import { useSocket } from "./useSocket";
+import { useFeedback } from "./useFeedback";
 // import { endLiveSession } from "../services/learnerServices";
 
 export const useLiveSession = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const socket = useSocket()
 
   const context = useContext(LiveSessionContext);
@@ -37,7 +38,7 @@ export const useLiveSession = () => {
 
       leaveSession();
     } catch (err) {
-      toast.error(err as string)
+      feedback.error("Error ending session", err as string)
     }
   };
 

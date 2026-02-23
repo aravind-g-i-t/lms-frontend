@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Award, Download, Calendar } from 'lucide-react';
-import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
 import { getLearnerCertificates } from '../../services/learnerServices';
+import { useFeedback } from '../../hooks/useFeedback';
 
 interface Certificate {
   id: string;
@@ -22,6 +22,7 @@ interface Certificate {
 
 const Certificates = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,14 +43,14 @@ const Certificates = () => {
         setCertificates(response.data.certificates);
         setTotalPages(response.data.totalPages);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCertificates();
-  }, [dispatch, page]);
+  }, [dispatch, page,feedback]);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {

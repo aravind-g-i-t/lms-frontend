@@ -5,8 +5,8 @@ import { setSignupCredentials } from "../../redux/slices/signupSlice";
 import { useNavigate } from "react-router-dom";
 import { verifyEmail } from "../../services/userAuthServices";
 import LearnerNav from "../../components/learner/LearnerNav";
-import { toast } from "react-toastify";
 import { AlertCircle } from "lucide-react";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 export default function ForgotPassword() {
@@ -16,6 +16,7 @@ export default function ForgotPassword() {
 
 
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
 
@@ -59,7 +60,7 @@ export default function ForgotPassword() {
       navigate("/reset/verify-otp");
     } catch (err) {
       console.error("Password reset request failed", err);
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setLoading(false)
     }

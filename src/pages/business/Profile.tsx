@@ -21,10 +21,10 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch } from "react-redux";
 import { applyForBusinessVerification, getBusinessProfile, resetBusinessPassword, updateBusinessLicense, updateBusinessProfile, updateBusinessProfileImage } from "../../services/businessServices";
 import type { AppDispatch } from "../../redux/store";
-import { toast } from "react-toastify";
 import { getPresignedDownloadUrl, uploadImageToS3, uploadPdfToS3 } from "../../config/s3Config";
 import * as yup from "yup";
 import { setUserName, setUserProfilePic } from "../../redux/slices/authSlice";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 const profileValidationSchema = yup.object().shape({
@@ -79,6 +79,7 @@ const passwordValidationSchema = yup.object().shape({
 
 const BusinessProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const [isEditing, setIsEditing] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -124,13 +125,13 @@ const BusinessProfile = () => {
         setLicense(data.license);
       } catch (err) {
         console.error("Failed to fetch business profile:", err);
-        toast.error(err as string)
+        feedback.error("Error", err as string)
       }
     };
 
 
     fetchProfile();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
 
   const validateForm = async (): Promise<boolean> => {
@@ -178,7 +179,7 @@ const BusinessProfile = () => {
   const handleSave = async () => {
     const isValid = await validateForm();
     if (!isValid) {
-      toast.error("Please fix the validation errors before saving");
+      feedback.error("Validation Error", "Please fix the validation errors before saving");
       return;
     }
 
@@ -189,9 +190,9 @@ const BusinessProfile = () => {
       setIsEditing(false);
       setValidationErrors({});
       dispatch(setUserName({ name }));
-      toast.success(result.message)
+      feedback.success("Success", result.message)
     } catch (err) {
-      toast.error(err as string)
+      feedback.error("Error", err as string)
     }
   };
 
@@ -219,9 +220,9 @@ const BusinessProfile = () => {
       setProfilePic(imageURL);
 
 
-      toast.success(result.message);
+      feedback.success("Success", result.message);
     } catch (err) {
-      toast.error(err as string);
+      feedback.error("Error", err as string);
     } finally {
       setImageLoading(false);
     }
@@ -243,9 +244,9 @@ const BusinessProfile = () => {
       setNewPassword("");
       setConfirmPassword("");
       setPasswordErrors({});
-      toast.success(response.message);
+      feedback.success("Success", response.message);
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     } finally {
       setIsChangingPassword(false);
     }
@@ -259,11 +260,11 @@ const BusinessProfile = () => {
       console.log(response);
 
 
-      toast.success(response.message);
+      feedback.success("Success", response.message);
       setVerificationStatus("Under Review");
     } catch (err) {
       console.error("Failed to apply for verification:", err);
-      toast.error(err as string)
+      feedback.error("Error", err as string)
     } finally {
       setIsApplying(false);
     }
@@ -274,7 +275,7 @@ const BusinessProfile = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.type !== "application/pdf") {
-      toast.error("Please upload a valid PDF file");
+      feedback.error("Error", "Please upload a valid PDF file");
       return;
     }
 
@@ -291,9 +292,9 @@ const BusinessProfile = () => {
       setLicense(pdfURL);
 
 
-      toast.success("Business license uploaded successfully");
+      feedback.success("Success", "Business license uploaded successfully");
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 

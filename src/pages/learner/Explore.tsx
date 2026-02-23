@@ -5,10 +5,10 @@ import { Link } from "react-router-dom";
 import { addToFavourites, getCoursesForLearners, removeFromFavourites } from "../../services/learnerServices";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
-import { toast } from "react-toastify";
 import { getCategoryOptions } from "../../services/instructorServices";
 import { formatDuration } from "../../utils/formats";
 import ExploreSkeleton from "../../components/learner/ExploreSkeleton";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
 type Category = { id: string; name: string; };
@@ -31,6 +31,7 @@ interface Course {
 
 const Explore = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const { id } = useSelector((state: RootState) => state.auth)
   const [courses, setCourses] = useState<Course[]>([]);
   const [search, setSearch] = useState("");
@@ -96,12 +97,14 @@ const Explore = () => {
       try {
         const response = await dispatch(getCategoryOptions()).unwrap();
         setCategories(response.data.categories);
-      } catch {
-        toast.error("Internal server error.");
+      } catch (err) {
+        console.log(err);
+        
+        feedback.error("Error", "Failed to load categories");
       }
     };
     fetchCategories();
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const handleAddToFavourites = useCallback(async (courseId: string) => {
     try {
@@ -110,9 +113,9 @@ const Explore = () => {
         prev.map(c => c.id === courseId ? { ...c, isFavourite: true } : c)
       );
     } catch (e) {
-      toast.error(e as string);
+      feedback.error("Error", e as string);
     }
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
   const handleRemoveFromFavourites = useCallback(async (courseId: string) => {
     try {
@@ -121,9 +124,9 @@ const Explore = () => {
         prev.map(c => c.id === courseId ? { ...c, isFavourite: false } : c)
       );
     } catch (e) {
-      toast.error(e as string);
+      feedback.error("Error", e as string);
     }
-  }, [dispatch]);
+  }, [dispatch,feedback]);
 
 
   // const handleRemoveFromFavourites = async (courseId: string) => {
@@ -139,9 +142,7 @@ const Explore = () => {
   //       )
   //     );
 
-  //     toast.success(result.message)
   //   } catch (error) {
-  //     toast.error(error as string)
   //   }
   // }
 

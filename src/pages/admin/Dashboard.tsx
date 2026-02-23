@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { getAdminDashboard } from "../../services/adminServices";
-import { toast } from "react-toastify";
+import { useFeedback } from "../../hooks/useFeedback";
 
 
 interface Stats{
@@ -96,6 +96,7 @@ interface MonthlyRevenue {
 
 const AdminDashboard = () => {
   const dispatch =useDispatch<AppDispatch>()
+  const feedback = useFeedback();
   const [animate, setAnimate] = useState(false);
   const [recentEnrollments,setRecentEnrollments]=useState<RecentEnrollment[]>([]);
   const [topCourses,setTopCourses]=useState<TopCourse[]>([]);
@@ -120,13 +121,13 @@ const AdminDashboard = () => {
           setAdminStats(response.data.stats)
           // setLoading(false);
         } catch (err) {
-          toast.error(err as string);
+          feedback.error("Error", err as string);
           // setLoading(false);
         }
       };
   
       fetchDashboardData();
-    }, [dispatch]);
+    }, [dispatch,feedback]);
 
   const maxRevenue = useMemo(
     () => Math.max(...adminRevenue.map(r => r.companyRevenue)),

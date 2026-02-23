@@ -9,13 +9,13 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import type { AppDispatch } from "../../redux/store";
-import { toast } from "react-toastify";
 import {
   getLiveSessionsForLearner,
   joinLiveSession,
 } from "../../services/learnerServices";
 import { useLiveSession } from "../../hooks/useLiveSession";
 import { useSocket } from "../../hooks/useSocket";
+import { useFeedback } from "../../hooks/useFeedback";
 
 interface LiveSession {
   id: string;
@@ -35,6 +35,7 @@ const CourseLiveSessionsPage = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const socket = useSocket()
   const { startSession } = useLiveSession();
 
@@ -61,7 +62,7 @@ const CourseLiveSessionsPage = () => {
         setSessions(response.data.sessions);
         setTotalPages(response.data.totalPages);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
         navigate(`/learner/courses/${courseId}/learn`);
       } finally {
         setLoading(false);
@@ -69,7 +70,7 @@ const CourseLiveSessionsPage = () => {
     };
 
     fetchSessions();
-  }, [page, courseId, dispatch, navigate]);
+  }, [page, courseId, dispatch, navigate,feedback]);
 
   useEffect(() => {
     if (!socket) return;
@@ -98,7 +99,7 @@ const CourseLiveSessionsPage = () => {
         )
       );
 
-      toast.info("Live session started!");
+      feedback.info("Info","Live session started!");
     };
 
     socket.on("liveSessionStarted", handleLiveStarted);
@@ -106,7 +107,7 @@ const CourseLiveSessionsPage = () => {
     return () => {
       socket.off("liveSessionStarted", handleLiveStarted);
     };
-  }, [socket, courseId]);
+  }, [socket, courseId,feedback]);
 
   useEffect(() => {
     if (!socket) return;
@@ -131,7 +132,7 @@ const CourseLiveSessionsPage = () => {
         )
       );
 
-      toast.info("Live session ended!");
+      feedback.info("Info","Live session ended!");
     };
 
     socket.on("liveSessionEnded", handleLiveEnded);
@@ -139,7 +140,7 @@ const CourseLiveSessionsPage = () => {
     return () => {
       socket.off("liveSessionEnded", handleLiveEnded);
     };
-  }, [socket, courseId]);
+  }, [socket, courseId,feedback]);
 
 
 
@@ -165,7 +166,7 @@ const CourseLiveSessionsPage = () => {
         sessionId,
       });
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 

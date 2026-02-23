@@ -6,12 +6,12 @@ import { Pagination } from "../../components/shared/Pagination";
 // import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import type { AppDispatch } from "../../redux/store";
 import {
   getCoursesForAdmin,
   updateCourseVerification,
 } from "../../services/adminServices";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type VerificationStatus =
   | "not_verified"
@@ -50,6 +50,7 @@ export interface Course {
 
 export default function Verifications() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -80,14 +81,14 @@ export default function Verifications() {
         setCourses(response.data.courses ?? []);
         setTotalPages(response.data.pagination.totalPages ?? 1);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, [dispatch, page, search]);
+  }, [dispatch, page, search,feedback]);
 
   const handleCourseVerification = async () => {
     try {
@@ -115,11 +116,12 @@ export default function Verifications() {
       setRemarks("");
       setModalType(null);
 
-      toast.success(
+      feedback.success(
+        "Success",
         `Course ${modalType === "approve" ? "approved" : "rejected"} successfully.`
       );
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 

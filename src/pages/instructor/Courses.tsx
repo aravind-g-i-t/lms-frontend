@@ -8,6 +8,7 @@ import {
   Clock,
   Calendar,
   IndianRupee,
+  BookOpen,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -15,10 +16,10 @@ import { SearchBar } from '../../components/shared/SearchBar';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
 import { getCoursesForInstructor } from '../../services/instructorServices';
-import { toast } from 'react-toastify';
 import { Pagination } from '../../components/shared/Pagination';
 import { formatDuration } from '../../utils/formats';
 import InstructorCoursesSkeleton from '../../components/instructor/InstructorCoursesSkeleton';
+import { useFeedback } from '../../hooks/useFeedback';
 
 export type CourseStatus = "draft" | "published" | "archived";
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
@@ -43,6 +44,7 @@ interface Course {
 const InstructorCourses = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
+  const feedback = useFeedback();
   const [selectedStatus, setSelectedStatus] = useState<CourseStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -72,15 +74,15 @@ const InstructorCourses = () => {
         setTotalPages(response.data.pagination.totalPages ?? 1);
         setCount(response.data.pagination.totalCount)
       } catch (err) {
-        toast.error(err as string)
-      }finally{
+        feedback.error("Error", err as string)
+      } finally {
         setLoading(false)
       }
     };
 
     fetchCourses();
 
-  }, [dispatch, page, searchQuery, selectedStatus]);
+  }, [dispatch, page, searchQuery, selectedStatus,feedback]);
 
   const handleEdit = (id: string) => {
     navigate(`/instructor/courses/${id}/edit`)
@@ -147,18 +149,33 @@ const InstructorCourses = () => {
   };
 
   if (loading) {
-  return <InstructorCoursesSkeleton />;
-}
+    return <InstructorCoursesSkeleton />;
+  }
 
   return (
     <>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
+        <div className="relative">
+          <div className="absolute -top-4 -left-4 w-24 h-24 bg-teal-100 rounded-full blur-3xl opacity-30" />
+          <div className="absolute -top-8 right-20 w-32 h-32 bg-cyan-100 rounded-full blur-3xl opacity-20" />
+
+          <div className="relative">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl shadow-lg shadow-teal-500/20">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold gradient-text">My Courses</h1>
+            </div>
+            <p className="text-slate-600 text-lg ml-14">Manage and grow your course library</p>
+          </div>
+        </div>
         <Link to="/instructor/courses/create" className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
           <Plus className="w-5 h-5 mr-2" />
           Create New Course
         </Link>
       </div>
+
+      
 
       <div className="mb-6 flex justify-between items-center">
         <SearchBar
@@ -182,8 +199,8 @@ const InstructorCourses = () => {
                 key={key}
                 onClick={() => setSelectedStatus(key as CourseStatus | 'all')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${selectedStatus === key
-                    ? 'border-teal-500 text-teal-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-teal-500 text-teal-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 {label} {(selectedStatus === key) ? "( " + count + " )" : ""}

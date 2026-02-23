@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
-import { toast } from 'react-toastify';
 import type { AppDispatch } from '../../redux/store';
 import { getWalletData } from '../../services/learnerServices';
+import { useFeedback } from '../../hooks/useFeedback';
 // import { getWalletDetails } from '../../../redux/services/learnerServices';
 
 interface WalletData {
@@ -28,6 +28,7 @@ const reasonLabel: Record<Transaction['reason'], string> = {
 
 const MyWallet = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -86,14 +87,14 @@ const MyWallet = () => {
         //   ],
         // });
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchWallet();
-  }, [dispatch,page]);
+  }, [dispatch,page,feedback]);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {

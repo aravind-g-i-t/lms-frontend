@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
-import { toast } from "react-toastify";
 import { formatDuration } from "../../utils/formats";
 import {
 
@@ -24,6 +23,7 @@ import {
 import { getCourseAnalytics, getCourseDetailsForAdmin, updateCourseVerification } from "../../services/adminServices";
 import FallbackUI from "../../components/shared/FallbackUI";
 import CourseSkeleton from "../../components/admin/CourseSkeleton";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type CourseStatus = "draft" | "published" | "archived";
 type VerificationStatus =
@@ -126,6 +126,7 @@ const VER_STATUS_LABEL: Record<VerificationStatus, string> = {
 const ViewCourseForAdmin = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
   const navigate = useNavigate()
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set());
   const [showPreview, setShowPreview] = useState(false);
@@ -149,13 +150,13 @@ const ViewCourseForAdmin = () => {
         const response = await dispatch(getCourseDetailsForAdmin(courseId)).unwrap();
         setCourse(response.data);
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false)
       }
     };
     fetchCourseDetails();
-  }, [dispatch, courseId]);
+  }, [dispatch, courseId,feedback]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -170,13 +171,13 @@ const ViewCourseForAdmin = () => {
         setAnalytics(response.data)
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false)
       }
     };
     fetchAnalytics();
-  }, [dispatch, courseId]);
+  }, [dispatch, courseId,feedback]);
 
 
 
@@ -207,9 +208,9 @@ const ViewCourseForAdmin = () => {
       setModalOpen(false);
       setRemarks("");
       setModalType(null);
-      toast.success(`Course ${modalType.replace("_", " ") + "ed"} successfully.`);
+      feedback.success("Success", `Course ${modalType.replace("_", " ") + "ed"} successfully.`);
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 

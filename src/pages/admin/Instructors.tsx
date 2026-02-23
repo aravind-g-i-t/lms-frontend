@@ -12,12 +12,12 @@ import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
-import { toast } from "react-toastify";
 import FallbackUI from "../../components/shared/FallbackUI";
 import ReactModal from "react-modal";
 import { X } from "lucide-react";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
+import { useFeedback } from "../../hooks/useFeedback";
 
 type Instructor = {
   id: string;
@@ -60,6 +60,7 @@ type VerificationStatus =
 
 export default function ManageInstructors() {
   const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
 
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [page, setPage] = useState(1);
@@ -102,14 +103,14 @@ export default function ManageInstructors() {
         setTotalPages(response.data.totalPages ?? 1);
       } catch (err) {
         setFetchFailure(true);
-        toast.error(err as string);
+        feedback.error("Error", err as string);
       } finally {
         setLoading(false);
       }
     };
 
     fetchInstructors();
-  }, [dispatch, page, search, status, verificationStatus]);
+  }, [dispatch, page, search, status, verificationStatus,feedback]);
 
   // ---------- Block / Unblock ----------
   const handleRequestToggle = (id: string, isActive: boolean) => {
@@ -134,13 +135,14 @@ export default function ManageInstructors() {
         )
       );
 
-      toast.success(
+      feedback.success(
+        "Success",  
         `Instructor ${
           confirmState.isActive ? "blocked" : "unblocked"
         } successfully`
       );
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     } finally {
       setActionLoading(false);
       setConfirmState(null);
@@ -154,7 +156,7 @@ export default function ManageInstructors() {
       setInstructorView(response.data.instructor);
       setSelectedId(id);
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
@@ -173,7 +175,7 @@ export default function ManageInstructors() {
         })
       ).unwrap();
 
-      toast.success("Verification status updated successfully");
+      feedback.success("Success", "Verification status updated successfully");
 
       const verification = {
         remarks,
@@ -192,7 +194,7 @@ export default function ManageInstructors() {
         )
       );
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 

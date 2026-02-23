@@ -14,11 +14,12 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
-import { toast } from 'react-toastify';
 import LearnerNav from '../../components/learner/LearnerNav';
 import { addToFavourites, cancelEnrollment, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview, updateReview } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CourseOverviewSkeleton from '../../components/learner/CourseOverviewSkeleton';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
+import { useFeedback } from '../../hooks/useFeedback';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
 
@@ -82,7 +83,7 @@ export interface Course {
   isEnrolled: boolean;
   enrolledAt: Date | null;
   isFavourite: boolean;
-  isCompleted:boolean
+  isCompleted: boolean
 }
 
 interface Review {
@@ -112,6 +113,7 @@ const CourseOverviewPage = () => {
   const { courseId } = useParams<{ courseId: string }>();
   console.log(courseId);
   const dispatch = useDispatch<AppDispatch>()
+  const feedback= useFeedback()
   const navigate = useNavigate()
 
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
@@ -126,7 +128,8 @@ const CourseOverviewPage = () => {
   const [myReviewText, setMyReviewText] = useState('');
   const [loading, setLoading] = useState(true);
   const [isEditingReview, setIsEditingReview] = useState(false);
-
+  const [confirmState, setConfirmState] = useState<boolean>(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
 
   useEffect(() => {
@@ -148,7 +151,7 @@ const CourseOverviewPage = () => {
 
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error("Error loading course details", err as string);
       } finally {
         setLoading(false)
       }
@@ -156,7 +159,7 @@ const CourseOverviewPage = () => {
 
     fetchCourseDetails();
 
-  }, [dispatch, courseId, id]);
+  }, [dispatch, courseId, id,feedback]);
 
   useEffect(() => {
 
@@ -170,7 +173,7 @@ const CourseOverviewPage = () => {
           courseId,
           skip: reviews.length,
           limit: 10,
-          learnerId:id?id:undefined
+          learnerId: id ? id : undefined
         })).unwrap();
 
         if (response.data.myReview) {
@@ -179,13 +182,13 @@ const CourseOverviewPage = () => {
         setReviews(response.data.reviews)
 
       } catch (err) {
-        toast.error(err as string);
+        feedback.error(err as string);
       }
     };
 
     fetchReviews();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, courseId]);
 
 
@@ -198,9 +201,9 @@ const CourseOverviewPage = () => {
         courseId
       })).unwrap();
       setCourse({ ...course, isFavourite: true });
-      toast.success(result.message)
+      feedback.success(result.message)
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error adding to favourites", error as string)
     }
   }
 
@@ -213,9 +216,9 @@ const CourseOverviewPage = () => {
         courseId
       })).unwrap();
       setCourse({ ...course, isFavourite: false })
-      toast.success(result.message)
+      feedback.success("Success",result.message)
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error removing from favourites", error as string)
     }
   }
   const startEditReview = () => {
@@ -237,9 +240,9 @@ const CourseOverviewPage = () => {
         rating: myRating
       })).unwrap();
       setMyReview(result.data.review)
-      toast.success(result.data.message)
+      feedback.success("Success","Review submitted successfully.")
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string)
     }
   }
 
@@ -257,25 +260,28 @@ const CourseOverviewPage = () => {
       setIsEditingReview(false);
       setMyRating(0);
       setMyReviewText('');
-      toast.success(result.data.message);
+      feedback.success("Success", result.data.message);
     } catch (error) {
-      toast.error(error as string);
+      feedback.error("Error", error as string);
     }
   };
 
 
-  const handleCancelEnrollment= async()=>{
+  const handleCancelEnrollment = async () => {
     if (!course) return null;
 
     try {
+      setActionLoading(true);
       const courseId = course.id;
       await dispatch(cancelEnrollment({
         courseId
       })).unwrap();
-      setCourse({ ...course, isEnrolled: false, enrolledAt:null });
-      toast.success("Enrollment cancelled successfully.")
+      setCourse({ ...course, isEnrolled: false, enrolledAt: null });
+      feedback.success("Success", "Enrollment cancelled successfully.");
     } catch (error) {
-      toast.error(error as string)
+      feedback.error("Error", error as string);
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -446,7 +452,7 @@ const CourseOverviewPage = () => {
 
                       {canCancelEnrollment(course.enrolledAt) && (
                         <button
-                          onClick={handleCancelEnrollment}
+                          onClick={() => setConfirmState(true)}
                           className="w-full border-2 border-red-500 text-red-500 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors mb-3"
                         >
                           Cancel Enrollment
@@ -680,7 +686,7 @@ const CourseOverviewPage = () => {
             </div>
 
             {/* ADD REVIEW */}
-            {course.isEnrolled && course.isCompleted&& (!myReview || isEditingReview) && (
+            {course.isEnrolled && course.isCompleted && (!myReview || isEditingReview) && (
               <div className="bg-white rounded-lg p-6 shadow">
                 <h3 className="text-xl font-semibold mb-4">
                   {isEditingReview ? 'Edit your review' : 'Leave a review'}
@@ -888,6 +894,17 @@ const CourseOverviewPage = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmState}
+        title={"Cancel Enrollment"}
+        description={"Are you sure you want to cancel your enrollment in this course? You will lose access to the course. This action cannot be undone."}
+        confirmText={"Yes, Cancel Enrollment"}
+        destructive={true}
+        loading={actionLoading}
+        onCancel={() => setConfirmState(false)}
+        onConfirm={handleCancelEnrollment}
+      />
     </div>
   );
 };
