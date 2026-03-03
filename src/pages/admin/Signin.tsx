@@ -78,7 +78,7 @@ export default function AdminSignin() {
           <div className="px-8 py-6 bg-gradient-to-r from-teal-600 to-teal-700">
             <div className="flex items-center space-x-3">
               <Shield className="w-8 h-8 text-white" />
-              <h2 className="text-2xl font-bold text-white">Admin Login</h2>
+              <h2 className="text-2xl font-bold text-white">Admin Signin</h2>
             </div>
           </div>
 
@@ -102,7 +102,7 @@ export default function AdminSignin() {
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
                       errors.email ? "border-red-500" : "border-gray-300"
                     }`}
-                    placeholder="admin@example.com"
+                    placeholder="Email"
                   />
                   <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
                 </div>
@@ -130,7 +130,7 @@ export default function AdminSignin() {
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
                       errors.password ? "border-red-500" : "border-gray-300"
                     }`}
-                    placeholder="••••••••"
+                    placeholder="Password"
                   />
                   <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
                 </div>
@@ -155,7 +155,6 @@ export default function AdminSignin() {
                   </>
                 ) : (
                   <>
-                    <Shield className="w-5 h-5" />
                     <span>Sign in to Dashboard</span>
                   </>
                 )}
@@ -164,7 +163,7 @@ export default function AdminSignin() {
 
             {/* Security Note */}
             <p className="text-center text-xs text-gray-500 mt-6">
-              🔒 This is a secure admin portal. Only authorized personnel should access.
+              This is a secure admin portal. Only authorized personnel should access.
             </p>
           </div>
         </div>

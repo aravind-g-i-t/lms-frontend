@@ -7,7 +7,6 @@ import type { RootState } from "../redux/store";
 import LearnerRoutes from "./LearnerRoutes";
 import AdminRoutes from "./AdminRoutes";
 import InstructorRoutes from "./InstructorRoutes";
-import BusinessRoutes from "./BusinessRoutes";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 import ResetOtpVerification from "../pages/auth/ResetOTPVerify";
@@ -42,7 +41,6 @@ const AppRoutes = () => {
       <Route path="/admin/*" element={<AdminRoutes />} />
       <Route path="/learner/*" element={<LearnerRoutes />} />
       <Route path="/instructor/*" element={<InstructorRoutes />} />
-      <Route path="/business/*" element={<BusinessRoutes />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

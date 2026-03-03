@@ -12,7 +12,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useFeedback } from '../../hooks/useFeedback';
 
 
-type Role = 'learner' | 'instructor' | 'business';
+type Role = 'learner' | 'instructor' ;
 
 
 interface SigninForm {
@@ -21,10 +21,10 @@ interface SigninForm {
 }
 
 
-const getSchema = (role: Role) => yup.object().shape({
+const getSchema = () => yup.object().shape({
   email: yup
     .string()
-    .required(`${role === "business" ? "Company" : "Email"} is required`)
+    .required(`Email is required`)
     .matches(
       /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/,
       "Invalid email format"
@@ -57,12 +57,11 @@ export default function Signin() {
   const roles = [
     { label: 'Learner', value: 'learner' },
     { label: 'Instructor', value: 'instructor' },
-    // { label: 'Business', value: 'business' }
   ] as const;
 
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<SigninForm>({
-    resolver: yupResolver(getSchema(selectedRole))
+    resolver: yupResolver(getSchema())
   });
 
 
@@ -134,7 +133,7 @@ export default function Signin() {
                 {/* Email Input */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {selectedRole === 'business' ? 'Company Email' : 'Email address'}
+                    Email
                   </label>
                   <input
                     type="email"
@@ -142,7 +141,7 @@ export default function Signin() {
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder={selectedRole === 'business' ? 'company@example.com' : 'you@example.com'}
+                    placeholder={'you@example.com'}
                   />
                   {errors.email && <p className="text-red-600 text-sm mt-2 font-medium">{errors.email.message}</p>}
                 </div>

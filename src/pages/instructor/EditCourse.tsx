@@ -900,8 +900,8 @@ const EditCoursePage = () => {
   };
 
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateModule = (index: number, field: keyof Module, value: any) => {
+ 
+  const updateModule = <K extends keyof Module>(index: number, field: K, value: Module[K]) => {
     setCourseData(prev =>
       prev
         ? ({
@@ -918,12 +918,11 @@ const EditCoursePage = () => {
 
 
 
-  const updateChapter = (
+  const updateChapter = <K extends keyof Chapter>(
     moduleIndex: number,
     chapterIndex: number,
-    field: keyof Chapter,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: any
+    field: K,
+    value: Chapter[K]
   ) => {
     setCourseData(prev =>
       prev

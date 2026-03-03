@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const dispatch= useDispatch<AppDispatch>()
 
   useEffect(() => {
-    if (!id || !role || !accessToken || role === "admin" || role === "business") {
+    if (!id || !role || !accessToken || role === "admin") {
       socketRef.current?.disconnect();
       socketRef.current = null;
       return;

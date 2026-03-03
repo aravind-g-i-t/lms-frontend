@@ -55,11 +55,11 @@ axiosInstance.interceptors.response.use(
             await store.dispatch(logout());
         }
 
-        if (!errData?.message) {
-            console.log(errData);
+        // if (!errData?.message) {
+        //     console.log(errData);
             
-            toast.error("Something went wrong. Please try again.");
-        }
+        //     toast.error("Something went wrong. Please try again.");
+        // }
 
         return Promise.reject(error);
     }

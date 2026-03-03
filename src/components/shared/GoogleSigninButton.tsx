@@ -16,7 +16,7 @@ const GoogleSigninButton: React.FC<{ role: string }> = ({ role }) => {
       await dispatch(
         googleSignIn({
           token: tokenResponse.access_token as string, 
-          role: role.toLowerCase() as 'learner'|'instructor'|'business',
+          role: role.toLowerCase() as 'learner'|'instructor'
         })
       ).unwrap();    
       navigate(`/${role.toLowerCase()}/dashboard`);

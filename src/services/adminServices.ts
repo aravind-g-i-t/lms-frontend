@@ -106,29 +106,6 @@ export const getInstructors = createAsyncThunk(
 )
 
 
-export const getBusinesses = createAsyncThunk(
-    "admin/getBusinesses",
-    async ({ page, limit, search, status, verificationStatus }: { page: number; limit: number; search: string; status: 'All' | 'Active' | 'Blocked'; verificationStatus: "All" | "Not Submitted" | "Under Review" | "Verified" | "Rejected"; }, { rejectWithValue }) => {
-        try {
-            console.log(page, status, limit, search);
-
-            const res = await axiosInstance.get(API.ADMIN.BUSINESSES, {
-                params: { page, limit, search, status, verificationStatus },
-            });
-
-            return res.data;
-        } catch (error: unknown) {
-            if (error instanceof AxiosError) {
-                console.log(error.response?.data);
-                return rejectWithValue(error.response?.data?.message || "Invalid request");
-            }
-            console.log(error);
-
-            return rejectWithValue("Something went wrong. Please try again.");
-        }
-    },
-)
-
 
 export const toggleLearnerStatus = createAsyncThunk(
     "admin/toggleLearnerStatus",
@@ -172,26 +149,7 @@ export const toggleInstructorStatus = createAsyncThunk(
     },
 )
 
-export const toggleBusinessStatus = createAsyncThunk(
-    "admin/toggleLearnerStatus",
-    async ({ id }: { id: string }, { rejectWithValue }) => {
-        try {
-            const res = await axiosInstance.patch(API.ADMIN.BUSINESS_STATUS, {
-                id
-            });
 
-            return res.data;
-        } catch (error: unknown) {
-            if (error instanceof AxiosError) {
-                console.log(error.response?.data);
-                return rejectWithValue(error.response?.data?.message || "Invalid request");
-            }
-            console.log(error);
-
-            return rejectWithValue("Something went wrong. Please try again.");
-        }
-    },
-)
 
 
 
@@ -222,24 +180,6 @@ export const toggleBusinessStatus = createAsyncThunk(
 //     },
 // )
 
-export const getBusinessData = createAsyncThunk(
-    "admin/business",
-    async ({ id }: { id: string }, { rejectWithValue }) => {
-        try {
-            const res = await axiosInstance.get(`/admin/business/${id}`);
-
-            return res.data;
-        } catch (error: unknown) {
-            if (error instanceof AxiosError) {
-                console.log(error.response?.data);
-                return rejectWithValue(error.response?.data?.message || "Invalid request");
-            }
-            console.log(error);
-
-            return rejectWithValue("Something went wrong. Please try again.");
-        }
-    },
-)
 
 export const getLearnerData = createAsyncThunk(
     "admin/learner",
@@ -301,27 +241,6 @@ export const updateInstructorVerificationStatus = createAsyncThunk(
     },
 )
 
-export const updateBusinessVerificationStatus = createAsyncThunk(
-    "admin/business/verification",
-    async ({ id, status, remarks }: { id: string, status: string, remarks: string | null }, { rejectWithValue }) => {
-        try {
-            const res = await axiosInstance.patch(API.ADMIN.BUSINESS_VERIFICATION, {
-                id,
-                status,
-                remarks
-            });
-            return res.data;
-        } catch (error: unknown) {
-            if (error instanceof AxiosError) {
-                console.log(error.response?.data);
-                return rejectWithValue(error.response?.data?.message || "Invalid request");
-            }
-            console.log(error);
-
-            return rejectWithValue("Something went wrong. Please try again.");
-        }
-    },
-)
 
 export const addCategory = createAsyncThunk(
     "/category/add",

@@ -217,7 +217,7 @@ export default function Verifications() {
         <div>
           <h1 className="text-2xl font-bold text-teal-700">Verification Center</h1>
           <p className="text-sm text-teal-600 mt-1">
-            Review and verify courses, instructors, and businesses.
+            Review and verify courses and instructors.
           </p>
         </div>
       </div>

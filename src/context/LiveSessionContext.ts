@@ -5,9 +5,11 @@ export type LiveSession = {
   roomId: string;
 };
 
-export const LiveSessionContext = createContext<{
+type LiveSessionContextType = {
   activeSession: LiveSession | null;
   startSession: (session: LiveSession) => void;
   leaveSession: () => void;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-}>({} as any);
+};
+
+export const LiveSessionContext =
+  createContext<LiveSessionContextType | undefined>(undefined);

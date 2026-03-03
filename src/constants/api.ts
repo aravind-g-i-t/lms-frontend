@@ -5,12 +5,9 @@ export const API = {
         LOGOUT:"/admin/logout",
         LEARNERS:"/admin/learners",
         INSTRUCTORS:"/admin/instructors",
-        BUSINESSES:"/admin/businesses",
         LEARNER_STATUS:"/admin/learner/status",
         INSTRUCTOR_STATUS:"/admin/instructor/status",
-        BUSINESS_STATUS:"/admin/business/status",
         INSTRUCTOR_VERIFICATION:"/admin/instructor/verification",
-        BUSINESS_VERIFICATION:"admin/business/verification",
         CATEGORY:"/admin/category",
         CATEGORIES:"/admin/categories",
         STATUS:"/admin/category/status",
@@ -119,16 +116,6 @@ export const API = {
         LEARNERS:"/instructor/learners"
 
 
-    },
-    BUSINESS: {
-        DASHBOARD: "/business/dashboard",
-        EMPLOYEES: "/business/employees",
-        PLANS: "/business/plans",
-        PROFILE:`/business/profile`,
-        PROFILE_IMAGE:`/business/profile/image`,
-        LICENSE:`/business/profile/license`,
-        PASSWORD:`/business/password`,
-        VERIFICATION:`/business/verification`
-    },
+    }
 
 } as const;

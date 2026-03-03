@@ -28,8 +28,8 @@ export const ZegoCallModal = ({
   onClose,
 }: VideoCallModalProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const zpRef = useRef<any>(null);
+  
+  const zpRef = useRef<ZegoUIKitPrebuilt|null>(null);
 
   const isLiveSession = mode === "live-session";
   const isInstructor = role ==="instructor"
@@ -60,7 +60,7 @@ export const ZegoCallModal = ({
       showScreenSharingButton:isLiveSession && isInstructor,
       showMyCameraToggleButton: media==="video",
       showLeaveRoomConfirmDialog: isLiveSession,
-      showLeaveRoomButton: isLiveSession,
+      // showLeaveRoomButton: isLiveSession,
       showLayoutButton: isLiveSession,
       showTextChat: isLiveSession,
       showUserList: isLiveSession,

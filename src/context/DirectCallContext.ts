@@ -4,22 +4,27 @@ type IncomingCall = {
   conversationId: string;
   callerId: string;
   callerRole: "learner" | "instructor";
-  type:"audio"|"video"
+  type: "audio" | "video";
 };
 
 type ActiveCall = {
   roomId: string;
-  participantId:string;
-  type: "audio"|"video";
+  participantId: string;
+  type: "audio" | "video";
 };
 
-export const DirectCallContext = createContext<{
+type DirectCallContextType = {
   activeCall: ActiveCall | null;
   incomingCall: IncomingCall | null;
-  startCall: (roomId: string,participantId:string,type:"video"|"audio") => void;
+  startCall: (
+    roomId: string,
+    participantId: string,
+    type: "video" | "audio"
+  ) => void;
   acceptCall: () => void;
   rejectCall: () => void;
   endCall: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}>({} as any);
+};
 
+export const DirectCallContext =
+  createContext<DirectCallContextType | undefined>(undefined);

@@ -60,7 +60,7 @@ const LearnerHome = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>()
   const feedback = useFeedback();
-  const { id, name } = useSelector((state: RootState) => state.auth)
+  const { id, name ,role} = useSelector((state: RootState) => state.auth)
   const [activeCategory, setActiveCategory] = useState('all');
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [popularCourses, setPopularCourses] = useState<Course[]>([]);
@@ -88,7 +88,7 @@ const LearnerHome = () => {
 
   useEffect(() => {
 
-    if (!id) return
+    if (!id || role!=="learner") return
     const fetchLearnerData = async () => {
       try {
         const result = await dispatch(getHomeDataForLearner()).unwrap();
@@ -102,7 +102,7 @@ const LearnerHome = () => {
       }
     };
     fetchLearnerData();
-  }, [id, dispatch,feedback]);
+  }, [id, dispatch,feedback,role]);
 
   useEffect(() => {
 
@@ -159,7 +159,7 @@ const LearnerHome = () => {
       <LearnerNav />
 
       {/* Hero Section */}
-      {id ? (
+      {role ==="learner" ? (
         <div className="bg-gradient-to-br from-teal-500 via-teal-400 to-red-500 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="grid md:grid-cols-2 gap-8 items-center">

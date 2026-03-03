@@ -53,7 +53,7 @@ const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
                     durationInMinutes,
                     description,
                 })
-            );
+            ).unwrap();
 
             setCourseId("");
             setDescription("");
@@ -62,6 +62,7 @@ const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
             setDurationInMinutes(60);
             onClose();
         } catch (error) {
+
             feedback.error(error as string);
         } finally {
             setLoading(false);

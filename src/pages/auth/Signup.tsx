@@ -11,7 +11,7 @@ import LearnerNav from "../../components/learner/LearnerNav";
 import { useFeedback } from "../../hooks/useFeedback";
 
 
-type Role = "learner" | "instructor" | "business";
+type Role = "learner" | "instructor" ;
 
 
 interface SignUpForm {
@@ -22,14 +22,14 @@ interface SignUpForm {
 }
 
 
-const getSchema = (role: Role) =>
+const getSchema = () =>
   yup
     .object({
       name: yup
         .string()
-        .required(`${role === "business" ? "Company" : "Full"} name is required`)
+        .required(`Full name is required`)
         .max(20, "Name cannot exceed 20 characters")
-        .matches(/^[A-Za-z\s]+$/, "Name can only contain alphabets and spaces")
+        .matches(/^[A-Za-z\s]+$/, "Name can only contain alphabets and spaces.")
         .transform((value) =>
           value
             ? value
@@ -44,7 +44,7 @@ const getSchema = (role: Role) =>
 
       email: yup
         .string()
-        .required(`${role === "business" ? "Company" : "Email"} is required`)
+        .required(`Email is required`)
         .matches(
           /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/,
           "Invalid email format"
@@ -91,7 +91,7 @@ const UserSignup = () => {
     formState: { errors },
     reset,
   } = useForm<SignUpForm>({
-    resolver: yupResolver(getSchema(selectedRole)),
+    resolver: yupResolver(getSchema()),
   });
 
 
@@ -119,7 +119,6 @@ const UserSignup = () => {
   const roles = [
     { label: "Learner", value: "learner" },
     { label: "Instructor", value: "instructor" },
-    // { label: "Business", value: "business" },
   ] as const;
 
 
@@ -174,7 +173,7 @@ const UserSignup = () => {
                 {/* Name Input */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {selectedRole === "business" ? "Company Name" : "Full Name"}
+                    Full Name
                   </label>
                   <input
                     {...register("name")}
@@ -182,7 +181,7 @@ const UserSignup = () => {
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder={selectedRole === "business" ? "Your company name" : "Your full name"}
+                    placeholder={ "Your full name"}
                   />
                   {errors.name && <p className="text-red-600 text-sm mt-2 font-medium">{errors.name.message}</p>}
                 </div>
@@ -191,7 +190,7 @@ const UserSignup = () => {
                 {/* Email Input */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {selectedRole === "business" ? "Company Email" : "Email"}
+                    Email
                   </label>
                   <input
                     {...register("email")}
@@ -199,7 +198,7 @@ const UserSignup = () => {
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder={selectedRole === "business" ? "company@example.com" : "you@example.com"}
+                    placeholder={"you@example.com"}
                   />
                   {errors.email && <p className="text-red-600 text-sm mt-2 font-medium">{errors.email.message}</p>}
                 </div>

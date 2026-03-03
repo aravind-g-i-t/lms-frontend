@@ -109,7 +109,7 @@ interface MyReview {
 
 
 const CourseOverviewPage = () => {
-  const { id } = useSelector((state: RootState) => state.auth);
+  const { id,role } = useSelector((state: RootState) => state.auth);
   const { courseId } = useParams<{ courseId: string }>();
   console.log(courseId);
   const dispatch = useDispatch<AppDispatch>()
@@ -143,7 +143,7 @@ const CourseOverviewPage = () => {
         }
         const response = await dispatch(getCourseDetailsForLearner({
           courseId,
-          learnerId: id || null
+          learnerId: role==="learner"?id:null
         })).unwrap();
 
         console.log(response.data);
@@ -159,7 +159,7 @@ const CourseOverviewPage = () => {
 
     fetchCourseDetails();
 
-  }, [dispatch, courseId, id,feedback]);
+  }, [dispatch, courseId, id,role,feedback]);
 
   useEffect(() => {
 
@@ -173,7 +173,7 @@ const CourseOverviewPage = () => {
           courseId,
           skip: reviews.length,
           limit: 10,
-          learnerId: id ? id : undefined
+          learnerId: role==="learner" ? id as string : undefined
         })).unwrap();
 
         if (response.data.myReview) {
@@ -276,12 +276,14 @@ const CourseOverviewPage = () => {
       await dispatch(cancelEnrollment({
         courseId
       })).unwrap();
+      
       setCourse({ ...course, isEnrolled: false, enrolledAt: null });
       feedback.success("Success", "Enrollment cancelled successfully.");
     } catch (error) {
       feedback.error("Error", error as string);
     } finally {
       setActionLoading(false);
+      setConfirmState(false);
     }
   }
 

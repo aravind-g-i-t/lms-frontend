@@ -3,7 +3,7 @@ import { resendOTP, sendOTP, verifyEmail } from "../../services/userAuthServices
 
 interface ISignupState{
     email:string;
-    role:'learner'|'instructor'|'business'|null
+    role:'learner'|'instructor'|null
     otpExpiresAt:Date|null;
 }
 

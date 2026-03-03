@@ -12,7 +12,7 @@ import { useFeedback } from "../../hooks/useFeedback";
 export default function ForgotPassword() {
 
 
-  type Role = 'learner' | 'instructor' | 'business';
+  type Role = 'learner' | 'instructor';
 
 
   const dispatch = useDispatch<AppDispatch>();
@@ -149,7 +149,6 @@ export default function ForgotPassword() {
                   >
                     <option value="learner">Learner</option>
                     <option value="instructor">Instructor</option>
-                    <option value="business">Business</option>
                   </select>
                 </div>
 

@@ -3,12 +3,11 @@ import { googleSignIn, logout, signin, userTokenRefresh } from "../../services/u
 import { adminLogout, adminSignin } from "../../services/adminServices";
 import { getLearnerProfile } from "../../services/learnerServices";
 import { getInstructorProfile } from "../../services/instructorServices";
-import { getBusinessProfile } from "../../services/businessServices";
 
 
 
 interface IAuthState {
-    role: 'learner' | 'instructor' | 'business' | 'admin' | null;
+    role: 'learner' | 'instructor' | 'admin' | null;
     accessToken: string | null;
     id: string | null;
     name: string | null;
@@ -105,11 +104,7 @@ const authSlice = createSlice({
                 state.name = action.payload.data.instructor.name;
                 state.profilePic = action.payload.data.instructor.profilePic;
             })
-            .addCase(getBusinessProfile.fulfilled, (state, action) => {
-                console.log(action.payload);
-                state.name = action.payload.data.business.name;
-                state.profilePic = action.payload.data.business.profilePic;
-            })
+
     }
 });
 

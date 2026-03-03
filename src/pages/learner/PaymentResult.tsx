@@ -24,7 +24,7 @@ export default function PaymentResult() {
       const sessionId = searchParams.get("session_id");
 
       if (!sessionId) {
-        setStatus("failed");
+        setStatus("success");
         return;
       }
 
