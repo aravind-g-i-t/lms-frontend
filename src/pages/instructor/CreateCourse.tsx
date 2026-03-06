@@ -31,7 +31,7 @@ const courseSchema = yup.object().shape({
     .max(1000, "Description must be at most 1000 characters").required("Description is required"),
   prerequisites: yup.array().of(yup.string().trim().min(3)),
   categoryId: yup.string().required("Please select a category"),
-  price: yup.number().min(0, "Price cannot be negative").max(99999, "Price is too high").required(),
+  price: yup.number().min(3000, "Price cannot be less than 3000").max(99999, "Price is too high").required(),
   level: yup.mixed<'beginner' | 'intermediate' | 'advanced'>().oneOf(["beginner", "intermediate", "advanced"]).required(),
   tags: yup.array().of(yup.string().trim().min(2, "Tag too short")),
   whatYouWillLearn: yup.array().of(yup.string().trim().min(4, "Learning point is too short")),

@@ -204,7 +204,7 @@ export const getInstructorData = createAsyncThunk(
     "admin/instructor",
     async ({ id }: { id: string }, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.get(`/admin/instructor/${id}`);
+            const res = await axiosInstance.get(`/admin/instructor/${id}/view`);
 
             return res.data;
         } catch (error: unknown) {
@@ -390,7 +390,7 @@ export const createCoupon = createAsyncThunk(
         code: string;
         discountType: string;
         discountValue: number;
-        maxDiscount: number | null;
+        maxDiscount?: number | null;
         minCost: number;
         expiresAt: Date;
         isActive: boolean;
@@ -449,7 +449,7 @@ export const updateCoupon = createAsyncThunk(
         code: string;
         discountType: string;
         discountValue: number;
-        maxDiscount: number | null;
+        maxDiscount?: number | null;
         minCost: number;
         expiresAt: Date;
         isActive: boolean;
@@ -549,6 +549,32 @@ export const getCourseAnalytics = createAsyncThunk(
         try {
             const res = await axiosInstance.get(API.ADMIN.COURSE_ANALYTICS,{
                 params:input
+            });
+
+            console.log(res.data);
+            return res.data;
+            
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    }
+);
+
+export const getInstructorDetailsForAdmin = createAsyncThunk(
+    "admin/instructor/details",
+    async (input:{instructorId:string}
+,
+        { rejectWithValue }
+    ) => {
+        try {
+            const res = await axiosInstance.get(API.ADMIN.INSTRUCTOR_DETAILS,{
+                params: input,
             });
 
             console.log(res.data);

@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
-import { getLearnerData, getLearners, toggleLearnerStatus } from "../../services/adminServices";
+import { getLearners, toggleLearnerStatus } from "../../services/adminServices";
 import { Pagination } from "../../components/shared/Pagination";
 import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import FallbackUI from "../../components/shared/FallbackUI";
-import { X } from "lucide-react";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 import { useFeedback } from "../../hooks/useFeedback";
+import {
+  Users, Search, Filter,
+  ShieldOff, ShieldCheck,
+} from "lucide-react";
 
 type Learner = {
   id: string;
@@ -19,14 +22,6 @@ type Learner = {
   email: string;
   isActive: boolean;
   profilePic?: string;
-};
-
-type LearnerView = {
-  name: string;
-  email: string;
-  profilePic: string | null;
-  joiningDate: Date | null;
-  hasPassword: boolean;
 };
 
 type Status = "All" | "Active" | "Blocked";
@@ -40,37 +35,29 @@ export default function ManageLearners() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<Status>("All");
-  const [learnerView, setLearnerView] = useState<LearnerView | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchFailure, setFetchFailure] = useState(false);
-  const [confirmState, setConfirmState] = useState<{
-    id: string;
-    isActive: boolean;
-  } | null>(null);
-
+  const [confirmState, setConfirmState] = useState<{ id: string; isActive: boolean } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-
+  const [totalCount,setTotalCount]= useState(0)
 
   useEffect(() => {
     const fetchLearners = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const response = await dispatch(getLearners({ page, search, status, limit: 5 })).unwrap();
         setLearners(response.data.learners ?? []);
         setTotalPages(response.data.totalPages ?? 1);
+        setTotalCount(response.data.totalCount ?? 0);
       } catch (err) {
-        setFetchFailure(true)
-        console.error("Failed to fetch learners:", err);
-        feedback.error("Error", err as string)
+        setFetchFailure(true);
+        feedback.error("Error", err as string);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
-
     fetchLearners();
-
-
-  }, [dispatch, page, search, status,feedback]);
+  }, [dispatch, page, search, status, feedback]);
 
   const handleRequestToggle = useCallback((id: string, isActive: boolean) => {
     setConfirmState({ id, isActive });
@@ -78,24 +65,13 @@ export default function ManageLearners() {
 
   const handleConfirmToggle = async () => {
     if (!confirmState) return;
-
     try {
       setActionLoading(true);
-
       await dispatch(toggleLearnerStatus({ id: confirmState.id })).unwrap();
-
       setLearners((prev) =>
-        prev.map((learner) =>
-          learner.id === confirmState.id
-            ? { ...learner, isActive: !learner.isActive }
-            : learner
-        )
+        prev.map((l) => l.id === confirmState.id ? { ...l, isActive: !l.isActive } : l)
       );
-
-      feedback.success(
-        "Success",
-        `Learner ${confirmState.isActive ? "blocked" : "unblocked"} successfully`
-      );
+      feedback.success("Success", `Learner ${confirmState.isActive ? "blocked" : "unblocked"} successfully`);
     } catch (error) {
       feedback.error("Error", error as string);
     } finally {
@@ -104,36 +80,45 @@ export default function ManageLearners() {
     }
   };
 
-
-
-  const handleViewLearner = useCallback(async (id: string) => {
-    try {
-      const response = await dispatch(getLearnerData({ id })).unwrap();
-      setLearnerView(response.data.learner);
-    } catch (error) {
-      feedback.error("Error", error as string)
-    }
-  }, [dispatch,feedback]);
-
   const columns = useMemo<Column<Learner>[]>(() => [
     {
       header: "Learner",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-            src={row.profilePic || "/images/default-profile.jpg"}
-            alt={row.name}
-            className="w-10 h-10 rounded-full object-cover border"
-          />
-          <span className="font-medium text-gray-800">{row.name}</span>
+          <div className="relative shrink-0">
+            <img
+              src={row.profilePic || "/images/default-profile.jpg"}
+              alt={row.name}
+              className="w-10 h-10 rounded-full object-cover"
+              style={{ border: "2px solid #ccfbf1" }}
+            />
+            {/* online dot */}
+            <span
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
+              style={{ background: row.isActive ? "#10b981" : "#f87171" }}
+            />
+          </div>
+          <div>
+            <p className="font-semibold text-sm" style={{ color: "#0f172a" }}>{row.name}</p>
+            <p className="text-xs text-slate-400">{row.email}</p>
+          </div>
         </div>
       ),
     },
-    { header: "Email", accessor: "email" },
     {
       header: "Status",
       render: (row) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+        <span
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+          style={{
+            background: row.isActive ? "#d1fae5" : "#fee2e2",
+            color: row.isActive ? "#065f46" : "#991b1b",
+          }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: row.isActive ? "#10b981" : "#f87171" }}
+          />
           {row.isActive ? "Active" : "Blocked"}
         </span>
       ),
@@ -141,145 +126,148 @@ export default function ManageLearners() {
     {
       header: "Actions",
       render: (row) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleRequestToggle(row.id, row.isActive)}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${row.isActive
-              ? "bg-red-500 text-white hover:bg-red-600"
-              : "bg-teal-600 text-white hover:bg-teal-700"
-              }`}
-          >
-            {row.isActive ? "Block" : "Unblock"}
-          </button>
-          <button
-            onClick={() => handleViewLearner(row.id)}
-            className="px-3 py-1 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-700"
-          >
-            View
-          </button>
-        </div>
+        <button
+          onClick={() => handleRequestToggle(row.id, row.isActive)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+          style={{
+            background: row.isActive ? "#fee2e2" : "#d1fae5",
+            color: row.isActive ? "#991b1b" : "#065f46",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = "0.8")}
+          onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+        >
+          {row.isActive
+            ? <><ShieldOff  className="w-3.5 h-3.5" /> Block</>
+            : <><ShieldCheck className="w-3.5 h-3.5" /> Unblock</>
+          }
+        </button>
       ),
     },
-  ], [handleRequestToggle, handleViewLearner]);
+  ], [handleRequestToggle]);
 
   if (loading) return <UserListSkeleton />;
-  if (fetchFailure) return <FallbackUI />
+  if (fetchFailure) return <FallbackUI />;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 mb-4">
-        <h1 className="text-2xl font-bold text-foreground">Manage Learners</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          View and manage all registered learners
-        </p>
-      </div>
+    <div
+      className="min-h-full p-6 md:p-10"
+      style={{
+        background: "linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #f0f9ff 100%)",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&family=DM+Mono:wght@400;500&display=swap');
+      `}</style>
 
-      {/* Filters */}
-      <div className="flex-shrink-0 bg-card rounded-lg shadow-sm border border-border p-4 mb-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <SearchBar
-            value={search}
-            placeholder="Search learners..."
-            onSearch={(query) => setSearch(query)}
-          />
+      <div className="max-w-7xl mx-auto">
 
-          <div className="flex gap-3 flex-wrap">
-            <FilterDropdown<Status>
-              label="Status"
-              value={status}
-              options={["All", "Active", "Blocked"]}
-              onChange={(newStatus) => {
-                setStatus(newStatus);
-                setPage(1);
-              }}
-            />
+        {/* ── Header ── */}
+        <div className="mb-8 flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-xs font-semibold tracking-widest uppercase text-teal-500 mb-1">Admin</p>
+            <h1
+              className="text-4xl md:text-5xl font-black"
+              style={{ color: "#0f172a", letterSpacing: "-1.5px" }}
+            >
+              Manage Learners
+            </h1>
+            <p className="text-sm text-slate-400 mt-1">
+              View and manage all registered learners on the platform
+            </p>
           </div>
+          <span
+            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full"
+            style={{ background: "#ccfbf1", color: "#0f766e" }}
+          >
+            <Users className="w-4 h-4" />
+            {totalCount} total
+          </span>
         </div>
-      </div>
 
-      {/* Table - Scrollable */}
-      <div className="flex-1 overflow-auto mb-4">
-        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-          <Table<Learner> columns={columns} data={learners} />
-        </div>
-      </div>
+        {/* ── Main card ── */}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.05)" }}
+        >
+          {/* Toolbar */}
+          <div
+            className="px-6 py-4 flex flex-wrap items-center justify-between gap-3"
+            style={{ borderBottom: "1px solid #f1f5f9" }}
+          >
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-teal-500" />
+              <span className="font-bold" style={{ color: "#0f172a" }}>Learner List</span>
+            </div>
 
-      {/* Pagination */}
-      <div className="flex-shrink-0 flex justify-center">
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      </div>
-
-      {/* View Modal */}
-      {learnerView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-xl p-4 animate-fade-in">
-          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-            {/* Header */}
-            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Learner Details</h2>
-              <button
-                onClick={() => setLearnerView(null)}
-                className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close modal"
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search */}
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: "#f8fafc", border: "1px solid #e2e8f0", minWidth: 220 }}
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Profile */}
-              <div className="flex items-center gap-6 mb-8 pb-6 border-b border-border">
-                <img
-                  src={learnerView.profilePic || "/images/default-profile.jpg"}
-                  alt={learnerView.name}
-                  className="w-24 h-24 rounded-full border-4 border-primary/10 object-cover shadow-md"
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <SearchBar
+                  value={search}
+                  placeholder="Search learners…"
+                  onSearch={(q) => { setSearch(q); setPage(1); }}
                 />
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-foreground mb-1">{learnerView.name}</h3>
-                  <p className="text-muted-foreground mb-2">{learnerView.email}</p>
-                </div>
               </div>
 
-              {/* Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Joining Date
-                  </p>
-                  <p className="text-foreground font-medium">
-                    {learnerView.joiningDate
-                      ? new Date(learnerView.joiningDate).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-                </div>
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Account Type
-                  </p>
-                  <p className="text-foreground font-medium">
-                    {learnerView.hasPassword ? "Email/Password" : "Google Sign-In"}
-                  </p>
-                </div>
+              {/* Filter */}
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
+              >
+                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                <FilterDropdown<Status>
+                  label="Status"
+                  value={status}
+                  options={["All", "Active", "Blocked"]}
+                  onChange={(newStatus) => { setStatus(newStatus); setPage(1); }}
+                />
               </div>
             </div>
           </div>
+
+          {/* Table */}
+          <div className="overflow-auto">
+            <Table<Learner> columns={columns} data={learners} />
+          </div>
+
+          {/* Empty state */}
+          {!loading && learners.length === 0 && (
+            <div className="py-16 text-center">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: "#f0fdfa" }}
+              >
+                <Users className="w-8 h-8 text-teal-300" />
+              </div>
+              <p className="font-semibold text-slate-500">No learners found</p>
+              <p className="text-sm text-slate-400 mt-1">Try adjusting your search or filter.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div
+              className="px-6 py-4 flex justify-center"
+              style={{ borderTop: "1px solid #f1f5f9" }}
+            >
+              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
       <ConfirmDialog
         open={!!confirmState}
-        title={
-          confirmState?.isActive
-            ? "Block Learner"
-            : "Unblock Learner"
-        }
+        title={confirmState?.isActive ? "Block Learner" : "Unblock Learner"}
         description={
           confirmState?.isActive
             ? "This learner will no longer be able to access the platform."
-            : "This learner will regain access to the platform."
+            : "This learner will regain full access to the platform."
         }
         confirmText={confirmState?.isActive ? "Block" : "Unblock"}
         destructive={confirmState?.isActive}
@@ -287,7 +275,6 @@ export default function ManageLearners() {
         onCancel={() => setConfirmState(null)}
         onConfirm={handleConfirmToggle}
       />
-
     </div>
   );
 }

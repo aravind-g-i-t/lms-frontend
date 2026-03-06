@@ -32,13 +32,12 @@ const profileValidationSchema = yup.object().shape({
     .trim(),
   designation: yup
     .string()
-    .required("Professional title is required")
     .min(2, "Professional title must be at least 2 characters")
     .max(20, "Professional title cannot exceed 20 characters")
-    .trim(),
+    .trim()
+    .nullable(),
   website: yup
     .string()
-    .url("Website must be a valid URL")
     .max(30, "Website cannot exceed 30 characters")
     .nullable()
     .transform((value) => value || null),

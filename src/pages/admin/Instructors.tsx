@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Table } from "../../components/shared/Table";
 import type { Column } from "../../components/shared/Table";
-import {
-  getInstructorData,
-  getInstructors,
-  toggleInstructorStatus,
-  updateInstructorVerificationStatus,
-} from "../../services/adminServices";
+import { getInstructors, toggleInstructorStatus } from "../../services/adminServices";
 import { Pagination } from "../../components/shared/Pagination";
 import type { AppDispatch } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { SearchBar } from "../../components/shared/SearchBar";
 import { FilterDropdown } from "../../components/shared/FilterDropdown";
 import FallbackUI from "../../components/shared/FallbackUI";
-import ReactModal from "react-modal";
-import { X } from "lucide-react";
 import { UserListSkeleton } from "../../components/admin/UserListSkeleton";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 import { useFeedback } from "../../hooks/useFeedback";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  GraduationCap, Search, Filter,
+  ShieldOff, ShieldCheck, Eye,
+  CheckCircle2, XCircle, HelpCircle, Clock,
+} from "lucide-react";
 
 type Instructor = {
   id: string;
@@ -25,82 +24,47 @@ type Instructor = {
   email: string;
   isActive: boolean;
   profilePic?: string;
-  verification: {
-    status: string;
-    remarks: string | null;
-  };
+  verification: { status: string; remarks: string | null };
 };
 
-type InstructorView = {
-  name: string;
-  email: string;
-  verification: {
-    status: "Not Submitted" | "Under Review" | "Verified" | "Rejected";
-    remarks: string | null;
-  };
-  profilePic: string | null;
-  joiningDate: Date | null;
-  website: string | null;
-  bio: string | null;
-  hasPassword: boolean;
-  designation: string | null;
-  expertise: string[];
-  resume: string | null;
-  rating: number | null;
-  identityProof: string | null;
-};
+type Status             = "All" | "Active" | "Blocked";
+type VerificationStatus = "All" | "Not Submitted" | "Under Review" | "Verified" | "Rejected";
 
-type Status = "All" | "Active" | "Blocked";
-type VerificationStatus =
-  | "All"
-  | "Not Submitted"
-  | "Under Review"
-  | "Verified"
-  | "Rejected";
+/* ── Verification badge meta ── */
+const VER_META: Record<string, { icon: React.ReactNode; bg: string; color: string; dot: string }> = {
+  "Verified":      { icon: <CheckCircle2 className="w-3 h-3" />, bg: "#d1fae5", color: "#065f46",  dot: "#10b981" },
+  "Under Review":  { icon: <Clock        className="w-3 h-3" />, bg: "#fef3c7", color: "#92400e",  dot: "#fbbf24" },
+  "Rejected":      { icon: <XCircle      className="w-3 h-3" />, bg: "#fee2e2", color: "#991b1b",  dot: "#f87171" },
+  "Not Submitted": { icon: <HelpCircle   className="w-3 h-3" />, bg: "#f1f5f9", color: "#64748b",  dot: "#94a3b8" },
+};
 
 export default function ManageInstructors() {
   const dispatch = useDispatch<AppDispatch>();
   const feedback = useFeedback();
+  const navigate = useNavigate();
 
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<Status>("All");
-  const [verificationStatus, setVerificationStatus] =
-    useState<VerificationStatus>("All");
-
-  const [newVerificationStatus, setNewVerificationStatus] =
-    useState<"Verified" | "Rejected">("Verified");
-
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [instructorView, setInstructorView] =
-    useState<InstructorView | null>(null);
-
-  const [loading, setLoading] = useState(false);
-  const [fetchFailure, setFetchFailure] = useState(false);
-
-  const remarksRef = useRef<HTMLInputElement>(null);
-  const [idProofModal, setIdProofModal] = useState(false);
-
-  // ✅ Confirmation state
-  const [confirmState, setConfirmState] = useState<{
-    id: string;
-    isActive: boolean;
-  } | null>(null);
-
-  const [actionLoading, setActionLoading] = useState(false);
+  const [instructors,        setInstructors]        = useState<Instructor[]>([]);
+  const [page,               setPage]               = useState(1);
+  const [totalPages,         setTotalPages]         = useState(1);
+  const [search,             setSearch]             = useState("");
+  const [status,             setStatus]             = useState<Status>("All");
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("All");
+  const [loading,            setLoading]            = useState(false);
+  const [fetchFailure,       setFetchFailure]       = useState(false);
+  const [confirmState,       setConfirmState]       = useState<{ id: string; isActive: boolean } | null>(null);
+  const [actionLoading,      setActionLoading]      = useState(false);
+  const [totalCount,setTotalCount]= useState(0)
 
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
         setLoading(true);
         const response = await dispatch(
-          getInstructors({ page, search, status, limit: 5, verificationStatus })
+          getInstructors({ page, search, status, limit: 4, verificationStatus })
         ).unwrap();
-
         setInstructors(response.data.instructors ?? []);
         setTotalPages(response.data.totalPages ?? 1);
+        setTotalCount(response.data.totalCount ?? 0);
       } catch (err) {
         setFetchFailure(true);
         feedback.error("Error", err as string);
@@ -108,39 +72,18 @@ export default function ManageInstructors() {
         setLoading(false);
       }
     };
-
     fetchInstructors();
-  }, [dispatch, page, search, status, verificationStatus,feedback]);
-
-  // ---------- Block / Unblock ----------
-  const handleRequestToggle = (id: string, isActive: boolean) => {
-    setConfirmState({ id, isActive });
-  };
+  }, [dispatch, page, search, status, verificationStatus, feedback]);
 
   const handleConfirmToggle = async () => {
     if (!confirmState) return;
-
     try {
       setActionLoading(true);
-
-      await dispatch(
-        toggleInstructorStatus({ id: confirmState.id })
-      ).unwrap();
-
+      await dispatch(toggleInstructorStatus({ id: confirmState.id })).unwrap();
       setInstructors((prev) =>
-        prev.map((instructor) =>
-          instructor.id === confirmState.id
-            ? { ...instructor, isActive: !instructor.isActive }
-            : instructor
-        )
+        prev.map((i) => i.id === confirmState.id ? { ...i, isActive: !i.isActive } : i)
       );
-
-      feedback.success(
-        "Success",  
-        `Instructor ${
-          confirmState.isActive ? "blocked" : "unblocked"
-        } successfully`
-      );
+      feedback.success("Success", `Instructor ${confirmState.isActive ? "blocked" : "unblocked"} successfully`);
     } catch (error) {
       feedback.error("Error", error as string);
     } finally {
@@ -149,390 +92,234 @@ export default function ManageInstructors() {
     }
   };
 
-  // ---------- View ----------
-  const handleViewInstructor = async (id: string) => {
-    try {
-      const response = await dispatch(getInstructorData({ id })).unwrap();
-      setInstructorView(response.data.instructor);
-      setSelectedId(id);
-    } catch (error) {
-      feedback.error("Error", error as string);
-    }
-  };
-
-  // ---------- Verification ----------
-  const updateVerificationStatus = async () => {
-    if (!selectedId) return;
-
-    const remarks = remarksRef.current?.value || null;
-
-    try {
-      await dispatch(
-        updateInstructorVerificationStatus({
-          id: selectedId,
-          remarks,
-          status: newVerificationStatus,
-        })
-      ).unwrap();
-
-      feedback.success("Success", "Verification status updated successfully");
-
-      const verification = {
-        remarks,
-        status: newVerificationStatus,
-      };
-
-      setInstructorView((prev) =>
-        prev ? { ...prev, verification } : prev
-      );
-
-      setInstructors((prev) =>
-        prev.map((instructor) =>
-          instructor.id === selectedId
-            ? { ...instructor, verification }
-            : instructor
-        )
-      );
-    } catch (error) {
-      feedback.error("Error", error as string);
-    }
-  };
-
-  const columns: Column<Instructor>[] = [
+  const columns = useMemo<Column<Instructor>[]>(() => [
     {
       header: "Instructor",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-            src={row.profilePic || "/images/default-profile.jpg"}
-            alt={row.name}
-            className="w-10 h-10 rounded-full object-cover border"
-          />
-          <span className="font-medium text-gray-800">{row.name}</span>
+          <div className="relative shrink-0">
+            <img
+              src={row.profilePic || "/images/default-profile.jpg"}
+              alt={row.name}
+              className="w-10 h-10 rounded-full object-cover"
+              style={{ border: "2px solid #ccfbf1" }}
+            />
+            <span
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
+              style={{ background: row.isActive ? "#10b981" : "#f87171" }}
+            />
+          </div>
+          <div>
+            <Link
+              to={`/admin/instructor/${row.id}`}
+              className="font-semibold text-sm text-teal-600 hover:text-teal-700 hover:underline"
+            >
+              {row.name}
+            </Link>
+            <p className="text-xs text-slate-400">{row.email}</p>
+          </div>
         </div>
       ),
     },
-    { header: "Email", accessor: "email" },
     {
-      header: "Status",
+      header: "Account",
       render: (row) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.isActive
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+          style={{
+            background: row.isActive ? "#d1fae5" : "#fee2e2",
+            color:      row.isActive ? "#065f46" : "#991b1b",
+          }}
         >
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: row.isActive ? "#10b981" : "#f87171" }}
+          />
           {row.isActive ? "Active" : "Blocked"}
         </span>
       ),
     },
     {
+      header: "KYC Status",
+      render: (row) => {
+        const meta = VER_META[row.verification.status] ?? VER_META["Not Submitted"];
+        return (
+          <span
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+            style={{ background: meta.bg, color: meta.color }}
+          >
+            {meta.icon}
+            {row.verification.status}
+          </span>
+        );
+      },
+    },
+    {
       header: "Actions",
       render: (row) => (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => handleRequestToggle(row.id, row.isActive)}
-            className={`px-3 py-1 rounded-lg text-sm font-medium ${
-              row.isActive
-                ? "bg-red-500 text-white hover:bg-red-600"
-                : "bg-teal-600 text-white hover:bg-teal-700"
-            }`}
+            onClick={() => setConfirmState({ id: row.id, isActive: row.isActive })}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+            style={{
+              background: row.isActive ? "#fee2e2" : "#d1fae5",
+              color:      row.isActive ? "#991b1b" : "#065f46",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "0.8")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
           >
-            {row.isActive ? "Block" : "Unblock"}
+            {row.isActive
+              ? <><ShieldOff  className="w-3.5 h-3.5" /> Block</>
+              : <><ShieldCheck className="w-3.5 h-3.5" /> Unblock</>
+            }
           </button>
           <button
-            onClick={() => handleViewInstructor(row.id)}
-            className="px-3 py-1 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-700"
+            onClick={() => navigate(`/admin/instructor/${row.id}`)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-all"
+            style={{ background: "#0d9488" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#0f766e")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#0d9488")}
           >
-            View
+            <Eye className="w-3.5 h-3.5" /> View
           </button>
         </div>
       ),
     },
-  ];
+  ], [navigate]);
 
-  if (loading) return <UserListSkeleton />;
+  if (loading)      return <UserListSkeleton />;
   if (fetchFailure) return <FallbackUI />;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 mb-4">
-        <h1 className="text-2xl font-bold text-foreground">Manage Instructors</h1>
-        <p className="text-sm text-muted-foreground mt-1">View and manage all registered instructors</p>
-      </div>
+    <div
+      className="min-h-full p-6 md:p-10"
+      style={{
+        background: "linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #f0f9ff 100%)",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&family=DM+Mono:wght@400;500&display=swap');
+      `}</style>
 
-      {/* Filters */}
-      <div className="flex-shrink-0 bg-card rounded-lg shadow-sm border border-border p-4 mb-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <SearchBar
-            value={search}
-            placeholder="Search instructors..."
-            onSearch={(query) => setSearch(query)}
-          />
+      <div className="max-w-7xl mx-auto">
 
-          <div className="flex gap-3 flex-wrap">
-            <FilterDropdown<Status>
-              label="Status"
-              value={status}
-              options={["All", "Active", "Blocked"]}
-              onChange={(newStatus) => {
-                setStatus(newStatus);
-                setPage(1);
-              }}
-            />
-            <FilterDropdown<VerificationStatus>
-              label="Verification"
-              value={verificationStatus}
-              options={[
-                "All",
-                "Not Submitted",
-                "Under Review",
-                "Verified",
-                "Rejected",
-              ]}
-              onChange={(newStatus) => {
-                setVerificationStatus(newStatus);
-                setPage(1);
-              }}
-            />
+        {/* ── Header ── */}
+        <div className="mb-8 flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-xs font-semibold tracking-widest uppercase text-teal-500 mb-1">Admin</p>
+            <h1
+              className="text-4xl md:text-5xl font-black"
+              style={{ color: "#0f172a", letterSpacing: "-1.5px" }}
+            >
+              Manage Instructors
+            </h1>
+            <p className="text-sm text-slate-400 mt-1">
+              View and manage all registered instructors on the platform
+            </p>
           </div>
+          <span
+            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full"
+            style={{ background: "#ccfbf1", color: "#0f766e" }}
+          >
+            <GraduationCap className="w-4 h-4" />
+            {totalCount} total
+          </span>
         </div>
-      </div>
 
-      {/* Table - Scrollable */}
-      <div className="flex-1 overflow-auto mb-4">
-        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-          <Table<Instructor> columns={columns} data={instructors} />
-        </div>
-      </div>
+        {/* ── Main card ── */}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.05)" }}
+        >
+          {/* Toolbar */}
+          <div
+            className="px-6 py-4 flex flex-wrap items-center justify-between gap-3"
+            style={{ borderBottom: "1px solid #f1f5f9" }}
+          >
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-teal-500" />
+              <span className="font-bold" style={{ color: "#0f172a" }}>Instructor List</span>
+            </div>
 
-      {/* Pagination */}
-      <div className="flex-shrink-0 flex justify-center">
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      </div>
-
-      {/* View Modal */}
-      {instructorView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-xl p-4 animate-fade-in">
-          <div className="bg-card rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-            {/* Header */}
-            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Instructor Details</h2>
-              <button
-                onClick={() => setInstructorView(null)}
-                className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close modal"
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search */}
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: "#f8fafc", border: "1px solid #e2e8f0", minWidth: 220 }}
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Profile */}
-              <div className="flex items-center gap-6 mb-8 pb-6 border-b border-border">
-                <img
-                  src={instructorView.profilePic || "/images/default-profile.jpg"}
-                  alt={instructorView.name}
-                  className="w-24 h-24 rounded-full border-4 border-primary/10 object-cover shadow-md"
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <SearchBar
+                  value={search}
+                  placeholder="Search instructors…"
+                  onSearch={(q) => { setSearch(q); setPage(1); }}
                 />
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-foreground mb-1">{instructorView.name}</h3>
-                  <p className="text-muted-foreground mb-2">{instructorView.email}</p>
-                  <span
-                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold mt-1 ${instructorView.verification.status === "Verified"
-                      ? "bg-success/10 text-success"
-                      : instructorView.verification.status === "Rejected"
-                        ? "bg-destructive/10 text-destructive"
-                        : instructorView.verification.status === "Under Review"
-                          ? "bg-warning/10 text-warning"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                  >
-                    {instructorView.verification.status}
-                  </span>
-                </div>
               </div>
 
-              {/* Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-4">
-                  <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Joining Date</p>
-                    <p className="text-foreground font-medium">
-                      {instructorView.joiningDate
-                        ? new Date(instructorView.joiningDate).toLocaleDateString()
-                        : "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Designation</p>
-                    <p className="text-foreground font-medium">{instructorView.designation || "—"}</p>
-                  </div>
-                  <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Website</p>
-                    <p className="text-foreground font-medium">
-                      {instructorView.website ? (
-                        <a
-                          href={instructorView.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary underline"
-                        >
-                          {instructorView.website}
-                        </a>
-                      ) : "—"}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Rating</p>
-                    <p className="text-foreground font-medium">
-                      {instructorView.rating !== null ? `${instructorView.rating}/5` : "—"}
-                    </p>
-                  </div>
-                  {instructorView.verification.remarks && (
-                    <div className="bg-secondary/30 rounded-lg p-4">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Remarks</p>
-                      <p className="text-foreground">{instructorView.verification.remarks}</p>
-                    </div>
-                  )}
-                </div>
+              {/* Status filter */}
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
+              >
+                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                <FilterDropdown<Status>
+                  label="Status"
+                  value={status}
+                  options={["All", "Active", "Blocked"]}
+                  onChange={(v) => { setStatus(v); setPage(1); }}
+                />
               </div>
 
-              {/* Extra Details */}
-              <div className="space-y-4 mb-6">
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Expertise</p>
-                  <p className="text-foreground font-medium">
-                    {instructorView.expertise.length > 0 ? instructorView.expertise.join(", ") : "—"}
-                  </p>
-                </div>
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Bio</p>
-                  <p className="text-foreground">{instructorView.bio || "No bio available"}</p>
-                </div>
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Resume</p>
-                  <p className="text-foreground">
-                    {instructorView.resume ? (
-                      <a
-                        href={instructorView.resume}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary underline"
-                      >
-                        View Resume
-                      </a>
-                    ) : "—"}
-                  </p>
-                </div>
-
-                {/* Identity Proof Section */}
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Identity Proof</p>
-                  {instructorView.identityProof ? (
-                    <img
-                      src={instructorView.identityProof}
-                      alt="Identity Proof"
-                      className="w-48 h-auto rounded-md border shadow-sm cursor-pointer"
-                      onClick={() => setIdProofModal(true)}
-                    />
-                  ) : (
-                    <p className="text-foreground">Not submitted</p>
-                  )}
-                </div>
-
-                <ReactModal
-                  isOpen={idProofModal}
-                  onRequestClose={() => setIdProofModal(false)}
-                  className="bg-white rounded-2xl shadow-lg max-w-3xl w-full mx-auto p-6 outline-none relative"
-                  overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
-                  ariaHideApp={false}
-                >
-                  <button
-                    onClick={() => setIdProofModal(false)}
-                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-
-                  <h2 className="text-xl font-semibold mb-4">Government ID Proof</h2>
-
-                  {instructorView.identityProof?.endsWith(".pdf") ? (
-                    <iframe
-                      src={instructorView.identityProof}
-                      className="w-full h-[500px] rounded-lg border"
-                      title="ID Proof PDF"
-                    />
-                  ) : (
-                    <img
-                      src={instructorView.identityProof || ""}
-                      alt="Government ID Proof"
-                      className="max-h-[500px] mx-auto rounded-lg border"
-                    />
-                  )}
-                </ReactModal>
+              {/* Verification filter */}
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
+              >
+                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                <FilterDropdown<VerificationStatus>
+                  label="Verification"
+                  value={verificationStatus}
+                  options={["All", "Not Submitted", "Under Review", "Verified", "Rejected"]}
+                  onChange={(v) => { setVerificationStatus(v); setPage(1); }}
+                />
               </div>
-
-              {/* Manage Verification */}
-              {instructorView.verification.status === "Under Review" && (
-                <div className="mt-6 pt-6 border-t border-border bg-secondary/10 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-foreground mb-4">Manage Verification Status</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-foreground mb-2">
-                        Change Status
-                      </label>
-                      <select
-                        value={newVerificationStatus}
-                        onChange={(e) => setNewVerificationStatus(e.target.value as "Verified" | "Rejected")}
-                        className="w-full md:w-auto px-4 py-2.5 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      >
-                        <option value="Verified">✓ Verified</option>
-                        <option value="Rejected">✕ Rejected</option>
-                      </select>
-                    </div>
-
-                    {newVerificationStatus === "Rejected" && (
-                      <div>
-                        <label className="block text-sm font-semibold text-foreground mb-2">
-                          Rejection Remarks
-                        </label>
-                        <input
-                          type="text"
-                          ref={remarksRef}
-                          maxLength={100}
-                          className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                          placeholder="Enter reason for rejection..."
-                        />
-                      </div>
-                    )}
-
-                    <button
-                      onClick={updateVerificationStatus}
-                      className="w-full md:w-auto px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
-                    >
-                      Submit Status Change
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Table */}
+          <div className="overflow-auto">
+            <Table<Instructor> columns={columns} data={instructors} />
+          </div>
+
+          {/* Empty state */}
+          {!loading && instructors.length === 0 && (
+            <div className="py-16 text-center">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: "#f0fdfa" }}
+              >
+                <GraduationCap className="w-8 h-8 text-teal-300" />
+              </div>
+              <p className="font-semibold text-slate-500">No instructors found</p>
+              <p className="text-sm text-slate-400 mt-1">Try adjusting your search or filters.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div
+              className="px-6 py-4 flex justify-center"
+              style={{ borderTop: "1px solid #f1f5f9" }}
+            >
+              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
+          )}
         </div>
-      )}
-       <ConfirmDialog
+      </div>
+
+      <ConfirmDialog
         open={!!confirmState}
-        title={
-          confirmState?.isActive ? "Block Instructor" : "Unblock Instructor"
-        }
+        title={confirmState?.isActive ? "Block Instructor" : "Unblock Instructor"}
         description={
           confirmState?.isActive
             ? "This instructor will no longer be able to access the platform."
