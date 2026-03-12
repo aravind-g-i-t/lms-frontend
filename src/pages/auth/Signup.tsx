@@ -107,6 +107,7 @@ const UserSignup = () => {
     try {
       setLoading(true)
       await dispatch(sendOTP(signupInput)).unwrap();
+      
       navigate("/verify-otp");
     } catch (error) {
       feedback.error("Error", error as string);

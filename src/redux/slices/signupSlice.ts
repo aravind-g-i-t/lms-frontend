@@ -29,9 +29,9 @@ const signupSlice=createSlice({
     extraReducers: (builder)=>{
         builder
         .addCase(sendOTP.fulfilled,(state,action)=>{
-            state.role=action.payload.role;
-            state.email=action.payload.email;
-            state.otpExpiresAt=action.payload.otpExpiresAt;
+            state.role=action.payload.data.role;
+            state.email=action.payload.data.email;
+            state.otpExpiresAt=action.payload.data.otpExpiresAt;
         })
         .addCase(resendOTP.fulfilled,(state,action)=>{
             state.otpExpiresAt=action.payload.otpExpiresAt;
