@@ -4,7 +4,7 @@ import type { RootState } from "../../redux/store";
 import { useDirectCall } from "../../hooks/useDirectCall";
 
 const DirectCall = () => {
-  const { activeCall, endCall } = useDirectCall();
+  const { activeCall, endCall } = useDirectCall()!;
   const { id, name, role } = useSelector((s: RootState) => s.auth);
 
   if (!activeCall) return null;

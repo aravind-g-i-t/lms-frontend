@@ -6,7 +6,7 @@ const IncomingCallModal = () => {
     activeCall,
     acceptCall,
     rejectCall,
-  } = useDirectCall();
+  } = useDirectCall()!;
 
   return (
     <>
