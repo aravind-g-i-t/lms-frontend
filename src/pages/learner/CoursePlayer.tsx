@@ -81,6 +81,7 @@ export interface Course {
     currentChapterId: string | null;
     quizStatus: QuizStatus
 }
+const apiURL = import.meta.env.VITE_API_URL
 
 const CoursePlayerPage = () => {
     const { courseId } = useParams<{ courseId: string }>();
@@ -352,7 +353,7 @@ const CoursePlayerPage = () => {
 
 
                                 className="max-h-[80vh] w-auto max-w-full object-contain"
-                                src={`http://localhost:3000/api/v1/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
+                                src={`${apiURL}/api/v1/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
                                 onError={handleVideoError}
                                 onStalled={handleVideoError}
                             >
