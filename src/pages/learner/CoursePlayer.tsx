@@ -353,7 +353,7 @@ const CoursePlayerPage = () => {
 
 
                                 className="max-h-[80vh] w-auto max-w-full object-contain"
-                                src={`${apiURL}/api/v1/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
+                                src={`${apiURL}/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
                                 onError={handleVideoError}
                                 onStalled={handleVideoError}
                             >
