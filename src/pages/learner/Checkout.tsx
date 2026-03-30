@@ -154,7 +154,7 @@ export default function Checkout() {
                   <p className="course-label">You're enrolling in</p>
                   <h2 className="course-title">{course.title}</h2>
                   <div className="instructor-row">
-                    <img src={course.instructor.profilePic} alt={course.instructor.name} className="instructor-pic" />
+                    <img src={course.instructor.profilePic || "/images/default-profile.jpg"} alt={course.instructor.name} className="instructor-pic" />
                     <span className="instructor-name">{course.instructor.name}</span>
                   </div>
                   <p className="course-desc">{course.description}</p>

@@ -67,7 +67,7 @@ const InstructorLiveSessions = () => {
     return () => clearTimeout(timeout);
   }, [livePage, fetchLiveSessions]);
 
-  const handleStartSession = async (sessionId: string, courseId: string) => {
+  const handleStartSession = async (sessionId: string) => {
     if (!socket) return
     try {
       setActionLoading(true);
@@ -76,7 +76,6 @@ const InstructorLiveSessions = () => {
 
       socket.emit("startLiveSession", {
         sessionId,
-        courseId,
       });
       setLiveSessions(prev =>
         prev.map(session =>
@@ -148,7 +147,7 @@ const InstructorLiveSessions = () => {
     };
   }, [socket,feedback]);
 
-  const handleCancelSession = async (sessionId: string, courseId: string) => {
+  const handleCancelSession = async (sessionId: string) => {
     if (!socket) return
     try {
       setActionLoading(true);
@@ -164,9 +163,7 @@ const InstructorLiveSessions = () => {
       })
 
       socket.emit("cancelLiveSession", {
-        sessionId,
-        courseId,
-      });
+        sessionId      });
 
     } catch (error) {
       feedback.error("Error", error as string)
@@ -402,7 +399,6 @@ const InstructorLiveSessions = () => {
           if (!confirmCancelSessionState) return;
           handleCancelSession(
             confirmCancelSessionState.sessionId,
-            confirmCancelSessionState.courseId
           );
         }}
 
@@ -419,7 +415,6 @@ const InstructorLiveSessions = () => {
 
           handleStartSession(
             confirmStartSessionState.sessionId,
-            confirmStartSessionState.courseId
           );
         }}
 

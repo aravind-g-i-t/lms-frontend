@@ -864,7 +864,7 @@ const LearnerMessagesPage = () => {
                     </button>
 
                     <img
-                      src={activeConversation.instructor.profilePic}
+                      src={activeConversation.instructor.profilePic||"/images/default-profile.jpg"}
                       alt={activeConversation.instructor.name}
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {

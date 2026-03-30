@@ -4,6 +4,7 @@ import { createLiveSession, getCourseOptions } from "../../services/instructorSe
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { useFeedback } from "../../hooks/useFeedback";
+import { useSocket } from "../../hooks/useSocket";
 
 interface Props {
     isOpen: boolean;
@@ -18,6 +19,7 @@ interface Course {
 const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
     const dispatch = useDispatch<AppDispatch>();
     const feedback = useFeedback();
+    const socket = useSocket();
 
     const [courseOptions, setCourseOptions] = useState<Course[]>([]);
     const [description, setDescription] = useState("");
@@ -46,7 +48,7 @@ const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
         setLoading(true);
         try {
             const scheduledAt = new Date(`${date}T${time}:00`);
-            await dispatch(
+            const response = await dispatch(
                 createLiveSession({
                     courseId,
                     scheduledAt,
@@ -54,6 +56,15 @@ const ScheduleSessionModal = ({ isOpen, onClose }: Props) => {
                     description,
                 })
             ).unwrap();
+            if (!socket) {
+                feedback.error("Error", "Socket connection not established. Please refresh the page and try again.")
+                return;
+            }
+            const { liveSession } = response.data;
+            socket.emit("startLiveSession", {
+                sessionId: liveSession.id,
+                courseId,
+            });
 
             setCourseId("");
             setDescription("");

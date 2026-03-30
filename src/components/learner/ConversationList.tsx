@@ -21,11 +21,6 @@ export const ConversationListItem: React.FC<{
   };
 
 
-  // const getCourseColor = (courseId: string) => {
-  //   const colors = ['#14B8A6', '#0D9488', '#0F766E', '#115E59', '#134E4A'];
-  //   const index = courseId.charCodeAt(courseId.length - 1) % colors.length;
-  //   return colors[index];
-  // };
 
 
   return (
@@ -39,7 +34,7 @@ export const ConversationListItem: React.FC<{
       <div className="flex items-start gap-3">
         <div className="relative flex-shrink-0">
           <img
-            src={conversation.instructor.profilePic}
+            src={conversation.instructor.profilePic||"/images/default-profile.jpg"}
             alt={conversation.instructor.name}
             className="w-12 h-12 rounded-full object-cover"
             onError={(e) => {

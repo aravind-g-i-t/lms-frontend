@@ -19,18 +19,10 @@ import { formatDuration } from "../../utils/formats";
 import { useNavigate } from "react-router-dom";
 import { useFeedback } from "../../hooks/useFeedback";
 
-/* =====================================================
-   TYPES (NEW STRUCTURE - flat enrollments)
-===================================================== */
 
 type EnrollmentStatus = "pending" | "active" | "cancelled" | "completed";
 
-// interface Stats {
-//   totalStudents: number;
-//   completedStudents: number;
-//   totalRevenue: number;
-//   averageProgress: number;
-// }
+
 
 interface Enrollment {
   id: string;
@@ -57,9 +49,6 @@ interface Learner {
   enrollments: Enrollment[];
 }
 
-/* =====================================================
-   DERIVED UI TYPE FOR DISPLAY
-===================================================== */
 
 interface StudentSummary {
   learner: {
@@ -75,9 +64,6 @@ interface StudentSummary {
   averageProgress: number;
 }
 
-/* =====================================================
-   PAGE
-===================================================== */
 
 const InstructorStudentsPage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -86,12 +72,7 @@ const InstructorStudentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<StudentSummary[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
-  // const [stats, setStats] = useState<Stats>({
-  //   totalStudents: 0,
-  //   completedStudents: 0,
-  //   totalRevenue: 0,
-  //   averageProgress: 0,
-  // });
+
 
   const [page, setPage] = useState(1);
   const [totalStudents, setTotalStudents] = useState(0)
@@ -102,9 +83,6 @@ const InstructorStudentsPage = () => {
 
   const limit = 5
 
-  /* =====================================================
-     TRANSFORM API DATA -> STUDENT SUMMARY
-  ===================================================== */
 
   const transformLearnersToStudents = (learners: Learner[]): StudentSummary[] => {
     console.log(learners);
@@ -166,22 +144,6 @@ const InstructorStudentsPage = () => {
   }, [search]);
 
 
-  // useEffect(() => {
-  //   const fetchStats = async () => {
-  //     try {
-  //       const response = await dispatch(getLearnerStatsForInstructor()).unwrap();
-  //       if (response.data) {
-  //         setStats(response.data);
-  //       }
-  //     } catch (err) {
-  //     }
-  //   };
-  //   fetchStats();
-  // }, [dispatch]);
-
-  /* =====================================================
-     FETCH LEARNERS
-  ===================================================== */
 
   useEffect(() => {
     const fetchLearners = async () => {
@@ -215,10 +177,6 @@ const InstructorStudentsPage = () => {
     fetchLearners();
   }, [dispatch, page, debouncedSearch,feedback]);
 
-  /* =====================================================
-     UTILITY FUNCTIONS
-  ===================================================== */
-
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -235,9 +193,6 @@ const InstructorStudentsPage = () => {
  
 
 
-  /* =====================================================
-     LOADING STATE
-  ===================================================== */
 
   if (loading && students.length === 0) {
     return (
@@ -250,9 +205,6 @@ const InstructorStudentsPage = () => {
     );
   }
 
-  /* =====================================================
-     UI RENDER
-  ===================================================== */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50">
@@ -351,69 +303,8 @@ const InstructorStudentsPage = () => {
           </div>
         </div>
 
-        {/* STATS GRID with enhanced cards */}
-        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Students"
-            value={stats.totalStudents}
-            icon={Users}
-            gradient="from-violet-500 to-purple-600"
-            iconBg="bg-violet-100"
-            iconColor="text-violet-600"
-            trend="+12%"
-            trendPositive
-          />
-          <StatCard
-            title="Active Learners"
-            value={students}
-            icon={TrendingUp}
-            gradient="from-blue-500 to-cyan-600"
-            iconBg="bg-blue-100"
-            iconColor="text-blue-600"
-            trend="+8%"
-            trendPositive
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completedStudents}
-            icon={CheckCircle}
-            gradient="from-emerald-500 to-teal-600"
-            iconBg="bg-emerald-100"
-            iconColor="text-emerald-600"
-            trend="+5%"
-            trendPositive
-          />
-          <StatCard
-            title="Total Revenue"
-            value={formatCurrency(stats.totalRevenue)}
-            icon={BarChart3}
-            gradient="from-amber-500 to-orange-600"
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
-            trend="+23%"
-            trendPositive
-          />
-        </div> */}
 
-        {/* <div className="relative overflow-hidden rounded-2xl border border-blue-200/50 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 p-5 shadow-sm">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200 rounded-full blur-3xl opacity-20" />
-          <div className="relative flex items-start space-x-4">
-            <div className="flex-shrink-0 p-2 bg-blue-100 rounded-lg">
-              <Sparkles className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-blue-900 mb-1">Multi-Course Enrollments</p>
-              <p className="text-sm text-blue-700 leading-relaxed">
-                Students may enroll in multiple courses. Expand each student row to view detailed
-                progress, quiz scores, and payment information across all their enrollments.
-              </p>
-            </div>
-          </div>
-        </div> */}
-
-        {/* MAIN LIST CARD with glass morphism */}
         <div className="glass-card rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden">
-          {/* FILTER TABS with enhanced design */}
           <div className="p-6 border-b border-slate-200/50 bg-white/50">
             <div className="flex items-center justify-between mb-4">
 
@@ -435,27 +326,9 @@ const InstructorStudentsPage = () => {
               </div>
             </div>
 
-            {/* <div className="flex space-x-2">
-              {(["all", "active", "completed"] as const).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setFilter(key)}
-                  className={`
-                    px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200
-                    ${
-                      filter === key
-                        ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-500/30"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }
-                  `}
-                >
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </button>
-              ))}
-            </div> */}
+
           </div>
 
-          {/* STUDENTS LIST */}
           <div className="divide-y divide-slate-100">
             {students.length > 0 ? (
               students.map((student, idx) => {
@@ -467,7 +340,6 @@ const InstructorStudentsPage = () => {
                     style={{ animationDelay: `${idx * 50}ms` }}
                     className="enrollment-card"
                   >
-                    {/* STUDENT SUMMARY ROW */}
                     <div
                       onClick={() => setExpanded(isOpen ? null : student.learner.id)}
                       className="student-row p-6 hover:bg-gradient-to-r hover:from-slate-50 hover:to-teal-50/30 cursor-pointer"
@@ -488,10 +360,9 @@ const InstructorStudentsPage = () => {
                                 {student.learner.name.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            {/* <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white shadow-sm" /> */}
+                         
                           </div>
 
-                          {/* Info */}
                           <div>
                             <div className="flex items-center space-x-3 mb-1">
                               <h3 className="text-lg font-bold text-slate-900">
@@ -514,10 +385,7 @@ const InstructorStudentsPage = () => {
                                 <BookOpen className="w-3.5 h-3.5" />
                                 <span className="font-medium">{student.totalCourses} courses</span>
                               </span>
-                              {/* <span className="flex items-center space-x-1 text-slate-600">
-                                <TrendingUp className="w-3.5 h-3.5" />
-                                <span className="font-medium">{student.activeCourses} active</span>
-                              </span> */}
+                            
                             </div>
                           </div>
                         </div>
@@ -597,15 +465,7 @@ const InstructorStudentsPage = () => {
                                   <div className="flex-1">
                                     <div className="flex items-center space-x-2 mb-2">
                                       <h5 className="font-bold text-slate-900">{e.courseTitle}</h5>
-                                      {/* <span
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center space-x-1 ${statusConfig.className}`}
-                                      >
-                                        <div
-                                          className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotColor}`}
-                                        />
-                                        <StatusIcon className="w-3 h-3" />
-                                        <span>{statusConfig.label}</span>
-                                      </span> */}
+
                                     </div>
 
                                     <div className="flex items-center space-x-4 text-xs text-slate-500 mb-3">
@@ -707,61 +567,3 @@ const InstructorStudentsPage = () => {
 
 export default InstructorStudentsPage;
 
-/* =====================================================
-   ENHANCED STAT CARD
-===================================================== */
-
-// interface StatCardProps {
-//   title: string;
-//   value: string | number;
-//   icon: React.ElementType;
-//   gradient: string;
-//   iconBg: string;
-//   iconColor: string;
-//   trend?: string;
-//   trendPositive?: boolean;
-// }
-
-// const StatCard = ({
-//   title,
-//   value,
-//   icon: Icon,
-//   gradient,
-//   iconBg,
-//   iconColor,
-//   trend,
-//   trendPositive,
-// }: StatCardProps) => (
-//   <div className="metric-card group relative overflow-hidden bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/50 hover:shadow-xl hover:shadow-slate-300/50">
-//     {/* Gradient overlay on hover */}
-//     <div
-//       className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
-//     />
-
-//     {/* Decorative blur */}
-//     <div
-//       className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${gradient} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity`}
-//     />
-
-//     <div className="relative">
-//       <div className="flex items-center justify-between mb-4">
-//         <div className={`p-3 ${iconBg} rounded-xl group-hover:scale-110 transition-transform`}>
-//           <Icon className={`w-6 h-6 ${iconColor}`} />
-//         </div>
-//         {trend && (
-//           <span
-//             className={`text-xs font-bold px-2 py-1 rounded-lg ${trendPositive
-//               ? "text-emerald-600 bg-emerald-50"
-//               : "text-rose-600 bg-rose-50"
-//               }`}
-//           >
-//             {trend}
-//           </span>
-//         )}
-//       </div>
-
-//       <p className="text-sm font-medium text-slate-600 mb-2">{title}</p>
-//       <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
-//     </div>
-//   </div>
-// );

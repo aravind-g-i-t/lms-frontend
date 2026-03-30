@@ -936,7 +936,7 @@ const InstructorMessagesPage = () => {
                 <div className="flex items-start gap-3">
                   <div className="relative flex-shrink-0">
                     <img
-                      src={conv.learner.profilePic}
+                      src={conv.learner.profilePic ||"/images/default-profile.jpg"}
                       alt={conv.learner.name}
                       className="w-12 h-12 rounded-full object-cover"
                       onError={(e) => {
@@ -1033,7 +1033,7 @@ const InstructorMessagesPage = () => {
                   </button>
 
                   <img
-                    src={activeConversation.learner.profilePic}
+                    src={activeConversation.learner.profilePic || "/images/default-profile.jpg"}
                     alt={activeConversation.learner.name}
                     className="w-10 h-10 rounded-full object-cover"
                     onError={(e) => {
