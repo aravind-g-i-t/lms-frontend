@@ -6,6 +6,8 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { logout } from "../../services/userAuthServices";
 import { useFeedback } from "../../hooks/useFeedback";
 
+const apiURL = import.meta.env.VITE_API_URL
+
 export default function LearnerNav() {
   const feedback = useFeedback();
   const { role, name, profilePic } = useSelector((state: RootState) => state.auth);
@@ -120,7 +122,7 @@ export default function LearnerNav() {
                     className="flex items-center gap-2 bg-white rounded-full px-2 sm:px-3 py-1 hover:bg-teal-100 transition-colors"
                   >
                     <img
-                      src={profilePic || "/images/default-profile.jpg"}
+                      src={profilePic ?`${apiURL}/learner/profile/image`: "/images/deault-profile.jpg"}
                       alt={name || "profile"}
                       className="w-8 h-8 rounded-full object-cover border border-teal-300"
                     />

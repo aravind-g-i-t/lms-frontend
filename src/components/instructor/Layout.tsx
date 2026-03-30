@@ -17,6 +17,9 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { logout } from "../../services/userAuthServices";
 import { useFeedback } from "../../hooks/useFeedback";
 
+const apiURL = import.meta.env.VITE_API_URL
+
+
 const InstructorLayout: React.FC = () => {
 
   const feedback = useFeedback();
@@ -202,7 +205,7 @@ const InstructorLayout: React.FC = () => {
               className="flex items-center gap-2 bg-white rounded-full px-3 py-1 hover:bg-teal-100 transition"
             >
               <img
-                src={profilePic || "/images/default-profile.jpg"}
+                src={profilePic ?`${apiURL}/instructor/profile/image`: "/images/deault-profile.jpg"}
                 alt={name || 'profile image'}
                 className="w-9 h-9 rounded-full object-cover border border-teal-500"
               />
