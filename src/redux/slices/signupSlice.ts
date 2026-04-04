@@ -34,10 +34,10 @@ const signupSlice=createSlice({
             state.otpExpiresAt=action.payload.data.otpExpiresAt;
         })
         .addCase(resendOTP.fulfilled,(state,action)=>{
-            state.otpExpiresAt=action.payload.otpExpiresAt;
+            state.otpExpiresAt=action.payload.data.otpExpiresAt;
         })
         .addCase(verifyEmail.fulfilled,(state,action)=>{
-            state.otpExpiresAt=action.payload.otpExpiresAt;
+            state.otpExpiresAt=action.payload.data.otpExpiresAt;
         })
         
     },

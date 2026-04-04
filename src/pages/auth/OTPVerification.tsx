@@ -33,6 +33,8 @@ export default function OtpVerification() {
     if (!email || !otpExpiresAt || !role) {
       navigate("/signup");
     }
+    console.log(email,otpExpiresAt,role);
+    
   }, [email, otpExpiresAt, role, navigate]);
 
 
