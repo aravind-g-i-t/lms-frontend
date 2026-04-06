@@ -9,13 +9,16 @@ import {
     VideoIcon,
     Archive,
     MessageCircle,
-    Award
+    Award,
+    Lock,
+    LogOut
 } from 'lucide-react';
 import type { AppDispatch } from '../../redux/store';
-import { getFullCourseForLearner, markChapterAsCompleted, pingLearner, updateCurrentChapter } from '../../services/learnerServices';
+import { getFullCourseForLearner, markChapterAsCompleted, pingLearner, updateCurrentChapter, cancelEnrollment } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CoursePlayerSkeleton from '../../components/learner/CoursePlayerSkeleton';
 import { useFeedback } from '../../hooks/useFeedback';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 
 
 export interface Resource {
@@ -29,7 +32,6 @@ export interface Chapter {
     id: string;
     title: string;
     description: string;
-    // video: string | null;
     duration: number;
     resources: Resource[];
 }
@@ -79,9 +81,22 @@ export interface Course {
     completedChapters: string[];
     totalChapters: number;
     currentChapterId: string | null;
-    quizStatus: QuizStatus
+    quizStatus: QuizStatus;
+    enrolledAt: Date | null;
 }
-const apiURL = import.meta.env.VITE_API_URL
+
+const apiURL = import.meta.env.VITE_API_URL;
+
+// const canCancelEnrollment = (enrolledAt: Date | null): boolean => {
+//     console.log("EnrolledAt",enrolledAt);
+    
+//     if (!enrolledAt) return false;
+//     if()
+//     const diffMs = new Date().getTime() - new Date(enrolledAt).getTime();
+//     return diffMs / (1000 * 60 * 60 * 24) <= 7;
+// };
+
+
 
 const CoursePlayerPage = () => {
     const { courseId } = useParams<{ courseId: string }>();
@@ -94,11 +109,12 @@ const CoursePlayerPage = () => {
     const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
-    // const [currentModuleId,setCurrentModuleId]=useState<string|null>(null)
     const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
     const [showSidebar, setShowSidebar] = useState(true);
     const [showNotes, setShowNotes] = useState(false);
     const [showResources, setShowResources] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancelLoading, setCancelLoading] = useState(false);
 
 
     useEffect(() => {
@@ -108,10 +124,9 @@ const CoursePlayerPage = () => {
                 setLoading(true);
                 const response = await dispatch(getFullCourseForLearner({ courseId })).unwrap();
                 console.log(response);
-                
-                const courseData: Course = response.data
-                setCourse(courseData);
 
+                const courseData: Course = response.data;
+                setCourse(courseData);
 
                 // Set initial chapter
                 if (courseData.currentChapterId) {
@@ -121,7 +136,6 @@ const CoursePlayerPage = () => {
                             if (chapter.id === courseData.currentChapterId) {
                                 setCurrentChapter(chapter);
                                 setCurrentModuleIndex(mIdx);
-
                                 setCurrentChapterIndex(cIdx);
                                 setExpandedModules(new Set([mIdx]));
                                 found = true;
@@ -143,16 +157,29 @@ const CoursePlayerPage = () => {
         };
 
         fetchCourse();
-    }, [courseId, dispatch, navigate,feedback]);
-
+    }, [courseId, dispatch, navigate, feedback]);
 
 
     const handleVideoError = async () => {
         try {
-            await dispatch(pingLearner()).unwrap()
-
-        } catch  {
+            await dispatch(pingLearner()).unwrap();
+        } catch {
             feedback.error("Error", "Session expired. Please login again.");
+        }
+    };
+
+    const handleCancelEnrollment = async () => {
+        if (!course) return;
+        try {
+            setCancelLoading(true);
+            await dispatch(cancelEnrollment({ courseId: course.id })).unwrap();
+            feedback.success("Success", "Enrollment cancelled successfully.");
+            navigate('/learner/dashboard');
+        } catch (err) {
+            feedback.error("Error", err as string);
+        } finally {
+            setCancelLoading(false);
+            setShowCancelConfirm(false);
         }
     };
 
@@ -167,16 +194,51 @@ const CoursePlayerPage = () => {
         setExpandedModules(newExpanded);
     }, [expandedModules]);
 
+
+    const completedSet = useMemo(
+        () => new Set(course?.completedChapters ?? []),
+        [course?.completedChapters]
+    );
+
+    const isChapterCompleted = useCallback(
+        (id: string) => completedSet.has(id),
+        [completedSet]
+    );
+
+    const isChapterLocked = useCallback(
+        (moduleIdx: number, chapterIdx: number): boolean => {
+            if (!course) return false;
+            if (moduleIdx === 0 && chapterIdx === 0) return false;
+
+            let prevChapterId: string;
+            if (chapterIdx > 0) {
+                prevChapterId = course.modules[moduleIdx].chapters[chapterIdx - 1].id;
+            } else {
+                const prevModule = course.modules[moduleIdx - 1];
+                prevChapterId = prevModule.chapters[prevModule.chapters.length - 1].id;
+            }
+
+            return !completedSet.has(prevChapterId);
+        },
+        [course, completedSet]
+    );
+
+
     const selectChapter = async (moduleIdx: number, chapterIdx: number) => {
         if (!course) return;
-        const module = course.modules[moduleIdx]
+
+        if (isChapterLocked(moduleIdx, chapterIdx)) {
+            feedback.error("Locked", "Complete all previous chapters to unlock this one.");
+            return;
+        }
+
+        const module = course.modules[moduleIdx];
         const chapter = module.chapters[chapterIdx];
         await dispatch(updateCurrentChapter({
             courseId: course.id,
             chapterId: chapter.id
         })).unwrap();
         setCurrentChapter(chapter);
-
         setCurrentModuleIndex(moduleIdx);
         setCurrentChapterIndex(chapterIdx);
         setShowSidebar(false);
@@ -187,10 +249,16 @@ const CoursePlayerPage = () => {
         const currentModule = course.modules[currentModuleIndex];
 
         if (currentChapterIndex < currentModule.chapters.length - 1) {
-            selectChapter(currentModuleIndex, currentChapterIndex + 1);
+            const nextChapterIdx = currentChapterIndex + 1;
+            if (!isChapterLocked(currentModuleIndex, nextChapterIdx)) {
+                selectChapter(currentModuleIndex, nextChapterIdx);
+            }
         } else if (currentModuleIndex < course.modules.length - 1) {
-            selectChapter(currentModuleIndex + 1, 0);
-            setExpandedModules(new Set(expandedModules).add(currentModuleIndex + 1));
+            const nextModuleIdx = currentModuleIndex + 1;
+            if (!isChapterLocked(nextModuleIdx, 0)) {
+                selectChapter(nextModuleIdx, 0);
+                setExpandedModules(new Set(expandedModules).add(nextModuleIdx));
+            }
         }
     };
 
@@ -225,20 +293,22 @@ const CoursePlayerPage = () => {
         }
     };
 
-    const completedSet = useMemo(
-        () => new Set(course?.completedChapters ?? []),
-        [course?.completedChapters]
-    );
-
-    const isChapterCompleted = useCallback(
-        (id: string) => completedSet.has(id),
-        [completedSet]
-    );
-
-
-    // const isChapterCompleted = (chapterId: string) => {
-    //     return course?.completedChapters.includes(chapterId) || false;
-    // };
+    const canCancelEnrollment = useMemo(() => {
+        console.log(course?.enrolledAt);
+        
+        if (!course || !course.enrolledAt) return false;
+        const now = new Date();
+        if(course.progressPercentage >= 50){
+            return false;
+        }
+        const enrolledDate = new Date(course.enrolledAt);
+        console.log(enrolledDate);
+        
+        const diffDays = (now.getTime() - enrolledDate.getTime()) / (1000 * 60 * 60 * 24);
+        console.log(diffDays);
+        
+        return diffDays <= 7;
+    }, [course]);
 
     const hasNextChapter = () => {
         if (!course) return false;
@@ -251,8 +321,7 @@ const CoursePlayerPage = () => {
     };
 
 
-
-    if (loading) return <CoursePlayerSkeleton />
+    if (loading) return <CoursePlayerSkeleton />;
 
     if (!course || !currentChapter) {
         return (
@@ -264,7 +333,6 @@ const CoursePlayerPage = () => {
 
     return (
         <>
-            {/* <LearnerNav /> */}
             <div className="min-h-screen bg-gray-900 flex flex-col">
                 {/* Top Navigation Bar */}
                 <header className="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
@@ -283,7 +351,7 @@ const CoursePlayerPage = () => {
                         </button>
                         <div className="hidden sm:block">
                             <h1 className="text-white font-semibold text-sm line-clamp-1">
-                                <Link to={`/course/${courseId}`} >{course.title}</Link>
+                                <Link to={`/course/${courseId}`}>{course.title}</Link>
                             </h1>
                             <p className="text-gray-400 text-xs">by {course.instructor.name}</p>
                         </div>
@@ -295,33 +363,30 @@ const CoursePlayerPage = () => {
                                 navigate("/learner/messages", {
                                     state: { courseId: course.id }
                                 });
-
                             }}
                             className="text-gray-300 hover:text-teal-400 flex items-center gap-1 px-3 py-1 border border-gray-600 rounded-md text-sm"
                         >
                             <MessageCircle className="w-4 h-4" />
                             Message Instructor
                         </button>
+
                         {(course.progressPercentage === 100 && course.quizStatus === "not_attended") && (
                             <button
                                 onClick={() => navigate(`/learner/courses/${course.id}/quiz`)}
-                                className="w-full p-4 flex items-center gap-3 bg-gray-850 hover:bg-gray-750 transition-colors border-t border-gray-700"
+                                className="flex items-center gap-2 px-3 py-1 border border-teal-500 text-teal-400 rounded-md text-sm hover:bg-teal-900/30 transition-colors"
                             >
-                                <FileText className="w-5 h-5 text-teal-400" />
-                                <span className="text-white font-medium">Final Quiz / Assessment</span>
+                                <FileText className="w-4 h-4" />
+                                <span className="hidden sm:inline">Final Quiz</span>
                             </button>
                         )}
 
                         <button
-                            onClick={() =>
-                                navigate(`/learner/courses/${course.id}/live-sessions`)
-                            }
+                            onClick={() => navigate(`/learner/courses/${course.id}/live-sessions`)}
                             className="text-gray-300 hover:text-teal-400 flex items-center gap-1 px-3 py-1 border border-gray-600 rounded-md text-sm"
                         >
                             <VideoIcon className="w-4 h-4" />
                             Live Sessions
                         </button>
-
 
                         {/* Progress */}
                         <div className="hidden md:flex items-center gap-2">
@@ -334,10 +399,22 @@ const CoursePlayerPage = () => {
                             <span className="text-gray-300 text-sm">{course.progressPercentage}%</span>
                         </div>
 
-                        {course.quizStatus === "passed" && (<button className="text-gray-300 hover:text-white text-sm flex items-center gap-1">
-                            <Award className="w-4 h-4" />
-                            <span className="hidden sm:inline">Certified</span>
-                        </button>)}
+                        {course.quizStatus === "passed" && (
+                            <button className="text-gray-300 hover:text-white text-sm flex items-center gap-1">
+                                <Award className="w-4 h-4" />
+                                <span className="hidden sm:inline">Certified</span>
+                            </button>
+                        )}
+
+                        {canCancelEnrollment && (
+                            <button
+                                onClick={() => setShowCancelConfirm(true)}
+                                className="text-red-400 hover:text-red-300 flex items-center gap-1 px-3 py-1 border border-red-800 rounded-md text-sm transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span className="hidden sm:inline">Cancel Enrollment</span>
+                            </button>
+                        )}
                     </div>
                 </header>
 
@@ -346,21 +423,20 @@ const CoursePlayerPage = () => {
                     {/* Main Content Area */}
                     <main className="flex-1 flex flex-col overflow-hidden">
                         {/* Video Player */}
-                        {currentChapter && (<div className="bg-black w-full flex justify-center items-center">
-                            <video
-                                key={currentChapter.id}
-                                controls
-
-
-                                className="max-h-[80vh] w-auto max-w-full object-contain"
-                                src={`${apiURL}/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
-                                onError={handleVideoError}
-                                onStalled={handleVideoError}
-                            >
-                                Your browser does not support video playback.
-                            </video>
-                        </div>)}
-
+                        {currentChapter && (
+                            <div className="bg-black w-full flex justify-center items-center">
+                                <video
+                                    key={currentChapter.id}
+                                    controls
+                                    className="max-h-[80vh] w-auto max-w-full object-contain"
+                                    src={`${apiURL}/learner/courses/${course.id}/modules/${course.modules[currentModuleIndex].id}/chapters/${currentChapter.id}/stream`}
+                                    onError={handleVideoError}
+                                    onStalled={handleVideoError}
+                                >
+                                    Your browser does not support video playback.
+                                </video>
+                            </div>
+                        )}
 
                         {/* Chapter Navigation */}
                         <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
@@ -385,7 +461,7 @@ const CoursePlayerPage = () => {
 
                             <button
                                 onClick={goToNextChapter}
-                                disabled={!hasNextChapter()}
+                                disabled={!hasNextChapter() || !isChapterCompleted(currentChapter.id)}
                                 className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                             >
                                 Next
@@ -433,15 +509,6 @@ const CoursePlayerPage = () => {
                                             <FileText className="w-4 h-4" />
                                             Resources ({currentChapter.resources.length})
                                         </button>
-                                        {/* <button
-                                            onClick={() => { setShowNotes(true); setShowResources(false); }}
-                                            className={`pb-3 px-1 border-b-2 transition-colors ${showNotes
-                                                ? 'border-teal-500 text-teal-400'
-                                                : 'border-transparent text-gray-400 hover:text-gray-300'
-                                                }`}
-                                        >
-                                            Notes
-                                        </button> */}
                                     </div>
                                 </div>
 
@@ -455,7 +522,6 @@ const CoursePlayerPage = () => {
 
                                 {showResources && (
                                     <div className="space-y-3">
-
                                         {currentChapter.resources.length === 0 ? (
                                             <div className="text-center py-12 text-gray-500">
                                                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -463,16 +529,13 @@ const CoursePlayerPage = () => {
                                             </div>
                                         ) : (
                                             currentChapter.resources.map((resource) => {
-                                                // Extract extension
                                                 const ext = resource.name.split(".").pop()?.toLowerCase() || "";
 
-                                                // Select icon for file
                                                 const Icon = (() => {
                                                     if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return ImageIcon;
                                                     if (["mp4", "mov", "webm", "mkv"].includes(ext)) return VideoIcon;
                                                     if (["zip", "rar", "7z"].includes(ext)) return Archive;
-                                                    if (["pdf"].includes(ext)) return FileText;
-                                                    return FileText; // default icon
+                                                    return FileText;
                                                 })();
 
                                                 return (
@@ -480,24 +543,17 @@ const CoursePlayerPage = () => {
                                                         key={resource.id}
                                                         className="bg-gray-800 rounded-lg p-4 flex items-center justify-between hover:bg-gray-750 transition-colors"
                                                     >
-                                                        {/* Left side block */}
                                                         <div className="flex items-center gap-3">
                                                             <Icon className="w-5 h-5 text-gray-300" />
-
                                                             <div>
-                                                                {/* Title (file name) */}
                                                                 <h4 className="text-white font-medium text-sm truncate max-w-[200px]">
                                                                     {resource.name}
                                                                 </h4>
-
-                                                                {/* File size + extension */}
                                                                 <p className="text-gray-500 text-xs">
                                                                     {(resource.size / 1024 / 1024).toFixed(2)} MB • {ext.toUpperCase()}
                                                                 </p>
                                                             </div>
                                                         </div>
-
-                                                        {/* Download button */}
                                                         <a
                                                             href={resource.file}
                                                             download
@@ -514,30 +570,17 @@ const CoursePlayerPage = () => {
                                         )}
                                     </div>
                                 )}
-
-
-                                {/* {showNotes && (
-                                    <div className="bg-gray-800 rounded-lg p-6">
-                                        <p className="text-gray-400 mb-4">Take notes while learning...</p>
-                                        <textarea
-                                            placeholder="Start typing your notes here..."
-                                            className="w-full h-64 bg-gray-900 border border-gray-700 rounded-lg p-4 text-white placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                        />
-                                        <button className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm">
-                                            Save Notes
-                                        </button>
-                                    </div>
-                                )} */}
                             </div>
                         </div>
                     </main>
+
                     {/* Sidebar - Course Content */}
                     <aside className={`
-          ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-10
-          w-80 bg-gray-800 border-r border-gray-700 overflow-y-auto transition-transform
-          flex flex-col
-        `}>
+                        ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
+                        lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-10
+                        w-80 bg-gray-800 border-r border-gray-700 overflow-y-auto transition-transform
+                        flex flex-col
+                    `}>
                         <div className="p-4 border-b border-gray-700">
                             <h2 className="text-white font-semibold flex items-center gap-2">
                                 <List className="w-5 h-5" />
@@ -575,27 +618,34 @@ const CoursePlayerPage = () => {
                                             {module.chapters.map((chapter, chapterIdx) => {
                                                 const isActive = moduleIdx === currentModuleIndex && chapterIdx === currentChapterIndex;
                                                 const isCompleted = isChapterCompleted(chapter.id);
+                                                const isLocked = isChapterLocked(moduleIdx, chapterIdx);
 
                                                 return (
                                                     <button
                                                         key={chapter.id}
                                                         onClick={() => selectChapter(moduleIdx, chapterIdx)}
                                                         className={`
-                            w-full p-3 pl-8 flex items-start gap-3 text-left transition-colors
-                            ${isActive ? 'bg-teal-900/30 border-l-2 border-teal-500' : 'hover:bg-gray-750'}
-                          `}
+                                                            w-full p-3 pl-8 flex items-start gap-3 text-left transition-colors
+                                                            ${isActive
+                                                                ? 'bg-teal-900/30 border-l-2 border-teal-500'
+                                                                : isLocked
+                                                                    ? 'opacity-50 cursor-not-allowed'
+                                                                    : 'hover:bg-gray-750'}
+                                                        `}
                                                     >
                                                         <div className="flex-shrink-0 mt-0.5">
                                                             {isCompleted ? (
                                                                 <CheckCircle className="w-4 h-4 text-green-500" />
                                                             ) : isActive ? (
                                                                 <PlayCircle className="w-4 h-4 text-teal-500" />
+                                                            ) : isLocked ? (
+                                                                <Lock className="w-4 h-4 text-gray-600" />
                                                             ) : (
                                                                 <Circle className="w-4 h-4 text-gray-500" />
                                                             )}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <h4 className={`text-sm font-medium ${isActive ? 'text-teal-400' : 'text-gray-300'}`}>
+                                                            <h4 className={`text-sm font-medium ${isActive ? 'text-teal-400' : isLocked ? 'text-gray-600' : 'text-gray-300'}`}>
                                                                 {chapterIdx + 1}. {chapter.title}
                                                             </h4>
                                                             <div className="flex items-center gap-2 mt-1">
@@ -614,8 +664,6 @@ const CoursePlayerPage = () => {
                             ))}
                         </div>
                     </aside>
-
-
                 </div>
 
                 {/* Mobile Sidebar Overlay */}
@@ -626,6 +674,17 @@ const CoursePlayerPage = () => {
                     />
                 )}
             </div>
+
+            <ConfirmDialog
+                open={showCancelConfirm}
+                title="Cancel Enrollment"
+                description="Are you sure you want to cancel your enrollment in this course? You will lose access to the course. This action cannot be undone."
+                confirmText="Yes, Cancel Enrollment"
+                destructive={true}
+                loading={cancelLoading}
+                onCancel={() => setShowCancelConfirm(false)}
+                onConfirm={handleCancelEnrollment}
+            />
         </>
     );
 };

@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  DollarSign,
 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
@@ -24,6 +25,8 @@ const navigationItems = [
   { name: "Categories",    icon: FolderOpen,      href: "/admin/categories" },
   { name: "Coupons",       icon: Ticket,          href: "/admin/coupons" },
   { name: "Verifications", icon: ShieldCheck,     href: "/admin/verifications" },
+  { name: "Revenue", icon: DollarSign, href: "/admin/revenue" },
+
 ];
 
 export function AdminSidebar() {

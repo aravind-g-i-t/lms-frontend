@@ -149,6 +149,45 @@ export const toggleInstructorStatus = createAsyncThunk(
     },
 )
 
+export const getRevenueStats = createAsyncThunk(
+    "admin/getRevenueStats",
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.get(API.ADMIN.REVENUE_STATS);
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
+
+export const getRevenueList = createAsyncThunk(
+    "admin/getRevenueList",
+    async ({ page, limit }: { page: number; limit: number }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.get(API.ADMIN.REVENUE_LIST, {
+                params: { page, limit }
+            });
+
+            return res.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data);
+                return rejectWithValue(error.response?.data?.message || "Invalid request");
+            }
+            console.log(error);
+
+            return rejectWithValue("Something went wrong. Please try again.");
+        }
+    },
+)
 
 
 

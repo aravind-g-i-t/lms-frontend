@@ -19,7 +19,9 @@ export const API = {
         COUPONS:"/admin/coupons",
         COUPON_STATUS:"/admin/coupon/status",
         DASHBOARD:"/admin/dashboard",
-        INSTRUCTOR_DETAILS:"/admin/instructor/details"
+        INSTRUCTOR_DETAILS:"/admin/instructor/details",
+        REVENUE_STATS:"/admin/revenue/stats",
+        REVENUE_LIST:"/admin/revenue/list"
 
 
 

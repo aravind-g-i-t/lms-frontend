@@ -15,10 +15,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { AppDispatch, RootState } from '../../redux/store';
 import LearnerNav from '../../components/learner/LearnerNav';
-import { addToFavourites, cancelEnrollment, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview, updateReview } from '../../services/learnerServices';
+import { addToFavourites, getCourseDetailsForLearner, getReviewsForLearner, removeFromFavourites, submitReview, updateReview } from '../../services/learnerServices';
 import { formatDuration } from '../../utils/formats';
 import CourseOverviewSkeleton from '../../components/learner/CourseOverviewSkeleton';
-import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { useFeedback } from '../../hooks/useFeedback';
 
 type CourseLevel = "beginner" | "intermediate" | "advanced";
@@ -43,7 +42,6 @@ interface Instructor {
   id: string;
   name: string;
   profilePic: string | null;
-
 }
 
 export interface Category {
@@ -83,7 +81,7 @@ export interface Course {
   isEnrolled: boolean;
   enrolledAt: Date | null;
   isFavourite: boolean;
-  isCompleted: boolean
+  isCompleted: boolean;
 }
 
 interface Review {
@@ -109,146 +107,118 @@ interface MyReview {
 
 
 const CourseOverviewPage = () => {
-  const { id,role } = useSelector((state: RootState) => state.auth);
+  const { id, role } = useSelector((state: RootState) => state.auth);
   const { courseId } = useParams<{ courseId: string }>();
   console.log(courseId);
-  const dispatch = useDispatch<AppDispatch>()
-  const feedback= useFeedback()
-  const navigate = useNavigate()
+  const dispatch = useDispatch<AppDispatch>();
+  const feedback = useFeedback();
+  const navigate = useNavigate();
 
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
   const [showPreview, setShowPreview] = useState(false);
 
-
-
   const [course, setCourse] = useState<Course | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [myReview, setMyReview] = useState<MyReview | null>(null)
+  const [myReview, setMyReview] = useState<MyReview | null>(null);
   const [myRating, setMyRating] = useState(0);
   const [myReviewText, setMyReviewText] = useState('');
   const [loading, setLoading] = useState(true);
   const [isEditingReview, setIsEditingReview] = useState(false);
-  const [confirmState, setConfirmState] = useState<boolean>(false);
-  const [actionLoading, setActionLoading] = useState(false);
 
 
   useEffect(() => {
-
     const fetchCourseDetails = async () => {
-
       try {
-        setLoading(true)
-        if (!courseId) {
-          return
-        }
+        setLoading(true);
+        if (!courseId) return;
         const response = await dispatch(getCourseDetailsForLearner({
           courseId,
-          learnerId: role==="learner"?id:null
+          learnerId: role === "learner" ? id : null
         })).unwrap();
 
         console.log(response.data);
-        setCourse(response.data)
-
-
+        setCourse(response.data);
       } catch (err) {
         feedback.error("Error loading course details", err as string);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
 
     fetchCourseDetails();
-
-  }, [dispatch, courseId, id,role,feedback]);
+  }, [dispatch, courseId, id, role, feedback]);
 
   useEffect(() => {
-
     const fetchReviews = async () => {
-
       try {
-        if (!courseId) {
-          return
-        }
+        if (!courseId) return;
         const response = await dispatch(getReviewsForLearner({
           courseId,
           skip: reviews.length,
           limit: 10,
-          learnerId: role==="learner" ? id as string : undefined
+          learnerId: role === "learner" ? id as string : undefined
         })).unwrap();
 
         if (response.data.myReview) {
-          setMyReview(response.data.myReview)
+          setMyReview(response.data.myReview);
         }
-        setReviews(response.data.reviews)
-
+        setReviews(response.data.reviews);
       } catch (err) {
         feedback.error(err as string);
       }
     };
 
     fetchReviews();
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, courseId]);
 
 
   const handleAddToFavourites = async () => {
-    if (!course) return null;
-
+    if (!course) return;
     try {
-      const courseId = course.id;
-      const result = await dispatch(addToFavourites({
-        courseId
-      })).unwrap();
+      const result = await dispatch(addToFavourites({ courseId: course.id })).unwrap();
       setCourse({ ...course, isFavourite: true });
-      feedback.success(result.message)
+      feedback.success(result.message);
     } catch (error) {
-      feedback.error("Error adding to favourites", error as string)
+      feedback.error("Error adding to favourites", error as string);
     }
-  }
+  };
 
   const handleRemoveFromFavourites = async () => {
-    if (!course) return null;
-
+    if (!course) return;
     try {
-      const courseId = course.id;
-      const result = await dispatch(removeFromFavourites({
-        courseId
-      })).unwrap();
-      setCourse({ ...course, isFavourite: false })
-      feedback.success("Success",result.message)
+      const result = await dispatch(removeFromFavourites({ courseId: course.id })).unwrap();
+      setCourse({ ...course, isFavourite: false });
+      feedback.success("Success", result.message);
     } catch (error) {
-      feedback.error("Error removing from favourites", error as string)
+      feedback.error("Error removing from favourites", error as string);
     }
-  }
+  };
+
   const startEditReview = () => {
     if (!myReview) return;
-
     setMyRating(myReview.rating);
     setMyReviewText(myReview.reviewText || '');
     setIsEditingReview(true);
   };
 
   const handleSubmitReview = async () => {
-    if (!course || !myRating) return null;
-
+    if (!course || !myRating) return;
     try {
-      const courseId = course.id;
       const result = await dispatch(submitReview({
-        courseId,
+        courseId: course.id,
         reviewText: myReviewText.trim() || null,
         rating: myRating
       })).unwrap();
-      setMyReview(result.data.review)
-      feedback.success("Success","Review submitted successfully.")
+      setMyReview(result.data.review);
+      feedback.success("Success", "Review submitted successfully.");
     } catch (error) {
-      feedback.error("Error", error as string)
+      feedback.error("Error", error as string);
     }
-  }
+  };
 
   const handleUpdateReview = async () => {
     if (!course || !myRating || !myReview) return;
-
     try {
       const result = await dispatch(updateReview({
         courseId: course.id,
@@ -267,27 +237,6 @@ const CourseOverviewPage = () => {
   };
 
 
-  const handleCancelEnrollment = async () => {
-    if (!course) return null;
-
-    try {
-      setActionLoading(true);
-      const courseId = course.id;
-      await dispatch(cancelEnrollment({
-        courseId
-      })).unwrap();
-      
-      setCourse({ ...course, isEnrolled: false, enrolledAt: null });
-      feedback.success("Success", "Enrollment cancelled successfully.");
-    } catch (error) {
-      feedback.error("Error", error as string);
-    } finally {
-      setActionLoading(false);
-      setConfirmState(false);
-    }
-  }
-
-
   const toggleModule = (index: number) => {
     const newExpanded = new Set(expandedModules);
     if (newExpanded.has(index)) {
@@ -298,19 +247,13 @@ const CourseOverviewPage = () => {
     setExpandedModules(newExpanded);
   };
 
-
-
   const getLevelColor = (level: CourseLevel) => {
     switch (level) {
-      case 'beginner':
-        return 'bg-blue-100 text-blue-800';
-      case 'intermediate':
-        return 'bg-purple-100 text-purple-800';
-      case 'advanced':
-        return 'bg-orange-100 text-orange-800';
+      case 'beginner': return 'bg-blue-100 text-blue-800';
+      case 'intermediate': return 'bg-purple-100 text-purple-800';
+      case 'advanced': return 'bg-orange-100 text-orange-800';
     }
   };
-
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A';
@@ -323,44 +266,20 @@ const CourseOverviewPage = () => {
 
   const getTotalChapters = () => {
     if (!course) return null;
-
     return course.modules.reduce((total, module) => total + module.chapters.length, 0);
   };
 
-  const canCancelEnrollment = (enrolledAt: Date | null) => {
-    if (!enrolledAt) return false;
 
-    const now = new Date();
-    const enrolledDate = new Date(enrolledAt);
-
-    const diffMs = now.getTime() - enrolledDate.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-    return diffDays <= 7; // within 7 days
-  };
-
-
-  if (loading) return <CourseOverviewSkeleton />
+  if (loading) return <CourseOverviewSkeleton />;
   if (!course) return null;
 
 
   return (
-
-
     <div className="min-h-screen bg-gray-50">
       <LearnerNav />
-      {/* Hero Section with Thumbnail */}
-      <div className="relative bg-gray-900 text-white">
-        {/* {course.thumbnail && (
-          <div className="absolute inset-0 opacity-30">
-            <img 
-              src={course.thumbnail} 
-              alt={course.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )} */}
 
+      {/* Hero Section */}
+      <div className="relative bg-gray-900 text-white">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left: Course Info */}
@@ -369,7 +288,6 @@ const CourseOverviewPage = () => {
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLevelColor(course.level)}`}>
                   {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
                 </span>
-
               </div>
 
               <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
@@ -395,7 +313,7 @@ const CourseOverviewPage = () => {
                 </div>
                 <div className="flex items-center text-gray-300">
                   <Clock className="w-5 h-5 mr-1" />
-                  <span>{formatDuration(course.duration)} </span>
+                  <span>{formatDuration(course.duration)}</span>
                 </div>
               </div>
 
@@ -440,7 +358,6 @@ const CourseOverviewPage = () => {
                 <div className="p-6">
                   {course.isEnrolled ? (
                     <>
-                      {/* Already Enrolled UI */}
                       <div className="text-green-600 font-semibold mb-2">
                         ✔ Enrolled on {course.enrolledAt ? formatDate(course.enrolledAt) : "N/A"}
                       </div>
@@ -452,15 +369,6 @@ const CourseOverviewPage = () => {
                         Continue Learning
                       </button>
 
-                      {canCancelEnrollment(course.enrolledAt) && (
-                        <button
-                          onClick={() => setConfirmState(true)}
-                          className="w-full border-2 border-red-500 text-red-500 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors mb-3"
-                        >
-                          Cancel Enrollment
-                        </button>
-                      )}
-
                       <button
                         onClick={() => navigate('/learner/dashboard')}
                         className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
@@ -470,7 +378,6 @@ const CourseOverviewPage = () => {
                     </>
                   ) : (
                     <>
-                      {/* Not Enrolled UI */}
                       <div className="text-3xl font-bold text-gray-900 mb-4">
                         ₹{course.price}
                       </div>
@@ -481,15 +388,17 @@ const CourseOverviewPage = () => {
                       >
                         Enroll Now
                       </button>
+
                       {course.isFavourite ? (
-                        <button className="w-full border-2 border-gray-400 text-gray-400 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                        <button
+                          className="w-full border-2 border-gray-400 text-gray-400 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
                           onClick={handleRemoveFromFavourites}
                         >
                           Remove from Favourites
                         </button>
                       ) : (
-
-                        <button className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
+                        <button
+                          className="w-full border-2 border-teal-600 text-teal-600 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
                           onClick={handleAddToFavourites}
                         >
                           Add to Favourites
@@ -497,7 +406,6 @@ const CourseOverviewPage = () => {
                       )}
                     </>
                   )}
-
 
                   <div className="mt-6 space-y-3 text-sm text-gray-600">
                     <div className="flex items-center">
@@ -523,7 +431,7 @@ const CourseOverviewPage = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Main Content */}
+          {/* Left Column */}
           <div className="lg:col-span-2 space-y-8">
             {/* What You'll Learn */}
             <div className="bg-white rounded-lg shadow-sm p-6">
@@ -537,8 +445,6 @@ const CourseOverviewPage = () => {
                 ))}
               </div>
             </div>
-
-
 
             {/* Prerequisites */}
             {course.prerequisites.length > 0 && (
@@ -604,8 +510,6 @@ const CourseOverviewPage = () => {
                                     </h4>
                                   </div>
                                   <p className="text-sm text-gray-600 ml-6">{chapter.description}</p>
-
-
                                 </div>
                                 <div className="text-sm text-gray-600 ml-4">
                                   {formatDuration(chapter.duration)}
@@ -621,36 +525,26 @@ const CourseOverviewPage = () => {
               </div>
             </div>
 
+            {/* Reviews */}
             <div className="bg-white rounded-lg p-6 shadow">
               <h2 className="text-2xl font-bold mb-6">Reviews</h2>
 
-              {/* Rating Distribution */}
               {[5, 4, 3, 2, 1].map((star) => {
                 const count = course.ratingDistribution[star as 1 | 2 | 3 | 4 | 5];
-                const percent =
-                  course.totalRatings > 0
-                    ? (count / course.totalRatings) * 100
-                    : 0;
-
+                const percent = course.totalRatings > 0 ? (count / course.totalRatings) * 100 : 0;
                 return (
                   <div key={star} className="flex items-center mb-2">
                     <span className="w-10">{star} ★</span>
                     <div className="flex-1 bg-gray-200 h-2 rounded mx-2">
-                      <div
-                        className="bg-yellow-400 h-2 rounded"
-                        style={{ width: `${percent}%` }}
-                      />
+                      <div className="bg-yellow-400 h-2 rounded" style={{ width: `${percent}%` }} />
                     </div>
                     <span className="w-10 text-right">{count}</span>
                   </div>
                 );
               })}
 
-              {/* Reviews List */}
               <div className="mt-6 space-y-6">
-                {reviews.length === 0 && (
-                  <p className="text-gray-500">No reviews yet.</p>
-                )}
+                {reviews.length === 0 && <p className="text-gray-500">No reviews yet.</p>}
 
                 {reviews.map((review) => (
                   <div key={review.id} className="border-b pb-4">
@@ -659,35 +553,21 @@ const CourseOverviewPage = () => {
                         src={review.learner.profilePic || '/images/default-profile.jpg'}
                         className="w-8 h-8 rounded-full"
                       />
-                      <span className="font-semibold">
-                        {review.learner.name}
-                      </span>
-                      {review.isEdited && (
-                        <span className="text-xs text-gray-500">(edited)</span>
-                      )}
+                      <span className="font-semibold">{review.learner.name}</span>
+                      {review.isEdited && <span className="text-xs text-gray-500">(edited)</span>}
                     </div>
-
                     <div className="flex mb-2">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          className={`w-4 h-4 ${s <= review.rating
-                            ? 'text-yellow-400 fill-yellow-400'
-                            : 'text-gray-300'
-                            }`}
-                        />
+                        <Star key={s} className={`w-4 h-4 ${s <= review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
                       ))}
                     </div>
-
-                    {review.reviewText && (
-                      <p className="text-gray-700">{review.reviewText}</p>
-                    )}
+                    {review.reviewText && <p className="text-gray-700">{review.reviewText}</p>}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* ADD REVIEW */}
+            {/* Add / Edit Review */}
             {course.isEnrolled && course.isCompleted && (!myReview || isEditingReview) && (
               <div className="bg-white rounded-lg p-6 shadow">
                 <h3 className="text-xl font-semibold mb-4">
@@ -699,10 +579,7 @@ const CourseOverviewPage = () => {
                     <Star
                       key={s}
                       onClick={() => setMyRating(s)}
-                      className={`w-6 h-6 cursor-pointer ${s <= myRating
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300'
-                        }`}
+                      className={`w-6 h-6 cursor-pointer ${s <= myRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
                     />
                   ))}
                 </div>
@@ -736,41 +613,21 @@ const CourseOverviewPage = () => {
               </div>
             )}
 
-
             {myReview && !isEditingReview && (
               <div className="bg-white rounded-lg p-6 shadow border border-teal-200">
                 <h3 className="text-xl font-semibold mb-3">Your Review</h3>
-
                 <div className="flex items-center gap-2 mb-2">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      className={`w-5 h-5 ${s <= myReview.rating
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300'
-                        }`}
-                    />
+                    <Star key={s} className={`w-5 h-5 ${s <= myReview.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
                   ))}
-                  {myReview.isEdited && (
-                    <span className="text-sm text-gray-500">(edited)</span>
-                  )}
+                  {myReview.isEdited && <span className="text-sm text-gray-500">(edited)</span>}
                 </div>
-
-                {myReview.reviewText && (
-                  <p className="text-gray-700 mb-3">{myReview.reviewText}</p>
-                )}
-
-                <button
-                  onClick={startEditReview}
-                  className="text-teal-600 text-sm font-medium hover:underline"
-                >
+                {myReview.reviewText && <p className="text-gray-700 mb-3">{myReview.reviewText}</p>}
+                <button onClick={startEditReview} className="text-teal-600 text-sm font-medium hover:underline">
                   Edit review
                 </button>
               </div>
             )}
-
-
-
 
             {/* Tags */}
             {course.tags.length > 0 && (
@@ -793,63 +650,35 @@ const CourseOverviewPage = () => {
           {/* Right Column: Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 space-y-6">
-              {/* Quick Stats */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Course Statistics</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
-                      Enrolled
-                    </span>
-                    <span className="font-semibold text-gray-900">
-                      {course.enrollmentCount.toLocaleString()}
-                    </span>
+                    <span className="text-gray-600 flex items-center"><Users className="w-4 h-4 mr-2" />Enrolled</span>
+                    <span className="font-semibold text-gray-900">{course.enrollmentCount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 flex items-center">
-                      <Star className="w-4 h-4 mr-2" />
-                      Ratings
-                    </span>
-                    <span className="font-semibold text-gray-900">
-                      {course.totalRatings}
-                    </span>
+                    <span className="text-gray-600 flex items-center"><Star className="w-4 h-4 mr-2" />Ratings</span>
+                    <span className="font-semibold text-gray-900">{course.totalRatings}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 flex items-center">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Modules
-                    </span>
-                    <span className="font-semibold text-gray-900">
-                      {course.modules.length}
-                    </span>
+                    <span className="text-gray-600 flex items-center"><BookOpen className="w-4 h-4 mr-2" />Modules</span>
+                    <span className="font-semibold text-gray-900">{course.modules.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 flex items-center">
-                      <PlayCircle className="w-4 h-4 mr-2" />
-                      Chapters
-                    </span>
-                    <span className="font-semibold text-gray-900">
-                      {getTotalChapters()}
-                    </span>
+                    <span className="text-gray-600 flex items-center"><PlayCircle className="w-4 h-4 mr-2" />Chapters</span>
+                    <span className="font-semibold text-gray-900">{getTotalChapters()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 flex items-center">
-                      <Clock className="w-4 h-4 mr-2" />
-                      Duration
-                    </span>
-                    <span className="font-semibold text-gray-900">
-                      {formatDuration(course.duration)}
-                    </span>
+                    <span className="text-gray-600 flex items-center"><Clock className="w-4 h-4 mr-2" />Duration</span>
+                    <span className="font-semibold text-gray-900">{formatDuration(course.duration)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Course Details */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Course Details</h3>
                 <div className="space-y-3 text-sm">
-
                   <div>
                     <span className="text-gray-600">Category:</span>
                     <p className="text-gray-900 mt-1">{course.category.name}</p>
@@ -858,55 +687,12 @@ const CourseOverviewPage = () => {
                     <span className="text-gray-600">Instructor:</span>
                     <p className="font-mono text-gray-900 mt-1">{course.instructor.name}</p>
                   </div>
-                  {/* <div>
-                    <span className="text-gray-600">Status:</span>
-                    <p className="text-gray-900 mt-1 flex items-center">
-                      {course.isActive ? (
-                        <><CheckCircle className="w-4 h-4 text-green-500 mr-1" /> Active</>
-                      ) : (
-                        <><span className="w-4 h-4 mr-1">•</span> Inactive</>
-                      )}
-                    </p>
-                  </div> */}
-
                 </div>
               </div>
-
-              {/* Action Buttons (for instructors) */}
-              {/* <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Instructor Actions</h3>
-                <div className="space-y-2">
-                  <Link
-                    to={`/instructor/courses/${course.id}/edit`}
-                    className="flex items-center justify-center w-full px-4 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Course
-                  </Link>
-                  <Link
-                    to={`/instructor/courses/${course.id}/analytics`}
-                    className="flex items-center justify-center w-full px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    View Analytics
-                  </Link>
-                </div>
-              </div> */}
             </div>
           </div>
         </div>
       </div>
-
-      <ConfirmDialog
-        open={!!confirmState}
-        title={"Cancel Enrollment"}
-        description={"Are you sure you want to cancel your enrollment in this course? You will lose access to the course. This action cannot be undone."}
-        confirmText={"Yes, Cancel Enrollment"}
-        destructive={true}
-        loading={actionLoading}
-        onCancel={() => setConfirmState(false)}
-        onConfirm={handleCancelEnrollment}
-      />
     </div>
   );
 };

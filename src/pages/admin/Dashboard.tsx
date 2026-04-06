@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../redux/store";
 import { getAdminDashboard } from "../../services/adminServices";
@@ -125,15 +125,15 @@ const AdminDashboard = () => {
   }, [dispatch, feedback]);
 
   const activeMode = REVENUE_MODES.find((m) => m.key === revenueMode)!;
-  const getValue = (r: MonthlyRevenue) => r[activeMode.field] as number;
+  const getValue = useCallback((r: MonthlyRevenue) => r[activeMode.field] as number, [activeMode.field]);
 
   const maxRevenue = useMemo(
     () => Math.max(...adminRevenue.map((r) => getValue(r)), 1),
-    [adminRevenue, revenueMode]
+    [adminRevenue, getValue]
   );
   const totalRevenue = useMemo(
     () => adminRevenue.reduce((sum, r) => sum + getValue(r), 0),
-    [adminRevenue, revenueMode]
+    [adminRevenue, getValue]
   );
   const avgRevenue = useMemo(
     () => (adminRevenue.length ? totalRevenue / adminRevenue.length : 0),

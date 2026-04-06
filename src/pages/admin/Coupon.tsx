@@ -421,7 +421,7 @@ export default function ManageCoupons() {
           </div>
 
           {/* Empty state */}
-          {!loading && coupons.length === 0 && (
+          {/* {!loading && coupons.length === 0 && (
             <div className="py-16 text-center">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
@@ -432,7 +432,7 @@ export default function ManageCoupons() {
               <p className="font-semibold text-slate-500">No coupons found</p>
               <p className="text-sm text-slate-400 mt-1">Try adjusting your search or create a new coupon.</p>
             </div>
-          )}
+          )} */}
 
           {/* Pagination */}
           {totalPages > 1 && (
